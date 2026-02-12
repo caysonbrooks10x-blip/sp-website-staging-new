@@ -8,138 +8,92 @@ import gsap from "gsap"
 import ScrollTrigger from "gsap/ScrollTrigger"
 import type { App } from "@/lib/types"
 
-gsap.registerPlugin(ScrollTrigger)
 
-const apps: App[] = [
-    {
-        id: "1",
-        name: "Text to Image",
-        description: "Generate stunning images from text descriptions",
-        image: "/marketplace/bg1.mp4",
-        tags: ["Image", "AI"],
-        creditCost: 5,
-        isNew: true,
-    },
-    {
-        id: "2",
-        name: "Video Upscaler",
-        description: "Enhance your videos with AI-powered upscaling",
-        image: "/marketplace/bg2.mp4",
-        tags: ["Video", "Enhancement"],
-        creditCost: 10,
-        isPro: true,
-    },
-    {
-        id: "3",
-        name: "Voice Cloner",
-        description: "Clone any voice with stunning accuracy",
-        image: "/marketplace/bg3.mp4",
-        tags: ["Audio", "Voice"],
-        creditCost: 8,
-    },
-    {
-        id: "4",
-        name: "Remove Background",
-        description: "Instantly remove backgrounds from images",
-        image: "/marketplace/bg4.mp4",
-        tags: ["Image", "Editing"],
-        creditCost: 3,
-    },
-    {
-        id: "5",
-        name: "Code Generator",
-        description: "Generate code from natural language descriptions",
-        image: "/marketplace/bg5.mp4",
-        tags: ["Development", "AI"],
-        creditCost: 2,
-    },
-    {
-        id: "6",
-        name: "Music Composer",
-        description: "Create original music compositions in any style",
-        image: "/marketplace/bg6.mp4",
-        tags: ["Audio", "Music"],
-        creditCost: 12,
-    },
-    {
-        id: "7",
-        name: "Face Swap",
-        description: "Seamlessly swap faces in images and videos",
-        image: "/marketplace/bg7.mp4",
-        tags: ["Video", "Face"],
-        creditCost: 7,
-        isNew: true,
-    },
-    {
-        id: "8",
-        name: "3D Model Generator",
-        description: "Generate 3D models from text or images",
-        image: "/marketplace/bg8.mp4",
-        tags: ["3D", "AI"],
-        creditCost: 15,
-        isPro: true,
-    },
-]
+import { marketplaceApps } from "@/lib/apps"
+
+const apps = marketplaceApps
 
 export function MarketplaceSection() {
     const sectionRef = useRef<HTMLDivElement>(null)
     const contentRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        const isMobile = window.innerWidth < 768
+        gsap.registerPlugin(ScrollTrigger)
+
+        const mm = gsap.matchMedia()
 
         const ctx = gsap.context(() => {
-            if (!isMobile && sectionRef.current && contentRef.current) {
-                ScrollTrigger.create({
-                    trigger: sectionRef.current,
-                    start: "bottom bottom",
-                    end: "+=100%",
-                    pin: true,
-                    pinSpacing: false,
-                    scrub: true,
-                })
-
-                gsap.to(contentRef.current, {
-                    scrollTrigger: {
+            // Desktop Logic
+            mm.add("(min-width: 768px)", () => {
+                if (sectionRef.current && contentRef.current) {
+                    ScrollTrigger.create({
                         trigger: sectionRef.current,
                         start: "bottom bottom",
-                        end: "bottom top",
+                        end: "+=100%",
+                        pin: true,
+                        pinSpacing: false,
                         scrub: true,
-                    },
-                    scale: 0.95,
-                    filter: "blur(5px)",
-                    opacity: 0.5,
-                    ease: "power1.inOut",
-                })
+                    })
 
-                gsap.to(".app-card-wrapper > div", {
-                    y: i => (i % 2 === 0 ? -80 : 40),
-                    ease: "none",
+                    gsap.to(contentRef.current, {
+                        scrollTrigger: {
+                            trigger: sectionRef.current,
+                            start: "bottom bottom",
+                            end: "bottom top",
+                            scrub: true,
+                        },
+                        scale: 0.95,
+                        filter: "blur(5px)",
+                        opacity: 0.5,
+                        ease: "power1.inOut",
+                    })
+
+                    gsap.to(".app-card-wrapper > div", {
+                        y: i => (i % 2 === 0 ? -80 : 40),
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: contentRef.current,
+                            start: "top bottom",
+                            end: "bottom top",
+                            scrub: 1.5,
+                        },
+                    })
+
+                    // Desktop Entry
+                    gsap.from(".app-card-wrapper", {
+                        scrollTrigger: {
+                            trigger: contentRef.current,
+                            start: "top 60%",
+                        },
+                        y: 100,
+                        opacity: 0,
+                        duration: 1.2,
+                        stagger: 0.1,
+                        ease: "power3.out",
+                    })
+                }
+            })
+
+            // Mobile Logic
+            mm.add("(max-width: 767px)", () => {
+                // Simple fade up for cards
+                gsap.from(".app-card-wrapper", {
                     scrollTrigger: {
                         trigger: contentRef.current,
-                        start: "top bottom",
-                        end: "bottom top",
-                        scrub: 1.5,
+                        start: "top 80%",
                     },
+                    y: 30,
+                    opacity: 0,
+                    duration: 0.6,
+                    stagger: 0.05,
+                    ease: "power3.out",
                 })
-            }
-
-            gsap.from(".app-card-wrapper", {
-                scrollTrigger: {
-                    trigger: contentRef.current,
-                    start: isMobile ? "top 80%" : "top 60%",
-                },
-                y: isMobile ? 30 : 100,
-                opacity: 0,
-                duration: isMobile ? 0.6 : 1.2,
-                stagger: isMobile ? 0.05 : 0.1,
-                ease: "power3.out",
             })
         }, sectionRef)
 
         return () => {
-            ScrollTrigger.getAll().forEach(t => t.kill())
             ctx.revert()
+            mm.revert()
         }
     }, [])
 

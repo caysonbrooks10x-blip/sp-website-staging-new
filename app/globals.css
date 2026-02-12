@@ -5,7 +5,7 @@
 
 :root {
   /* Brighter, more visible dark theme - no pure black */
-  --background: oklch(0.15 0.005 260);
+  --background: oklch(0.02 0 0);
   --foreground: oklch(0.98 0 0);
   --card: oklch(0.18 0.005 260);
   --card-foreground: oklch(0.98 0 0);
@@ -23,7 +23,7 @@
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.28 0.01 260);
   --input: oklch(0.2 0.005 260);
-  --ring: oklch(0.7 0.15 250);
+  --ring: oklch(0.7 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -41,7 +41,7 @@
 }
 
 .dark {
-  --background: oklch(0.15 0.005 260);
+  --background: oklch(0.02 0 0);
   --foreground: oklch(0.98 0 0);
   --card: oklch(0.18 0.005 260);
   --card-foreground: oklch(0.98 0 0);
@@ -120,7 +120,37 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  html,
   body {
     @apply bg-background text-foreground;
+    background-color: #050505;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: .5;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

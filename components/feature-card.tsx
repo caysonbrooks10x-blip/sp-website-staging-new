@@ -83,14 +83,14 @@ export function FeatureCard({ title, description, icon: Icon, className }: Featu
 
             <div className="relative z-20 p-8 h-full flex flex-col items-start gap-4">
                 <div className="mb-4 inline-flex items-center justify-center rounded-xl bg-zinc-800/50 p-3 ring-1 ring-white/10 group-hover:bg-zinc-700/50 group-hover:scale-110 transition-all duration-500">
-                    <Icon className="h-6 w-6 text-zinc-400 group-hover:text-white transition-colors duration-500" />
+                    <Icon className="h-6 w-6 text-zinc-300 group-hover:text-white transition-colors duration-500" />
                 </div>
 
-                <h3 className="text-xl font-bold text-zinc-300 group-hover:text-white transition-colors duration-300 font-serif tracking-tight">
+                <h3 className="text-xl font-bold text-zinc-100 group-hover:text-white transition-colors duration-300 font-serif tracking-tight">
                     {title}
                 </h3>
 
-                <p className="text-zinc-500 leading-relaxed group-hover:text-zinc-400 transition-colors duration-300">
+                <p className="text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors duration-300">
                     {description}
                 </p>
             </div>

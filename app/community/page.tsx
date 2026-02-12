@@ -1,15 +1,22 @@
 
 "use client"
 
-import { Suspense, useEffect, useRef } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, ArrowUpRight, Filter, Play } from "lucide-react"
+import { Search, ArrowUpRight, Filter, Play, Plus } from "lucide-react"
 import { gsap } from "gsap"
 import { CommunityGrid } from "@/components/community-grid"
+import { UploadModal } from "@/components/upload-modal"
+
+import { useAuth } from "@/context/auth-context"
+import { useRouter } from "next/navigation"
 
 function CommunityContent() {
   const headerRef = useRef<HTMLDivElement>(null)
+  const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const { user } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -38,6 +45,9 @@ function CommunityContent() {
   return (
     <main ref={headerRef} className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30 overflow-x-hidden">
 
+      {/* Upload Modal */}
+      <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
+
       {/* Sophisticated Ambient Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-purple-900/5 rounded-full blur-[180px]" />
@@ -63,7 +73,20 @@ function CommunityContent() {
           </div>
 
           <div className="hero-controls w-full lg:w-auto flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
-            <div className="relative group w-full sm:w-[320px]">
+            <Button
+              className="h-14 rounded-full px-8 bg-white text-black hover:bg-neutral-200 transition-all duration-500 font-medium"
+              onClick={() => {
+                if (!user) {
+                  router.push(`/login?redirect=${encodeURIComponent("/community")}`)
+                  return
+                }
+                setIsUploadOpen(true)
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Upload
+            </Button>
+            <div className="relative group w-full sm:w-[280px]">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500 group-hover:text-white transition-colors duration-300" />
               <Input
                 placeholder="Search the gallery..."
@@ -72,10 +95,6 @@ function CommunityContent() {
             </div>
             <Button variant="outline" size="icon" className="h-14 w-14 rounded-full border-white/5 bg-white/[0.03] hover:bg-white/[0.08] hover:text-white hover:border-white/10 transition-all duration-500">
               <Filter className="h-4 w-4" />
-            </Button>
-            <Button variant="default" className="h-14 rounded-full px-8 bg-white text-black hover:bg-neutral-200 transition-all duration-500 font-medium">
-              <Play className="h-4 w-4 mr-2 fill-current" />
-              Showreel
             </Button>
           </div>
         </div>

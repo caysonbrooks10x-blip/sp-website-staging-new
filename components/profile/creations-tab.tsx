@@ -93,21 +93,40 @@ export function CreationsTab({ items }: CreationsTabProps) {
             </div>
 
             {/* Grid Layout */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
-                {items.map((recipe, i) => (
-                    <CreationCard key={recipe.id} item={recipe} index={i} />
-                ))}
-                {/* Extended Demo Data to show grid better */}
-                {items.map((recipe, i) => (
-                    <CreationCard key={`${recipe.id}-2`} item={{ ...recipe, id: `${recipe.id}-2` }} index={i + 6} />
-                ))}
-            </div>
+            {/* Grid Layout or Empty State */}
+            {items.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
+                    {items.map((recipe, i) => (
+                        <CreationCard key={recipe.id} item={recipe} index={i} />
+                    ))}
+                </div>
+            ) : (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="flex flex-col items-center justify-center py-20 text-center space-y-6"
+                >
+                    <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                        <Search className="w-10 h-10 text-slate-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">No creations yet</h3>
+                    <p className="text-slate-400 max-w-md">
+                        Your personalized studio is waiting. Start generating amazing content to populate your portfolio.
+                    </p>
+                    <Button variant="default" className="mt-4 rounded-full px-8 bg-purple-600 hover:bg-purple-500 text-white">
+                        Start Creating
+                    </Button>
+                </motion.div>
+            )}
 
-            <div className="flex justify-center mt-12">
-                <Button variant="outline" size="lg" className="rounded-full px-8 py-6 border-white/10 bg-gradient-to-b from-white/5 to-transparent hover:from-white/10 hover:to-white/5 text-slate-300 hover:text-white transition-all duration-500 group">
-                    Load More Creations <span className="ml-2 group-hover:translate-y-0.5 transition-transform duration-300">↓</span>
-                </Button>
-            </div>
+            {items.length > 0 && (
+                <div className="flex justify-center mt-12">
+                    <Button variant="outline" size="lg" className="rounded-full px-8 py-6 border-white/10 bg-gradient-to-b from-white/5 to-transparent hover:from-white/10 hover:to-white/5 text-slate-300 hover:text-white transition-all duration-500 group">
+                        Load More Creations <span className="ml-2 group-hover:translate-y-0.5 transition-transform duration-300">↓</span>
+                    </Button>
+                </div>
+            )}
         </div>
     )
 }

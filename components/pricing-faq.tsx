@@ -24,7 +24,7 @@ const faqs = [
 ]
 
 export function PricingFaq() {
-    const [openIndex, setOpenIndex] = useState<number | null>(0)
+    const [openIndex, setOpenIndex] = useState<number | null>(null)
 
     return (
         <section className="py-24 px-4 bg-secondary/5 border-t border-border/50">

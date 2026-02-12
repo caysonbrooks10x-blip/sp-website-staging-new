@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowUpRight } from "lucide-react"
+import Link from "next/link"
 import type { App } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -69,14 +70,14 @@ export function AppCard({ app, onTryNow }: AppCardProps) {
                 ))}
               </div>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full bg-white/5 hover:bg-white hover:text-black text-white border border-white/5 transition-all duration-300 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0"
-                onClick={() => onTryNow?.(app.id)}
-              >
-                <ArrowUpRight className="w-4 h-4" />
-              </Button>
+              <Link href={`/studio?tab=templates&template=${app.id}`}>
+                <Button
+                  size="sm"
+                  className="h-8 px-4 rounded-full bg-white/10 hover:bg-white hover:text-black text-white border border-white/5 transition-all duration-300 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 text-xs font-medium"
+                >
+                  Use Template
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

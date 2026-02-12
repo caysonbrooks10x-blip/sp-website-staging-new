@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Check, Sparkles, ArrowRight } from "lucide-react"
 import type { PricingPlan } from "@/lib/types"
 import { motion, useMotionTemplate, useMotionValue } from "framer-motion"
+import { useState } from "react"
 import { cn } from "@/lib/utils"
+import { api } from "@/lib/api"
 // Removed UnifiedCard import to build a custom premium card
 
 interface PricingCardProps {
@@ -16,6 +18,7 @@ interface PricingCardProps {
 export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: PricingCardProps) {
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
+  const [loading, setLoading] = useState(false)
 
   // Calculate price based on billing cycle (simple mock logic: 20% off for year)
   const displayPrice =
@@ -25,6 +28,26 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
     const { left, top } = currentTarget.getBoundingClientRect()
     mouseX.set(clientX - left)
     mouseY.set(clientY - top)
+  }
+
+  const handlePurchase = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      console.log("Purchasing plan:", plan.name)
+      // Simulate or perform purchase/credit addition
+      await api.adminCredits({
+        amount: plan.credits,
+        plan: plan.id,
+        description: `Purchase of ${plan.name} plan`
+      })
+      alert(`Successfully purchased ${plan.name} plan! Credentials added.`)
+    } catch (e) {
+      console.error("Purchase failed:", e)
+      alert("Purchase failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -96,6 +119,8 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
 
         {/* CTA */}
         <Button
+          onClick={handlePurchase}
+          disabled={loading}
           className={cn(
             "w-full h-12 rounded-xl text-base font-semibold group-hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden",
             plan.popular
@@ -104,11 +129,11 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
           )}
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
-            get started
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            {loading ? "Processing..." : "Get Started"}
+            {!loading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
           </span>
           {/* Subtle shine effect for popular button */}
-          {plan.popular && (
+          {plan.popular && !loading && (
             <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0" />
           )}
         </Button>

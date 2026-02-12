@@ -1,0 +1,73 @@
+
+import type { App } from "@/lib/types"
+
+export const marketplaceApps: App[] = [
+    {
+        id: "1",
+        name: "Text to Image",
+        description: "Generate stunning images from text descriptions",
+        image: "/marketplace/bg1.mp4",
+        tags: ["Image", "AI"],
+        creditCost: 5,
+        isNew: true,
+    },
+    {
+        id: "2",
+        name: "Video Upscaler",
+        description: "Enhance your videos with AI-powered upscaling",
+        image: "/marketplace/bg2.mp4",
+        tags: ["Video", "Enhancement"],
+        creditCost: 10,
+        isPro: true,
+    },
+    {
+        id: "3",
+        name: "Voice Cloner",
+        description: "Clone any voice with stunning accuracy",
+        image: "/marketplace/bg3.mp4",
+        tags: ["Audio", "Voice"],
+        creditCost: 8,
+    },
+    {
+        id: "4",
+        name: "Remove Background",
+        description: "Instantly remove backgrounds from images",
+        image: "/marketplace/bg4.mp4",
+        tags: ["Image", "Editing"],
+        creditCost: 3,
+    },
+    {
+        id: "5",
+        name: "Code Generator",
+        description: "Generate code from natural language descriptions",
+        image: "/marketplace/bg5.mp4",
+        tags: ["Development", "AI"],
+        creditCost: 2,
+    },
+    {
+        id: "6",
+        name: "Music Composer",
+        description: "Create original music compositions in any style",
+        image: "/marketplace/bg6.mp4",
+        tags: ["Audio", "Music"],
+        creditCost: 12,
+    },
+    {
+        id: "7",
+        name: "Face Swap",
+        description: "Seamlessly swap faces in images and videos",
+        image: "/marketplace/bg7.mp4",
+        tags: ["Video", "Face"],
+        creditCost: 7,
+        isNew: true,
+    },
+    {
+        id: "8",
+        name: "3D Model Generator",
+        description: "Generate 3D models from text or images",
+        image: "/marketplace/bg8.mp4",
+        tags: ["3D", "AI"],
+        creditCost: 15,
+        isPro: true,
+    },
+]

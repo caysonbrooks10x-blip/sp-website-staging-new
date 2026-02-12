@@ -57,3 +57,23 @@ export interface Creation {
   thumbnail?: string
   createdAt: Date
 }
+
+export interface CommunityPost {
+  id: string
+  title: string
+  description?: string
+  author: {
+    id: string
+    name: string
+    avatar: string
+  }
+  assetUrl: string
+  thumbnailUrl: string
+  aspectRatio: "square" | "portrait" | "landscape"
+  likes: number
+  views: number
+  allowRemix: boolean
+  createdAt: Date
+  remixSourceId?: string // If this post is a remix of another
+  tags: string[]
+}

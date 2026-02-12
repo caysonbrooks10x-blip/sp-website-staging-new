@@ -1,6 +1,7 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 interface PricingHeroProps {
@@ -8,7 +9,23 @@ interface PricingHeroProps {
     setBillingCycle: (cycle: "monthly" | "yearly") => void
 }
 
+const content = [
+    { line1: "Simple, Transparent", line2: "Pricing" },
+    { line1: "Powerful, Creative", line2: "Tools" },
+    { line1: "Unmatched, Flexible", line2: "Plans" },
+    { line1: "Scale Your", line2: "Vision" }
+]
+
 export function PricingHero({ billingCycle, setBillingCycle }: PricingHeroProps) {
+    const [index, setIndex] = useState(0)
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setIndex((prev) => (prev + 1) % content.length)
+        }, 3000)
+        return () => clearInterval(interval)
+    }, [])
+
     return (
         <section className="relative pt-32 pb-20 px-4 overflow-hidden">
             {/* Background Ambience */}
@@ -21,10 +38,22 @@ export function PricingHero({ billingCycle, setBillingCycle }: PricingHeroProps)
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                     className="space-y-4"
                 >
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">
-                        Simple, Transparent <br />
-                        <span className="text-primary/90">Pricing</span>
-                    </h1>
+                    <div className="h-[140px] md:h-[180px] flex items-center justify-center">
+                        <AnimatePresence mode="wait">
+                            <motion.h1
+                                key={index}
+                                initial={{ opacity: 0, filter: "blur(10px)", scale: 0.95 }}
+                                animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
+                                exit={{ opacity: 0, filter: "blur(10px)", scale: 1.05 }}
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                className="text-5xl md:text-7xl font-bold tracking-tight text-foreground"
+                            >
+                                {content[index].line1}<br />
+                                <span className="text-primary/90">{content[index].line2}</span>
+                            </motion.h1>
+                        </AnimatePresence>
+                    </div>
+
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                         Choose the perfect plan for your creative journey. <br className="hidden md:block" />
                         Unlock the full potential of StudioX.

@@ -4,8 +4,8 @@ import { Playfair_Display, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
 import { SmoothScroll } from "@/components/smooth-scroll"
+import { AuthProvider } from "@/context/auth-context"
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -38,6 +38,7 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-icon.png",
   },
+  themeColor: "#050505",
 }
 
 export default function RootLayout({
@@ -48,12 +49,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
-        <SmoothScroll>
-          <Navbar />
-          {children}
-          <Footer />
-          <Analytics />
-        </SmoothScroll>
+        <AuthProvider>
+          <SmoothScroll>
+            <Navbar />
+            {children}
+            <Analytics />
+          </SmoothScroll>
+        </AuthProvider>
       </body>
     </html>
   )
