@@ -31,7 +31,7 @@ export function MarketplaceSection() {
                         start: "bottom bottom",
                         end: "+=100%",
                         pin: true,
-                        pinSpacing: false,
+                        pinSpacing: false, // Page flap effect
                         scrub: true,
                     })
 
@@ -43,13 +43,12 @@ export function MarketplaceSection() {
                             scrub: true,
                         },
                         scale: 0.95,
-                        filter: "blur(5px)",
                         opacity: 0.5,
                         ease: "power1.inOut",
                     })
 
                     gsap.to(".app-card-wrapper > div", {
-                        y: i => (i % 2 === 0 ? -80 : 40),
+                        y: i => (i % 2 === 0 ? -40 : 20),
                         ease: "none",
                         scrollTrigger: {
                             trigger: contentRef.current,
@@ -99,6 +98,7 @@ export function MarketplaceSection() {
 
     return (
         <section
+            id="collective"
             ref={sectionRef}
             className="py-24 bg-zinc-950 relative z-40 min-h-screen flex flex-col justify-center overflow-hidden"
         >
@@ -112,33 +112,18 @@ export function MarketplaceSection() {
                 className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col justify-center"
             >
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-20">
-                    <div>
+                    <div className="flex flex-col gap-4">
                         <TypewriterText
-                            text="App Marketplace"
-                            className="text-4xl md:text-6xl font-bold font-sans text-white tracking-tighter"
+                            text="Collective"
+                            className="text-3xl md:text-4xl font-bold font-sans text-white tracking-tighter"
                             cursor={false}
                         />
                         <TypewriterText
-                            text="Curated tools for professional workflows"
-                            className="text-zinc-400 text-lg font-sans tracking-wide mt-2"
+                            text="Explore masterpieces from the collective soul"
+                            className="text-zinc-400 text-lg font-sans tracking-wide"
                             delay={0.5}
                             stagger={0.02}
                         />
-                    </div>
-
-                    <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
-                        <Button className="rounded-full px-6 h-9 bg-white text-black hover:bg-white/90">
-                            All Tools
-                        </Button>
-                        <Button variant="ghost" className="rounded-full px-6 h-9 text-zinc-400 hover:text-white hover:bg-white/10">
-                            Image
-                        </Button>
-                        <Button variant="ghost" className="rounded-full px-6 h-9 text-zinc-400 hover:text-white hover:bg-white/10">
-                            Video
-                        </Button>
-                        <Button variant="ghost" className="rounded-full px-6 h-9 text-zinc-400 hover:text-white hover:bg-white/10">
-                            Audio
-                        </Button>
                     </div>
                 </div>
 
