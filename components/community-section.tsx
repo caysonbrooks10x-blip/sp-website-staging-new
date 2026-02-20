@@ -18,34 +18,51 @@ export function CommunitySection() {
         const mm = gsap.matchMedia()
 
         const ctx = gsap.context(() => {
-            // Intro Animation - Runs on all devices
-            gsap.from(".community-card", {
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: "top 75%",
-                    end: "bottom 25%",
-                    toggleActions: "play none none reverse",
-                },
-                y: 100,
-                scale: 0.9,
-                opacity: 0,
-                duration: 1.2,
-                stagger: {
-                    each: 0.05,
-                    from: "random"
-                },
-                ease: "power3.out"
+            // Mobile Animation - Simple & Smooth
+            mm.add("(max-width: 767px)", () => {
+                gsap.from(".community-card", {
+                    scrollTrigger: {
+                        trigger: sectionRef.current,
+                        start: "top 85%", // Start earlier
+                        toggleActions: "play none none reverse",
+                    },
+                    y: 30, // Reduced offset
+                    opacity: 0,
+                    duration: 0.8,
+                    stagger: 0.05, // Faster stagger
+                    ease: "power2.out",
+                    clearProps: "all" // Ensure clean state after animation
+                })
             })
 
-            // Desktop Specifics - Pinning & Parallax
+            // Desktop Animation & Pinning
             mm.add("(min-width: 768px)", () => {
+                // Desktop Entrance
+                gsap.from(".community-card", {
+                    scrollTrigger: {
+                        trigger: sectionRef.current,
+                        start: "top 75%",
+                        end: "bottom 25%",
+                        toggleActions: "play none none reverse",
+                    },
+                    y: 100,
+                    scale: 0.9,
+                    opacity: 0,
+                    duration: 1.2,
+                    stagger: {
+                        each: 0.05,
+                        from: "random"
+                    },
+                    ease: "power3.out"
+                })
+
                 // Pinning: Wait until bottom of section hits bottom of viewport (allows full scroll)
                 ScrollTrigger.create({
                     trigger: sectionRef.current,
                     start: "bottom bottom",
-                    end: "+=100%", // Pin for 1 screen height while next section overlaps
+                    end: "+=100%",
                     pin: true,
-                    pinSpacing: false, // Essential for stacking: next section slides over
+                    pinSpacing: false,
                     anticipatePin: 1,
                     id: "community-pin"
                 })
@@ -55,7 +72,6 @@ export function CommunitySection() {
                     y: -100, // Move up slightly as it gets covered
                     scale: 0.95,
                     opacity: 0.5,
-                    filter: "blur(5px)",
                     scrollTrigger: {
                         trigger: sectionRef.current,
                         start: "bottom bottom",
@@ -73,7 +89,7 @@ export function CommunitySection() {
     }, [])
 
     return (
-        <section ref={sectionRef} className="py-12 md:py-20 bg-background relative z-40 min-h-screen flex flex-col justify-center overflow-hidden border-t border-border/10 will-change-transform">
+        <section ref={sectionRef} className="py-24 md:py-32 bg-background relative z-40 min-h-screen flex flex-col justify-center overflow-hidden border-t border-border/10 will-change-transform">
             {/* Artistic Background */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent/10 via-background to-background pointer-events-none" />
 
@@ -82,7 +98,7 @@ export function CommunitySection() {
                     <div className="inline-block">
                         <TypewriterText
                             text="Made with StudioX"
-                            className="text-4xl md:text-6xl font-bold font-serif tracking-tighter"
+                            className="text-3xl md:text-4xl font-bold font-serif tracking-tighter"
                             cursor={false}
                         />
                     </div>

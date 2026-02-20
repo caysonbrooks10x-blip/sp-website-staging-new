@@ -15,7 +15,7 @@ const pricingPlans: PricingPlan[] = [
     name: "Free",
     price: 0,
     credits: 10,
-    features: ["10 credits/month", "Basic tools access", "Community sharing", "Standard support", "Personal license"],
+    features: ["10 credits/month", "Basic tools access", "Standard support", "Personal license"],
   },
   {
     id: "pro",

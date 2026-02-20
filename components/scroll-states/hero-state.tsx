@@ -170,9 +170,9 @@ export function HeroState({ register }: HeroStateProps) {
                         </a>
                     </Button>
                     <Button size="lg" variant="outline" className="h-16 px-12 rounded-full text-lg bg-white/5 backdrop-blur-md border-white/10 hover:bg-white/10 hover:scale-[1.02] transition-all duration-300 text-white font-medium group" asChild>
-                        <a href="/community">
+                        <a href="#collective">
                             <Play className="mr-2 h-5 w-5 fill-white/20 group-hover:fill-white/100 transition-all" />
-                            Showreel
+                            Explore
                         </a>
                     </Button>
                 </div>
