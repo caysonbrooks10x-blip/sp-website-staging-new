@@ -111,15 +111,26 @@ export default function PostDetailPage() {
                         />
                     </div>
 
-                    {/* Main Image */}
+                    {/* Main Content */}
                     <div className="relative w-full h-[60vh] lg:h-[85vh] max-w-[90%] lg:max-w-4xl shadow-2xl">
-                        <Image
-                            src={post.assetUrl}
-                            alt={post.title}
-                            fill
-                            className="object-contain drop-shadow-2xl"
-                            priority
-                        />
+                        {post.type === "video" ? (
+                            <video
+                                src={post.assetUrl}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-contain drop-shadow-2xl"
+                            />
+                        ) : (
+                            <Image
+                                src={post.assetUrl}
+                                alt={post.title}
+                                fill
+                                className="object-contain drop-shadow-2xl"
+                                priority
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -214,10 +225,10 @@ export default function PostDetailPage() {
                                     className="w-full bg-white text-black hover:bg-zinc-200 rounded-xl h-12 text-base font-medium font-sans"
                                     onClick={() => {
                                         if (!user) {
-                                            const target = `/studio?mode=remix&source=${post.id}`
+                                            const target = `/studio?mode=${post.type}&prompt=${encodeURIComponent(post.prompt)}`
                                             router.push(`/login?redirect=${encodeURIComponent(target)}`)
                                         } else {
-                                            router.push(`/studio?mode=remix&source=${post.id}`)
+                                            router.push(`/studio?mode=${post.type}&prompt=${encodeURIComponent(post.prompt)}`)
                                         }
                                     }}
                                 >

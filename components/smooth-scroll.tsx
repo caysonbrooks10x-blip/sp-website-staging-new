@@ -24,6 +24,8 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
         })
 
         lenisRef.current = lenis
+            // Expose globally for Navbar and other components to trigger soft scrolls
+            ; (window as any).lenis = lenis
 
         ScrollTrigger.scrollerProxy(document.body, {
             scrollTop(value) {

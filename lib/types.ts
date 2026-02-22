@@ -8,6 +8,8 @@ export interface App {
   creditCost: number
   isNew?: boolean
   isPro?: boolean
+  prompt: string
+  type: "image" | "video"
 }
 
 export interface Recipe {
@@ -75,5 +77,7 @@ export interface CommunityPost {
   allowRemix: boolean
   createdAt: Date
   remixSourceId?: string // If this post is a remix of another
+  type: "image" | "video"
+  prompt: string
   tags: string[]
 }

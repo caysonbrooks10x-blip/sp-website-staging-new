@@ -52,49 +52,51 @@ export function StudioMainContent({ mode, generations }: StudioMainContentProps)
     if (mode === "image" && resolution === "5s") setResolution("1K");
 
     return (
-        <div className="flex-1 bg-black/20 backdrop-blur-xl flex flex-col min-w-0 relative border-l border-white/5">
+        <div className="flex-1 flex flex-col min-w-0 relative h-full">
             {/* ... Header ... */}
-            <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-black/20 backdrop-blur-md sticky top-0 z-10">
-                {/* ... existing header content ... */}
-                <div className="flex items-center gap-4">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-9 gap-2 px-3 text-zinc-200 hover:text-white hover:bg-white/5 font-medium">
-                                <Clock className="w-4 h-4 text-zinc-400" />
-                                {mode === "video" ? "Video History" : "Generation History"}
-                                <ChevronDown className="w-3.5 h-3.5 opacity-50" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-56 bg-[#18181b] border-[#27272a] text-zinc-200">
-                            <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">All Generations</DropdownMenuItem>
-                            <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">Favorites</DropdownMenuItem>
-                            <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">Archived</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+            <div className="sticky top-24 z-30 mb-8">
+                <header className="h-16 rounded-2xl border border-indigo-500/10 flex items-center justify-between px-6 bg-[#0B0F19]/60 backdrop-blur-3xl shadow-xl">
+                    {/* ... existing header content ... */}
+                    <div className="flex items-center gap-4">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-9 gap-2 px-3 text-zinc-200 hover:text-white hover:bg-white/5 font-medium">
+                                    <Clock className="w-4 h-4 text-zinc-400" />
+                                    {mode === "video" ? "Video History" : "Generation History"}
+                                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56 bg-[#0D111D] border-indigo-500/20 text-indigo-100 shadow-2xl">
+                                <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">All Generations</DropdownMenuItem>
+                                <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">Favorites</DropdownMenuItem>
+                                <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">Archived</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
 
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-400 hover:text-white hover:bg-white/5">
-                        <LayoutGrid className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-400 hover:text-white hover:bg-white/5" onClick={() => setShowOutputSettings(!showOutputSettings)}>
-                        <Settings2 className="w-4 h-4" />
-                    </Button>
-                    <Button className="bg-white text-black hover:bg-zinc-200 h-8 text-xs font-semibold px-4 rounded-lg">
-                        Select All
-                    </Button>
-                </div>
-            </header>
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-400 hover:text-white hover:bg-white/5">
+                            <LayoutGrid className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-400 hover:text-white hover:bg-white/5" onClick={() => setShowOutputSettings(!showOutputSettings)}>
+                            <Settings2 className="w-4 h-4" />
+                        </Button>
+                        <Button className="bg-white text-black hover:bg-zinc-200 h-8 text-xs font-semibold px-4 rounded-lg">
+                            Select All
+                        </Button>
+                    </div>
+                </header>
+            </div>
 
             {/* Content Area */}
-            <main className="flex-1 p-8 overflow-y-auto relative no-scrollbar">
-                <div className="max-w-[1600px] mx-auto">
+            <main className="flex-1 relative">
+                <div className="w-full">
                     {/* Main Grid */}
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-white mb-6">Ready to create</h1>
 
                         {generations.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center min-h-[600px] border border-dashed border-white/10 rounded-3xl bg-gradient-to-b from-white/5 to-transparent hover:border-white/20 transition-all duration-500 group relative overflow-hidden">
+                            <div className="flex flex-col items-center justify-center min-h-[600px] border border-dashed border-indigo-500/20 rounded-3xl bg-gradient-to-b from-indigo-500/5 to-transparent hover:border-indigo-500/40 transition-all duration-500 group relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
                                 <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-8 ring-1 ring-white/10 group-hover:scale-110 group-hover:ring-white/20 transition-all duration-500 relative">
@@ -110,9 +112,9 @@ export function StudioMainContent({ mode, generations }: StudioMainContentProps)
                         ) : (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {generations.map((item) => (
-                                    <div key={item.id} className="aspect-[4/5] bg-[#18181b] rounded-2xl overflow-hidden relative group border border-transparent hover:border-white/10 transition-all">
+                                    <div key={item.id} className="aspect-[4/5] bg-[#0D111D] rounded-2xl overflow-hidden relative group border border-transparent hover:border-indigo-500/30 transition-all shadow-xl shadow-black/20">
                                         {item.status === 'queued' || item.status === 'generating' ? (
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#09090b] border border-[#27272a] border-dashed rounded-2xl">
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#06080D] border border-indigo-500/20 border-dashed rounded-2xl">
                                                 <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center animate-pulse">
                                                     <Clock className="w-5 h-5 text-emerald-500" />
                                                 </div>
@@ -156,7 +158,7 @@ export function StudioMainContent({ mode, generations }: StudioMainContentProps)
                             initial={{ opacity: 0, y: 20, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#18181b] border border-[#27272a] rounded-2xl p-4 shadow-2xl w-[400px] z-50 flex flex-col gap-4"
+                            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#0D111D] border border-indigo-500/20 rounded-2xl p-4 shadow-2xl w-[400px] z-50 flex flex-col gap-4"
                         >
                             <div className="flex items-center justify-between">
                                 <h3 className="text-sm font-medium text-white">Output Settings</h3>
@@ -176,8 +178,8 @@ export function StudioMainContent({ mode, generations }: StudioMainContentProps)
                                                 className={cn(
                                                     "py-2 px-1 rounded-lg text-xs font-medium transition-all border",
                                                     aspectRatio === ratio
-                                                        ? "bg-white text-black border-white"
-                                                        : "bg-zinc-800 text-zinc-400 border-transparent hover:bg-zinc-700"
+                                                        ? "bg-indigo-500 text-white border-indigo-400"
+                                                        : "bg-[#1A2235] text-indigo-200 border-transparent hover:bg-indigo-900/50"
                                                 )}
                                             >
                                                 {ratio}
@@ -198,8 +200,8 @@ export function StudioMainContent({ mode, generations }: StudioMainContentProps)
                                                 className={cn(
                                                     "py-2 px-1 rounded-lg text-xs font-medium transition-all border",
                                                     resolution === res
-                                                        ? "bg-white text-black border-white"
-                                                        : "bg-zinc-800 text-zinc-400 border-transparent hover:bg-zinc-700"
+                                                        ? "bg-indigo-500 text-white border-indigo-400"
+                                                        : "bg-[#1A2235] text-indigo-200 border-transparent hover:bg-indigo-900/50"
                                                 )}
                                             >
                                                 {res}
