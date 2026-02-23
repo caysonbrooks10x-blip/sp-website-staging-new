@@ -30,14 +30,26 @@ export function CommunityPostCard({ post, index }: CommunityPostCardProps) {
       href={`/community/${post.id}`}
       className={`group relative block w-full rounded-xl overflow-hidden bg-[#111] border border-white/5 cursor-pointer ${aspectClass} transition-transform duration-700 hover:shadow-2xl hover:-translate-y-1`}
     >
-      {/* Image Layer */}
-      <Image
-        src={post.thumbnailUrl}
-        alt={post.title}
-        fill
-        className="object-cover transition-transform duration-[2s] ease-in-out group-hover:scale-105"
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-      />
+      {/* Media Layer */}
+      {post.type === "video" ? (
+        <video
+          src={post.assetUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster={post.thumbnailUrl}
+          className="object-cover w-full h-full absolute inset-0 transition-transform duration-[2s] ease-in-out group-hover:scale-105"
+        />
+      ) : (
+        <Image
+          src={post.thumbnailUrl}
+          alt={post.title}
+          fill
+          className="object-cover transition-transform duration-[2s] ease-in-out group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        />
+      )}
 
       {/* Classy Gradient Overlay */}
       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-500" />
@@ -67,10 +79,10 @@ export function CommunityPostCard({ post, index }: CommunityPostCardProps) {
             onClick={(e) => {
               e.preventDefault() // Prevent navigation to detail page
               if (!user) {
-                const target = `/studio?mode=remix&source=${post.id}`
+                const target = `/studio?mode=${post.type}&prompt=${encodeURIComponent(post.prompt)}`
                 router.push(`/login?redirect=${encodeURIComponent(target)}`)
               } else {
-                router.push(`/studio?mode=remix&source=${post.id}`)
+                router.push(`/studio?mode=${post.type}&prompt=${encodeURIComponent(post.prompt)}`)
               }
             }}
           >

@@ -22,14 +22,22 @@ export function AppCard({ app, onTryNow }: AppCardProps) {
       >
         {app.image && (
           <div className="absolute inset-0 h-[70%] z-0 overflow-hidden">
-            <video
-              src={app.image}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 opacity-70 group-hover:opacity-100"
-            />
+            {app.type === "video" ? (
+              <video
+                src={app.image}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 opacity-70 group-hover:opacity-100"
+              />
+            ) : (
+              <img
+                src={app.image}
+                alt={app.name}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 opacity-70 group-hover:opacity-100"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
           </div>
         )}
@@ -70,7 +78,7 @@ export function AppCard({ app, onTryNow }: AppCardProps) {
                 ))}
               </div>
 
-              <Link href={`/studio?tab=templates&template=${app.id}`}>
+              <Link href={`/studio?mode=${app.type}&prompt=${encodeURIComponent(app.prompt)}&previewUrl=${encodeURIComponent(app.image || "")}`}>
                 <Button
                   size="sm"
                   className="h-8 px-4 rounded-full bg-white/10 hover:bg-white hover:text-black text-white border border-white/5 transition-all duration-300 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 text-xs font-medium"

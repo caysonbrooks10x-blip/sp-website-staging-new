@@ -16,20 +16,18 @@ export function CommunityGrid() {
     useEffect(() => {
         const ctx = gsap.context(() => {
             // Masonry Entrance
-            const cards = gsap.utils.toArray<HTMLElement>(".community-card-wrapper")
+            const cards = gsap.utils.toArray<HTMLElement>(".community-card-inner")
 
             // Set initial state
-            gsap.set(cards, { opacity: 0, y: 50, scale: 0.9 })
+            gsap.set(cards, { opacity: 0, y: 30 })
 
             ScrollTrigger.batch(cards, {
                 onEnter: (batch) => {
                     gsap.to(batch, {
                         opacity: 1,
                         y: 0,
-                        scale: 1,
-                        filter: "blur(0px)",
                         duration: 0.8,
-                        stagger: 0.05,
+                        stagger: 0.08,
                         ease: "power2.out",
                         overwrite: true
                     })
@@ -55,9 +53,11 @@ export function CommunityGrid() {
             {communityPosts.map((post, index) => (
                 <div
                     key={post.id}
-                    className="community-card-wrapper break-inside-avoid mb-6 opacity-0 translate-y-20 scale-95 blur-sm" // Initial state for GSAP
+                    className="break-inside-avoid mb-6"
                 >
-                    <CommunityPostCard post={post} index={index} />
+                    <div className="community-card-inner opacity-0 translate-y-8 rounded-xl overflow-hidden block">
+                        <CommunityPostCard post={post} index={index} />
+                    </div>
                 </div>
             ))}
         </div>

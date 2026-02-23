@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -39,12 +39,21 @@ interface StudioLeftPanelProps {
     isGenerating: boolean;
     mode: "image" | "video";
     setMode: (mode: "image" | "video") => void;
+    initialPrompt?: string;
+    initialPreviewUrl?: string;
 }
 
-export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: StudioLeftPanelProps) {
+export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode, initialPrompt = "", initialPreviewUrl = "" }: StudioLeftPanelProps) {
     const [activeTab, setActiveTab] = useState<"create" | "variations">("create");
     // Local mode state removed in favor of prop
-    const [prompt, setPrompt] = useState("");
+    const [prompt, setPrompt] = useState(initialPrompt);
+    const [previewUrl, setPreviewUrl] = useState(initialPreviewUrl);
+
+    useEffect(() => {
+        if (initialPrompt) setPrompt(initialPrompt);
+        if (initialPreviewUrl) setPreviewUrl(initialPreviewUrl);
+    }, [initialPrompt, initialPreviewUrl]);
+
     const [autoPolish, setAutoPolish] = useState(false);
 
     // Local state for model selection
@@ -82,7 +91,7 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
     };
 
     return (
-        <div className="w-[400px] h-full flex flex-col bg-black/20 backdrop-blur-xl border-r border-white/5 relative z-20 flex-shrink-0 text-zinc-100 overflow-y-auto no-scrollbar">
+        <div className="w-full h-full flex flex-col bg-[#0B0F19]/60 backdrop-blur-3xl border border-indigo-500/10 rounded-3xl relative z-20 flex-shrink-0 text-zinc-100 overflow-y-auto no-scrollbar">
             {/* Header */}
             <div className="h-16 flex items-center px-6 border-b border-white/5">
                 <Button variant="ghost" size="icon" className="mr-2 text-zinc-400 hover:text-white">
@@ -97,10 +106,10 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
 
             <div className="p-6 flex-1 flex flex-col gap-8">
                 {/* Mode Switcher - Large & Premium */}
-                <div className="bg-black/40 p-1.5 rounded-2xl border border-white/5 flex relative">
+                <div className="bg-[#06080D]/40 p-1.5 rounded-2xl border border-indigo-500/10 flex relative mt-2">
                     <div
                         className={cn(
-                            "absolute inset-y-1.5 w-[calc(50%-6px)] bg-[#27272a] rounded-xl shadow-lg border border-white/10 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                            "absolute inset-y-1.5 w-[calc(50%-6px)] bg-[#1A2235] rounded-xl shadow-lg border border-indigo-500/20 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                             mode === 'video' ? "left-[calc(50%+3px)]" : "left-1.5"
                         )}
                     />
@@ -127,13 +136,13 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
                 </div>
 
                 {/* Tabs */}
-                <div className="p-1 bg-[#18181b] rounded-xl flex gap-1">
+                <div className="p-1 bg-[#0D111D] rounded-xl flex gap-1">
                     <button
                         onClick={() => setActiveTab("create")}
                         className={cn(
                             "flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all flex flex-col items-center gap-2 relative overflow-hidden",
                             activeTab === "create"
-                                ? "text-white bg-[#27272a] shadow-lg border border-white/5"
+                                ? "text-white bg-[#1A2235] shadow-lg border border-indigo-500/20"
                                 : "text-zinc-500 hover:text-zinc-300"
                         )}
                     >
@@ -153,8 +162,8 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
                         className={cn(
                             "flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all flex flex-col items-center gap-2 relative overflow-hidden",
                             activeTab === "variations"
-                                ? "text-white bg-[#27272a] shadow-lg border border-white/5"
-                                : "text-zinc-500 hover:text-zinc-300"
+                                ? "text-white bg-[#1A2235] shadow-lg border border-indigo-500/20"
+                                : "text-zinc-500 hover:text-indigo-200"
                         )}
                     >
                         {activeTab === "variations" && <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent" />}
@@ -175,25 +184,27 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
                         <Maximize2 className="w-3 h-3 text-zinc-500 cursor-pointer hover:text-zinc-300" />
                     </div>
 
-                    <div className="relative bg-[#121214] rounded-2xl border border-[#27272a] overflow-hidden group focus-within:border-zinc-700 transition-colors py-2">
+                    <div className="relative bg-[#0D111D] rounded-2xl border border-indigo-500/10 overflow-hidden group focus-within:border-indigo-500/50 transition-colors py-2">
 
                         {/* Upload Area */}
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="mx-4 mt-2 p-2 rounded-xl border border-zinc-800 bg-[#18181b] hover:bg-[#27272a] cursor-pointer flex items-center gap-3 transition-colors"
+                            className="mx-4 mt-2 p-2 rounded-xl border border-indigo-900/30 bg-[#131A2B] hover:bg-[#1A2235] cursor-pointer flex items-center gap-3 transition-colors"
                         >
                             <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
-                                {mode === 'image' ? (
+                                {previewUrl ? (
+                                    <video src={previewUrl} className="object-cover w-full h-full opacity-80" autoPlay loop muted playsInline />
+                                ) : mode === 'image' ? (
                                     <Image src="/createcard.jpeg" alt="Upload" fill className="object-cover opacity-80" />
                                 ) : (
                                     <Video className="w-4 h-4 text-zinc-400" />
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-xs font-medium text-zinc-300 truncate">Add visual references <span className="text-zinc-600 ml-1">Optional</span></div>
-                                <div className="text-[10px] text-zinc-600 truncate">Guide the look and keep things consistent.</div>
+                                <div className="text-xs font-medium text-indigo-200 truncate">Add visual references <span className="text-indigo-400 ml-1">Optional</span></div>
+                                <div className="text-[10px] text-indigo-400/70 truncate">Guide the look and keep things consistent.</div>
                             </div>
-                            <span className="text-[10px] font-medium text-zinc-600">0/10</span>
+                            <span className="text-[10px] font-medium text-indigo-400/50">0/10</span>
                             <input ref={fileInputRef} type="file" className="hidden" multiple accept="image/*" />
                         </div>
 
@@ -201,7 +212,7 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             placeholder="What do you want to see? Example: 'A cat sitting on a table, warm morning light.'"
-                            className="resize-none min-h-[120px] bg-transparent border-none text-zinc-300 placeholder:text-zinc-600 focus-visible:ring-0 p-4 text-sm leading-relaxed"
+                            className="resize-none min-h-[120px] bg-transparent border-none text-indigo-100 placeholder:text-indigo-900/40 focus-visible:ring-0 p-4 text-sm leading-relaxed"
                         />
 
                         <div className="px-4 pb-2 flex items-center justify-between">
@@ -236,7 +247,7 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
                         {/* Model Selector */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <div className="p-4 bg-[#121214] rounded-2xl border border-[#27272a] flex flex-col justify-between cursor-pointer hover:border-zinc-700 transition-colors h-24">
+                                <div className="p-4 bg-[#0D111D] rounded-2xl border border-indigo-500/10 flex flex-col justify-between cursor-pointer hover:border-indigo-500/40 transition-colors h-24 shadow-lg shadow-black/20">
                                     <div className="flex justify-between items-start">
                                         <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">MODEL</span>
                                         <ChevronDown className="w-3 h-3 text-zinc-600" />
@@ -252,7 +263,7 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
                                     </div>
                                 </div>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-[180px] bg-[#18181b] border-[#27272a] text-zinc-200">
+                            <DropdownMenuContent align="start" className="w-[180px] bg-[#0D111D] border-indigo-500/20 text-indigo-100 shadow-xl shadow-black/40">
                                 <>
                                     <DropdownMenuItem onClick={() => setSelectedModel("Nano")} className="hover:bg-white/5 cursor-pointer flex gap-2">
                                         <div className="w-4 h-4 rounded-full bg-zinc-800 text-white flex items-center justify-center text-[8px] font-bold">G</div>
@@ -282,7 +293,7 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
                         </DropdownMenu>
 
                         {/* Output Settings Display */}
-                        <div className="p-4 bg-[#121214] rounded-2xl border border-[#27272a] flex flex-col justify-between cursor-pointer hover:border-zinc-700 transition-colors h-24">
+                        <div className="p-4 bg-[#0D111D] rounded-2xl border border-indigo-500/10 flex flex-col justify-between cursor-pointer hover:border-indigo-500/40 transition-colors h-24 shadow-lg shadow-black/20">
                             <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">OUTPUT</span>
                             <div className="flex items-center gap-2">
                                 <LayoutTemplate className="w-5 h-5 text-zinc-500" />
@@ -294,7 +305,7 @@ export function StudioLeftPanel({ onGenerate, isGenerating, mode, setMode }: Stu
 
                 {/* Count & Generate */}
                 <div className="flex gap-3 items-stretch h-14">
-                    <div className="flex items-center gap-4 bg-[#121214] px-5 rounded-2xl border border-[#27272a]">
+                    <div className="flex items-center gap-4 bg-[#0D111D] px-5 rounded-2xl border border-indigo-500/10 shadow-lg shadow-black/20">
                         <button
                             onClick={() => setOutputCount(Math.max(1, outputCount - 1))}
                             className="text-zinc-500 hover:text-white transition-colors text-lg"
