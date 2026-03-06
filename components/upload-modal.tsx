@@ -9,23 +9,34 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-// Imports removed as unused
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { storage, db, functions } from "@/lib/firebaseClient"
+import { useAuth } from "@/context/auth-context"
+import { httpsCallable } from "firebase/functions"
 
 interface UploadModalProps {
     isOpen: boolean
     onClose: () => void
+    initialData?: {
+        url: string
+        type: "image" | "video"
+        prompt?: string
+        creationId?: string
+    }
 }
 
-export function UploadModal({ isOpen, onClose }: UploadModalProps) {
+export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) {
     const [file, setFile] = useState<File | null>(null)
-    const [preview, setPreview] = useState<string | null>(null)
+    const [preview, setPreview] = useState<string | null>(initialData?.url || null)
     const [title, setTitle] = useState("")
-    const [description, setDescription] = useState("")
+    const [description, setDescription] = useState(initialData?.prompt || "")
     const [isPublic, setIsPublic] = useState(true)
     const [allowRemix, setAllowRemix] = useState(true)
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const router = useRouter()
+    const { user } = useAuth()
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -55,27 +66,71 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     }
 
     const handlePublish = async () => {
-        if (!file) return
+        if (!user) {
+            alert("You must be logged in to publish.");
+            return;
+        }
 
-        setIsUploading(true)
+        if (!file && !initialData) {
+            alert("You must select a file to publish.");
+            return;
+        }
 
-        // Mock upload delay
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        setIsUploading(true);
 
-        setIsUploading(false)
-        onClose()
-        setFile(null)
-        setPreview(null)
-        setTitle("")
-        setDescription("")
+        try {
+            let downloadUrl = "";
+            let uploadType = "image";
+            let modelOutput = "External";
 
-        // Refresh to show new post
-        router.push("/community")
-        router.refresh()
+            if (file) {
+                // 1. Upload file to Firebase Storage
+                const fileRef = ref(storage, `community-uploads/${user.uid}/${Date.now()}_${file.name}`);
+                const uploadResult = await uploadBytesResumable(fileRef, file);
+                downloadUrl = await getDownloadURL(uploadResult.ref);
+                uploadType = file.type.startsWith('video') ? "video" : "image";
+            } else if (initialData) {
+                downloadUrl = initialData.url;
+                uploadType = initialData.type;
+                modelOutput = "StudioX";
+            }
 
-        // Use a simpler alert or just let it close silently as per user request to "remove everything"
-        // But maybe a success indication is nice.
-        // toast.success("Published (Mock)") // assuming toast is available or just let it happen. 
+            // 2. Add document to Firestore 'posts' collection using Serverless proxy
+            const publishPost = httpsCallable(functions, "publishPost");
+            await publishPost({
+                title: title || "StudioX Upload",
+                prompt: description || "No description provided.",
+                caption: description || "",
+                model: modelOutput,
+                type: uploadType,
+                creationId: initialData?.creationId || null,
+                author: {
+                    name: user.displayName || user.email?.split('@')[0] || "Creator",
+                    avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
+                    uid: user.uid
+                },
+                tags: isPublic ? ["community", "upload"] : ["private", "upload"],
+                assetUrl: downloadUrl,
+                thumbnailUrl: downloadUrl, // Can be refined later for automatic video thumbnails
+                allowRemix,
+                isPublic
+            });
+
+            console.log("Successfully published external post!");
+            onClose();
+            setFile(null);
+            setPreview(null);
+            setTitle("");
+            setDescription("");
+
+            router.push("/community");
+            router.refresh();
+        } catch (error: any) {
+            console.error("Upload failed:", error);
+            alert("Upload failed: " + error.message);
+        } finally {
+            setIsUploading(false);
+        }
     }
 
     return (
@@ -98,7 +153,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         className="fixed left-1/2 top-1/2 z-50 w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 p-4"
                     >
-                        <div className="relative overflow-hidden rounded-3xl shadow-2xl group">
+                        <div className="relative overflow-hidden rounded-3xl shadow-2xl group max-h-[90vh] overflow-y-auto">
                             {/* Background Image with Parallax-like fixity (or just cover) */}
                             <div className="absolute inset-0 z-0">
                                 <img src="/community_card.jpeg" alt="bg" className="w-full h-full object-cover opacity-60" />
@@ -106,7 +161,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
                                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
                             </div>
 
-                            <div className="relative z-10 flex flex-col md:flex-row h-[600px]">
+                            <div className="relative z-10 flex flex-col md:flex-row min-h-[500px] md:h-[600px]">
                                 {/* Left: Preview / Upload Area - Glassy & Featured */}
                                 <div
                                     className={cn(
@@ -131,20 +186,21 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
                                             animate={{ opacity: 1, scale: 1 }}
                                             className="relative h-full w-full overflow-hidden rounded-xl shadow-2xl border border-white/10"
                                         >
-                                            {file?.type.startsWith('video') ? (
-                                                <video src={preview} className="h-full w-full object-cover" controls />
+                                            {((file?.type.startsWith('video')) || (!file && initialData?.type === "video")) ? (
+                                                <video src={preview} className="h-full w-full object-cover" controls autoPlay loop muted />
                                             ) : (
                                                 <img src={preview} alt="Preview" className="h-full w-full object-cover" />
                                             )}
                                             <Button
                                                 variant="secondary"
                                                 size="sm"
-                                                className="absolute right-3 top-3 h-8 w-8 rounded-full bg-black/60 text-white backdrop-blur-md border border-white/10 hover:bg-black/80 hover:scale-105 transition-all"
                                                 onClick={(e) => {
                                                     e.stopPropagation()
                                                     setFile(null)
                                                     setPreview(null)
                                                 }}
+                                                disabled={!!initialData && !file}
+                                                className={cn("absolute right-3 top-3 h-8 w-8 rounded-full bg-black/60 text-white backdrop-blur-md border border-white/10 hover:bg-black/80 hover:scale-105 transition-all", (!!initialData && !file) && "hidden")}
                                             >
                                                 <X className="h-4 w-4" />
                                             </Button>
@@ -242,10 +298,10 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
                                         </Button>
                                         <Button
                                             onClick={handlePublish}
-                                            disabled={!file || isUploading}
+                                            disabled={(!file && !initialData) || isUploading}
                                             className={cn(
                                                 "min-w-[140px] h-11 rounded-xl font-medium transition-all shadow-lg",
-                                                !file ? "bg-white/10 text-zinc-500" : "bg-white text-black hover:bg-zinc-200 hover:scale-105 shadow-white/10"
+                                                (!file && !initialData) ? "bg-white/10 text-zinc-500" : "bg-white text-black hover:bg-zinc-200 hover:scale-105 shadow-white/10"
                                             )}
                                         >
                                             {isUploading ? (

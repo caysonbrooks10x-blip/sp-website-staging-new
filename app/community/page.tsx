@@ -20,21 +20,19 @@ function CommunityContent() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Elegant Header Fade
       gsap.from(".hero-text", {
-        y: 40,
+        y: 30,
         opacity: 0,
-        duration: 1.2,
-        stagger: 0.15,
+        duration: 0.8,
+        stagger: 0.1,
         ease: "power3.out"
       })
 
-      // Controls Fade
       gsap.from(".hero-controls", {
-        y: 20,
+        y: 15,
         opacity: 0,
-        duration: 1,
-        delay: 0.6,
+        duration: 0.6,
+        delay: 0.3,
         ease: "power2.out"
       })
     }, headerRef)
@@ -52,7 +50,6 @@ function CommunityContent() {
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-purple-900/5 rounded-full blur-[180px]" />
         <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-blue-900/5 rounded-full blur-[150px]" />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.02]" />
       </div>
 
       {/* Refined Header */}
@@ -74,7 +71,7 @@ function CommunityContent() {
 
           <div className="hero-controls w-full lg:w-auto flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
             <Button
-              className="h-14 rounded-full px-8 bg-white text-black hover:bg-neutral-200 transition-all duration-500 font-medium"
+              className="h-14 rounded-full px-8 bg-white text-black hover:bg-neutral-200 transition-all duration-300 font-medium"
               onClick={() => {
                 if (!user) {
                   router.push(`/login?redirect=${encodeURIComponent("/community")}`)
@@ -90,10 +87,10 @@ function CommunityContent() {
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500 group-hover:text-white transition-colors duration-300" />
               <Input
                 placeholder="Search the gallery..."
-                className="pl-12 h-14 bg-white/[0.03] border-white/5 rounded-full text-base text-white placeholder:text-neutral-600 focus:bg-white/[0.08] focus:border-white/10 transition-all duration-500 shadow-xl"
+                className="pl-12 h-14 bg-white/[0.03] border-white/5 rounded-full text-base text-white placeholder:text-neutral-600 focus:bg-white/[0.08] focus:border-white/10 transition-all duration-300 shadow-xl"
               />
             </div>
-            <Button variant="outline" size="icon" className="h-14 w-14 rounded-full border-white/5 bg-white/[0.03] hover:bg-white/[0.08] hover:text-white hover:border-white/10 transition-all duration-500">
+            <Button variant="outline" size="icon" className="h-14 w-14 rounded-full border-white/5 bg-white/[0.03] hover:bg-white/[0.08] hover:text-white hover:border-white/10 transition-all duration-300">
               <Filter className="h-4 w-4" />
             </Button>
           </div>

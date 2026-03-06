@@ -92,7 +92,7 @@ export function CTAState({ progress, isVisible = true }: CTAStateProps) {
 
             {/* Footer Links (Static bottom) */}
             <div className="absolute bottom-10 w-full text-center text-zinc-600 text-sm font-mono opacity-50">
-                StudioX © 2026. All Systems Nominal.
+                StudioX © 2026.
             </div>
 
         </section>

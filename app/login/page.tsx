@@ -35,7 +35,7 @@ const Divider = () => (
 );
 
 export default function LoginPage() {
-    const { user, loading, signInWithGoogle, signInWithEmail, signInWithPhone, verifyOtp } = useAuth();
+    const { user, loading, signInWithGoogle, signInWithEmail, signInWithPhone, verifyOtp, setUpRecaptcha } = useAuth();
     const router = useRouter();
 
     const [view, setView] = useState<"selection" | "email" | "phone">("selection");
@@ -90,7 +90,9 @@ export default function LoginPage() {
         setIsSubmitting(true);
 
         try {
-            await signInWithPhone(phoneNumber);
+            setUpRecaptcha("recaptcha-container");
+            const appVerifier = (window as any).recaptchaVerifier;
+            await signInWithPhone(phoneNumber, appVerifier);
             setPhoneStep("code");
             setIsSubmitting(false);
         } catch (err: any) {
@@ -105,7 +107,7 @@ export default function LoginPage() {
         setError("");
         setIsSubmitting(true);
         try {
-            await verifyOtp(phoneNumber, verificationCode);
+            await verifyOtp(verificationCode);
             // Redirect handled by user effect
         } catch (err: any) {
             setError("Invalid verification code");
@@ -281,6 +283,7 @@ export default function LoginPage() {
                                                     />
                                                 </div>
                                             </div>
+                                            <div id="recaptcha-container"></div>
                                             {error && <p className="text-xs text-red-400 text-center pt-2 font-medium">{error}</p>}
                                             <Button type="submit" className="w-full h-11 bg-white text-black hover:bg-white/90 font-bold rounded-xl mt-4 shadow-lg shadow-white/5 transition-transform active:scale-[0.98]" disabled={isSubmitting}>
                                                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Code"}

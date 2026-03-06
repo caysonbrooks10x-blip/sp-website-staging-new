@@ -1,20 +1,33 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabaseClient";
+import {
+    User,
+    onAuthStateChanged,
+    signInWithPopup,
+    GoogleAuthProvider,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    updateProfile,
+    RecaptchaVerifier,
+    signInWithPhoneNumber,
+    ConfirmationResult
+} from "firebase/auth";
+import { auth } from "@/lib/firebaseClient";
+import { createUserDoc } from "@/lib/db";
 import { useRouter } from "next/navigation";
 
 interface AuthContextType {
     user: User | null;
-    session: Session | null;
     loading: boolean;
     credits: number | null;
     signInWithGoogle: () => Promise<void>;
     signInWithEmail: (email: string, pass: string) => Promise<any>;
     signUpWithEmail: (email: string, pass: string, name: string) => Promise<any>;
-    signInWithPhone: (phone: string) => Promise<any>;
-    verifyOtp: (phone: string, token: string) => Promise<any>;
+    setUpRecaptcha: (containerId: string) => void;
+    signInWithPhone: (phone: string, appVerifier: RecaptchaVerifier) => Promise<any>;
+    verifyOtp: (token: string) => Promise<any>;
     logout: () => Promise<void>;
     updateCredits: (newCredits: number) => void;
     refreshCredits: () => Promise<void>;
@@ -22,12 +35,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
-    session: null,
     loading: true,
     credits: null,
     signInWithGoogle: async () => { },
     signInWithEmail: async () => { throw new Error("Not implemented") },
     signUpWithEmail: async () => { throw new Error("Not implemented") },
+    setUpRecaptcha: () => { },
     signInWithPhone: async () => { throw new Error("Not implemented") },
     verifyOtp: async () => { throw new Error("Not implemented") },
     logout: async () => { },
@@ -39,9 +52,9 @@ export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [credits, setCredits] = useState<number | null>(null);
+    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const router = useRouter();
 
     // Mock credits for now since backend integration is removed
@@ -50,56 +63,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchCredits(session.user.id);
-            }
-            setLoading(false);
-        }).catch((err) => {
-            console.error("Supabase Session Error:", err);
-            setLoading(false); // Ensure loading stops even on error
-        });
-
-        // Listen for changes
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchCredits(session.user.id);
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            setUser(currentUser);
+            if (currentUser) {
+                await createUserDoc(currentUser);
+                fetchCredits(currentUser.uid);
             } else {
                 setCredits(null);
             }
             setLoading(false);
         });
 
-        return () => subscription.unsubscribe();
+        return () => unsubscribe();
     }, []);
 
     const signInWithGoogle = async () => {
         try {
-            const redirectUrl = window.location.origin;
-            console.log("Initiating Google Sign-In with redirect:", redirectUrl);
-            console.log("Supabase URL Check:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "Defined" : "Missing");
-
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: redirectUrl,
-                }
-            });
-
-            if (error) {
-                console.error("Supabase Auth Error:", error);
-                if (error.status === 500) {
-                    console.error("CRITICAL CONFIG ERROR: A 500 error usually means your Google Client ID/Secret in Supabase is incorrect, OR the Authorized Redirect URI in Google Cloud Console is missing the Supabase callback URL.");
-                }
-                throw error;
-            }
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
         } catch (error) {
             console.error("Error signing in with Google", error);
             throw error;
@@ -107,54 +88,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const signInWithEmail = async (email: string, pass: string) => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password: pass,
-        });
-        if (error) throw error;
-        return data;
-    };
-
-    const signUpWithEmail = async (email: string, pass: string, name: string) => {
         try {
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password: pass,
-                options: {
-                    data: {
-                        name: name,
-                    }
-                }
-            });
-            if (error) throw error;
-            return data;
+            const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+            return userCredential.user;
         } catch (error) {
-            console.error("Error signing up", error);
             throw error;
         }
     };
 
-    const signInWithPhone = async (phone: string) => {
-        const { data, error } = await supabase.auth.signInWithOtp({
-            phone,
-        });
-        if (error) throw error;
-        return data;
+    const signUpWithEmail = async (email: string, pass: string, name: string) => {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            const user = userCredential.user;
+            await updateProfile(user, { displayName: name });
+            return user;
+        } catch (error) {
+            console.error("Error signing up:", error);
+            throw error;
+        }
     };
 
-    const verifyOtp = async (phone: string, token: string) => {
-        const { data, error } = await supabase.auth.verifyOtp({
-            phone,
-            token,
-            type: 'sms',
-        });
-        if (error) throw error;
-        return data;
+    const setUpRecaptcha = (containerId: string) => {
+        if (!(window as any).recaptchaVerifier) {
+            (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+                size: 'invisible',
+            });
+        }
+    };
+
+    const signInWithPhone = async (phone: string, appVerifier: RecaptchaVerifier) => {
+        try {
+            const result = await signInWithPhoneNumber(auth, phone, appVerifier);
+            setConfirmationResult(result);
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const verifyOtp = async (token: string) => {
+        if (!confirmationResult) throw new Error("No phone authentication pending.");
+        try {
+            const result = await confirmationResult.confirm(token);
+            return result.user;
+        } catch (error) {
+            throw error;
+        }
     };
 
     const logout = async () => {
         try {
-            await supabase.auth.signOut();
+            await signOut(auth);
+            setCredits(0);
+            setUser(null);
             router.push("/");
         } catch (error) {
             console.error("Error signing out", error);
@@ -167,19 +153,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const refreshCredits = async () => {
         if (user) {
-            await fetchCredits(user.id);
+            await fetchCredits(user.uid);
         }
     };
 
     return (
         <AuthContext.Provider value={{
             user,
-            session,
             loading,
             credits,
             signInWithGoogle,
             signInWithEmail,
             signUpWithEmail,
+            setUpRecaptcha,
             signInWithPhone,
             verifyOtp,
             logout,

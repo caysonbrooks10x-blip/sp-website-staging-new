@@ -6,7 +6,6 @@ import { UnifiedCard } from "@/components/unified-card"
 import { TypewriterText } from "@/components/typewriter-text"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
-import { communityPosts } from "@/lib/community-data"
 import Image from "next/image"
 import Link from "next/link"
 

@@ -15,11 +15,15 @@ const faqs = [
     },
     {
         question: "Is there a discount for annual billing?",
-        answer: "Yes! By choosing the annual billing option, you save 20% compared to the monthly rate. It's our way of rewarding long-term commitment to creativity.",
+        answer: "Yes! By choosing the annual billing option, you receive a 20% discount billed as a single upfront payment. It's our way of rewarding long-term commitment to creativity.",
     },
     {
         question: "Do you offer enterprise or team plans?",
-        answer: "We do. Our Business plan is designed for small teams, but for larger organizations requiring SSO, dedicated support, and custom SLAs, please contact our sales team.",
+        answer: "We do. Our Ultra plan is designed for agencies and power users, but for larger organizations requiring dedicated infrastructure, custom SLAs, and priority onboarding, please contact our sales team.",
+    },
+    {
+        question: "Do unused credits roll over?",
+        answer: "Credits do not reset and roll over to the next month. You can accumulate credits over time, ensuring nothing goes to waste.",
     },
 ]
 
@@ -27,7 +31,7 @@ export function PricingFaq() {
     const [openIndex, setOpenIndex] = useState<number | null>(null)
 
     return (
-        <section className="py-24 px-4 bg-secondary/5 border-t border-border/50">
+        <section className="py-24 px-4 border-t border-white/[0.06]">
             <div className="max-w-3xl mx-auto">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -36,27 +40,27 @@ export function PricingFaq() {
                     transition={{ duration: 0.6 }}
                     className="text-center mb-16"
                 >
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-                    <p className="text-muted-foreground">Everything you need to know about our pricing and plans.</p>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Frequently Asked Questions</h2>
+                    <p className="text-zinc-500">Everything you need to know about our pricing and plans.</p>
                 </motion.div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                     {faqs.map((faq, index) => (
                         <motion.div
                             key={index}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
-                            className="border border-border/50 rounded-2xl bg-card overflow-hidden"
+                            transition={{ duration: 0.5, delay: index * 0.08 }}
+                            className="border border-white/[0.08] rounded-xl bg-white/[0.02] overflow-hidden hover:border-white/[0.12] transition-colors duration-300"
                         >
                             <button
                                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                                className="flex items-center justify-between w-full p-6 text-left"
+                                className="flex items-center justify-between w-full p-5 text-left group"
                             >
-                                <span className="font-semibold text-lg">{faq.question}</span>
-                                <span className="p-2 bg-secondary rounded-full transition-colors duration-300 group-hover:bg-secondary/80">
-                                    {openIndex === index ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                                <span className="font-medium text-base text-white/90 group-hover:text-white transition-colors">{faq.question}</span>
+                                <span className="p-1.5 bg-white/[0.06] rounded-full transition-colors duration-300 group-hover:bg-white/10 shrink-0 ml-4">
+                                    {openIndex === index ? <Minus className="w-3.5 h-3.5 text-cyan-400" /> : <Plus className="w-3.5 h-3.5 text-zinc-400" />}
                                 </span>
                             </button>
                             <AnimatePresence>
@@ -67,7 +71,7 @@ export function PricingFaq() {
                                         exit={{ height: 0, opacity: 0 }}
                                         transition={{ duration: 0.3, ease: "easeInOut" }}
                                     >
-                                        <div className="px-6 pb-6 text-muted-foreground leading-relaxed">
+                                        <div className="px-5 pb-5 text-zinc-400 leading-relaxed text-sm">
                                             {faq.answer}
                                         </div>
                                     </motion.div>

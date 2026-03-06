@@ -42,13 +42,26 @@ export interface User {
   totalRemixes: number
 }
 
+export interface PricingTier {
+  credits: number
+  price: number
+  yearlyPrice: number
+}
+
 export interface PricingPlan {
   id: string
   name: string
   price: number
+  yearlyPrice: number
   credits: number
+  creditsPerYear: number
+  generationValue: number
   features: string[]
   popular?: boolean
+  queuePriority: string
+  support: string
+  bestFor: string
+  tiers?: PricingTier[]
 }
 
 export interface Creation {
@@ -77,7 +90,13 @@ export interface CommunityPost {
   allowRemix: boolean
   createdAt: Date
   remixSourceId?: string // If this post is a remix of another
+  parentAssetId?: string // The asset ID this was remixed from (lineage tracking)
   type: "image" | "video"
   prompt: string
   tags: string[]
+  model?: string
+  preset?: string
+  quality?: string
+  size?: string
+  creationId?: string
 }

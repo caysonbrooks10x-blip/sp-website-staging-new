@@ -16,16 +16,31 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
+import { doc, onSnapshot } from "firebase/firestore"
+import { db } from "@/lib/firebaseClient"
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isNavVisible, setIsNavVisible] = useState(true)
-  const [lastScrollY, setLastScrollY] = useState(0)
+  const lastScrollYRef = useRef(0)
+  const [scrolled, setScrolled] = useState(false)
   const { user, logout } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
-  const navRef = useRef<HTMLElement>(null)
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 })
+  const navRef = useRef<HTMLDivElement>(null)
+
+  const [balance, setBalance] = useState<number>(0)
+
+  useEffect(() => {
+    if (!user) return
+    const unsub = onSnapshot(doc(db, "users", user.uid), (docRef) => {
+      if (docRef.exists()) {
+        setBalance(docRef.data()?.tokenBalance || 0)
+      }
+    })
+    return () => unsub()
+  }, [user])
 
   useEffect(() => {
     if (!navRef.current) return
@@ -42,17 +57,18 @@ export function Navbar() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY
-      if (currentScrollY > 50 && currentScrollY > lastScrollY) {
+      if (currentScrollY > 50 && currentScrollY > lastScrollYRef.current) {
         setIsNavVisible(false)
       } else {
         setIsNavVisible(true)
       }
-      setLastScrollY(currentScrollY)
+      setScrolled(currentScrollY > 20)
+      lastScrollYRef.current = currentScrollY
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [lastScrollY])
+  }, [])
 
   // Lock body scroll when menu is open
   useEffect(() => {
@@ -78,17 +94,20 @@ export function Navbar() {
     { href: "/pricing", label: "Pricing" },
   ]
 
-
+  // Hide global navbar on community post detail pages (they have their own nav)
+  const isCommunityPostDetail = /^\/community\/.+/.test(pathname)
+  if (isCommunityPostDetail) return null
 
   return (
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-[100] px-4 py-6 sm:px-6 lg:px-8 transition-transform duration-700 ease-[0.32,0.72,0,1]",
-          isNavVisible ? "translate-y-0" : "-translate-y-32"
+          "fixed top-0 left-0 right-0 z-[100] px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-[0.32,0.72,0,1]",
+          isNavVisible ? "translate-y-0" : "-translate-y-32",
+          scrolled ? "bg-white/80 backdrop-blur-xl border-b border-black/5 py-4" : "bg-transparent py-6"
         )}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between relative">
+        <div className="w-full flex items-center justify-between relative">
           {/* Logo */}
           <Link
             href="/"
@@ -105,15 +124,17 @@ export function Navbar() {
               <span className="relative font-bold text-sm tracking-tighter">Sx</span>
             </div>
             <span className={cn(
-              "font-medium tracking-wide transition-colors duration-300",
-              "text-white"
+              "font-medium tracking-wide transition-colors duration-300 pointer-events-none",
+              (pathname.startsWith('/studio') || pathname.startsWith('/community') || pathname.startsWith('/creations') || pathname.startsWith('/profile')) && !scrolled
+                ? "text-white"
+                : "text-zinc-900"
             )}>
               StudioX
             </span>
           </Link>
 
           {/* Desktop Navigation Capsule */}
-          <nav ref={navRef} className="hidden md:flex items-center gap-1 p-1.5 rounded-full bg-white/5 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.02)] absolute left-1/2 -translate-x-1/2 z-[110]">
+          <nav ref={navRef} className="hidden md:flex items-center gap-1 p-1.5 rounded-full bg-white/5 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.02)] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[110]">
 
             {/* Smooth Sliding Pill */}
             <div
@@ -149,11 +170,11 @@ export function Navbar() {
           {/* Right Section */}
           <div className="flex items-center gap-4 relative z-[110]">
             {/* Credits Pill */}
-            <div className="hidden sm:flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-zinc-900/80 border border-white/10 shadow-lg backdrop-blur-md">
+            <div className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-zinc-900/80 border border-white/10 shadow-lg backdrop-blur-md">
               <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center">
                 <Sparkles className="w-3 h-3 text-white fill-white" />
               </div>
-              <span className="text-xs font-semibold text-zinc-100 tabular-nums tracking-wide">120</span>
+              <span className="text-xs font-semibold text-zinc-100 tabular-nums tracking-wide">{balance}</span>
             </div>
 
             {/* User Profile */}
@@ -162,9 +183,9 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="hidden md:flex rounded-full w-10 h-10 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all">
                     <div className="h-full w-full rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center">
-                      {(user.user_metadata?.avatar_url || user.user_metadata?.picture || user.identities?.[0]?.identity_data?.avatar_url || user.identities?.[0]?.identity_data?.picture) ? (
+                      {user.photoURL ? (
                         <img
-                          src={user.user_metadata?.avatar_url || user.user_metadata?.picture || user.identities?.[0]?.identity_data?.avatar_url || user.identities?.[0]?.identity_data?.picture}
+                          src={user.photoURL}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
@@ -179,7 +200,7 @@ export function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64 p-2 bg-[#0A0A0A] border-white/10 backdrop-blur-2xl shadow-2xl rounded-2xl mt-2 animate-in fade-in zoom-in-95 duration-200">
                   <div className="px-4 py-3 border-b border-white/5 mb-2">
-                    <p className="font-medium text-sm text-white">{user.user_metadata?.full_name || "Creator"}</p>
+                    <p className="font-medium text-sm text-white">{user.displayName || "Creator"}</p>
                     <p className="text-xs text-zinc-500 truncate mt-0.5">{user.email}</p>
                   </div>
 
@@ -308,9 +329,9 @@ export function Navbar() {
                     <>
                       <div className="flex items-center gap-4 mb-6">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center border border-white/10 shrink-0">
-                          {(user.user_metadata?.avatar_url || user.user_metadata?.picture || user.identities?.[0]?.identity_data?.avatar_url || user.identities?.[0]?.identity_data?.picture) ? (
+                          {user.photoURL ? (
                             <img
-                              src={user.user_metadata?.avatar_url || user.user_metadata?.picture || user.identities?.[0]?.identity_data?.avatar_url || user.identities?.[0]?.identity_data?.picture}
+                              src={user.photoURL}
                               alt="Profile"
                               className="w-full h-full object-cover"
                               referrerPolicy="no-referrer"
@@ -322,7 +343,7 @@ export function Navbar() {
                           )}
                         </div>
                         <div>
-                          <p className="text-white font-medium text-lg">{user.user_metadata?.full_name}</p>
+                          <p className="text-white font-medium text-lg">{user.displayName}</p>
                           <p className="text-zinc-500 text-sm">{user.email}</p>
                         </div>
                       </div>
@@ -336,28 +357,27 @@ export function Navbar() {
                       </div>
                     </>
                   ) : (
-                    <div className="text-center">
-                      <p className="text-zinc-400 mb-4 text-sm">Join the creative revolution.</p>
-                      <Button onClick={() => handleMobileNav('/login')} className="w-full h-12 rounded-xl bg-white text-black hover:bg-zinc-200 font-semibold text-lg">
+                    <div className="text-center py-4">
+                      <p className="text-zinc-400 mb-6 text-sm font-light tracking-wide">Join the creative revolution.</p>
+                      <Button onClick={() => handleMobileNav('/login')} className="w-full h-14 rounded-2xl bg-white text-black hover:bg-zinc-200 font-bold text-lg shadow-xl shadow-white/10 active:scale-[0.98] transition-all">
                         Get Started
                       </Button>
                     </div>
                   )}
                 </div>
 
-                {/* Stats / Footer */}
-                <div className="flex justify-between items-end border-t border-white/5 pt-6">
-                  <div className="text-left">
-                    <p className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold mb-1">Status</p>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-zinc-400 text-xs">Systems Operational</span>
+                {/* Mobile Credits / Status Indicator (Refined) */}
+                <div className="flex items-center justify-between px-2 pt-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner backdrop-blur-md">
+                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Credits</span>
+                      <span className="text-lg font-bold text-white tabular-nums leading-none mt-0.5">{balance}</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold mb-1">Version</p>
-                    <span className="text-zinc-500 text-xs font-mono">v2.0.4</span>
-                  </div>
+                  {/* Version Removed as requested */}
                 </div>
               </motion.div>
             </div>

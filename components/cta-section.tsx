@@ -73,20 +73,20 @@ export function CTASection() {
                     <div className="inline-block relative">
                         <TypewriterText
                             text="Start Creating."
-                            className="text-6xl md:text-9xl font-bold text-background font-serif tracking-tighter"
+                            className="text-5xl sm:text-6xl md:text-9xl font-bold text-background font-serif tracking-tighter"
                             cursor={true}
                             delay={0.5}
                         />
                     </div>
 
-                    <p className="text-xl md:text-3xl text-background/80 max-w-2xl mx-auto font-light leading-relaxed">
+                    <p className="text-xl md:text-3xl text-background/80 max-w-2xl mx-auto font-light leading-relaxed px-4">
                         Join the revolution of AI-assisted artistry. Your first 50 credits are on us.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-12">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-12 w-full px-4">
                         <Button
                             size="lg"
-                            className="h-20 px-16 rounded-full text-xl gap-3 shadow-[0_0_50px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_80px_-10px_rgba(255,255,255,0.5)] hover:scale-105 transition-all duration-500 bg-background text-foreground hover:bg-background/90"
+                            className="h-20 px-10 sm:px-16 rounded-full text-xl gap-3 shadow-[0_0_50px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_80px_-10px_rgba(255,255,255,0.5)] hover:scale-105 transition-all duration-500 bg-background text-foreground hover:bg-background/90 w-full sm:w-auto"
                             asChild
                         >
                             <a href="/studio">

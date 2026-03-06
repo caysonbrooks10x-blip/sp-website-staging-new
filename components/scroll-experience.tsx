@@ -1,3 +1,5 @@
+"use client"
+
 import { useRef, useEffect, useState, useCallback } from "react"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
@@ -188,7 +190,7 @@ export function ScrollExperience() {
                     <div
                         key={i}
                         ref={(el) => { sectionRefs.current[i] = el }}
-                        className={`relative w-full min-h-[100svh] md:absolute md:inset-0 md:min-h-0 will-change-[opacity,transform,filter] overflow-hidden md:overflow-visible ${i === 0 ? 'md:opacity-100' : 'md:opacity-0'}`}
+                        className={`relative w-full h-auto md:absolute md:inset-0 md:h-full will-change-[opacity,transform,filter] overflow-hidden md:overflow-visible ${i === 0 ? 'md:opacity-100' : 'md:opacity-0'}`}
                         style={{
                             // Only set initial styles that match desktop logic
                             // Mobile styles are overridden by CSS classes (opacity 1 naturally)

@@ -29,7 +29,37 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
 import Image from "next/image"
 
-// --- Mock Data for Stats/Creations (since real backend connection for these specific items isn't requested yet) ---
+
+import { doc, onSnapshot } from "firebase/firestore"
+import { db, functions } from "@/lib/firebaseClient"
+import { httpsCallable } from "firebase/functions"
+
+function ProfileBalanceComponent() {
+  const { user } = useAuth();
+  const [balance, setBalance] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    const unsub = onSnapshot(doc(db, "users", user.uid), (docRef) => {
+      if (docRef.exists()) {
+        setBalance(docRef.data()?.tokenBalance || 0);
+      }
+    });
+    return () => unsub();
+  }, [user]);
+
+  return (
+    <div className="bg-[#050505]/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8 flex items-center justify-between max-w-2xl w-full mx-auto md:mx-0 header-element">
+      <div>
+        <h3 className="text-lg font-bold text-white flex items-center gap-2"><Sparkles className="w-5 h-5 text-purple-400" /> Token Balance</h3>
+        <p className="text-slate-400 text-sm">Credits available for generation</p>
+      </div>
+      <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">
+        {balance.toLocaleString()}
+      </div>
+    </div>
+  );
+}
+
 // --- Mock Data Removed ---
 
 
@@ -42,6 +72,40 @@ function ProfileContent() {
   const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState<"overview" | "creations">("overview")
   const containerRef = useRef<HTMLDivElement>(null)
+
+  const [creations, setCreations] = useState<any[]>([])
+  const [loadingCreations, setLoadingCreations] = useState(false)
+
+  // Fetch true creations from backend
+  useEffect(() => {
+    if (!user || activeTab !== "creations") return
+
+    let isMounted = true;
+    async function loadCreations() {
+      setLoadingCreations(true)
+      try {
+        const getUserCreations = httpsCallable(functions, "getUserCreations")
+        const result = await getUserCreations()
+        if (isMounted) {
+          const data = result.data as any
+          console.log("CREATIONS RESPONSE:", data)
+
+          if (Array.isArray(data)) {
+            setCreations(data)
+          } else {
+            setCreations(data.creations || [])
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch user creations:", err)
+      } finally {
+        if (isMounted) setLoadingCreations(false)
+      }
+    }
+
+    loadCreations()
+    return () => { isMounted = false }
+  }, [user, activeTab])
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -62,7 +126,7 @@ function ProfileContent() {
   ]
 
   // Fallback for display name if not set
-  const displayName = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || "StudioX User"
+  const displayName = user?.displayName || user?.email?.split('@')[0] || "StudioX User"
   const initials = displayName.substring(0, 2).toUpperCase()
 
   return (
@@ -100,13 +164,7 @@ function ProfileContent() {
               <div className="h-40 w-40 md:h-48 md:w-48 rounded-full p-1.5 bg-[#050505]/50 backdrop-blur-xl ring-1 ring-white/10 relative z-20 overflow-hidden shadow-2xl shadow-black/50">
                 <Avatar className="h-full w-full rounded-full bg-black">
                   <AvatarImage
-                    src={
-                      user?.user_metadata?.avatar_url ||
-                      user?.user_metadata?.picture ||
-                      user?.identities?.[0]?.identity_data?.avatar_url ||
-                      user?.identities?.[0]?.identity_data?.picture ||
-                      ""
-                    }
+                    src={user?.photoURL || ""}
                     className="object-cover"
                   />
                   <AvatarFallback className="bg-gradient-to-br from-neutral-800 to-neutral-900 text-3xl font-black text-neutral-500">{initials}</AvatarFallback>
@@ -140,6 +198,8 @@ function ProfileContent() {
               </Button>
             </div>
           </div>
+
+          <ProfileBalanceComponent />
 
           {/* Cinematic Floating Tabs */}
           <div className="flex justify-center mb-16 header-element relative z-20">
@@ -191,7 +251,21 @@ function ProfileContent() {
               )}
 
               {activeTab === "creations" && (
-                <CreationsTab items={[]} />
+                <CreationsTab
+                  items={creations.map(c => ({
+                    id: c.id,
+                    appName: c.title || "Untitled Creation",
+                    previewUrl: c.outputUrl || c.thumbnailUrl || "",
+                    type: c.type || (c.outputUrl?.includes('.mp4') ? 'video' : 'image'),
+                    remixCount: c.remixCount || 0,
+                    likes: c.likes || 0,
+                    date: new Date(c.createdAt?._seconds * 1000 || c.createdAt).toLocaleDateString(),
+                    model: c.model,
+                    prompt: c.prompt
+                  }))}
+                  loading={loadingCreations}
+                  onDelete={(id) => setCreations(prev => prev.filter(c => c.id !== id))}
+                />
               )}
             </motion.div>
           </AnimatePresence>

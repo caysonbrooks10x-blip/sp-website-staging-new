@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import type { Creation } from "@/lib/types"
 import { motion } from "framer-motion"
 import { Eye, ExternalLink } from "lucide-react"
+import { MediaRenderer } from "@/components/media-renderer"
 
 interface StudioCreationCardProps {
     creation: Creation
@@ -51,9 +52,9 @@ export function StudioCreationCard({
                 {/* Thumbnail */}
                 <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
                     {creation.thumbnail ? (
-                        <img
-                            src={creation.thumbnail}
-                            alt={creation.appName}
+                        <MediaRenderer
+                            url={creation.thumbnail}
+                            altText={creation.appName}
                             className="h-full w-full object-cover"
                         />
                     ) : (
@@ -102,9 +103,9 @@ export function StudioCreationCard({
             {/* Thumbnail Area */}
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-800/50">
                 {creation.thumbnail ? (
-                    <img
-                        src={creation.thumbnail}
-                        alt={creation.appName}
+                    <MediaRenderer
+                        url={creation.thumbnail}
+                        altText={creation.appName}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                 ) : (

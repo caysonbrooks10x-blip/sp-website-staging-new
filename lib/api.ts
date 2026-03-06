@@ -1,23 +1,19 @@
-import { supabase } from "./supabaseClient";
 
 /**
- * Simplified API Fetch Wrapper (Anon Key Only)
+ * Simplified API Fetch Wrapper
  *
- * 1. No user authentication checks.
- * 2. Uses the Anon Key for authorization directly.
- * 3. Constructs robust URLs.
+ * 1. No user authentication checks required by default in the wrapper.
+ * 2. Uses a generic base URL or defaults to standard local API routes.
  */
 export async function apiFetch(path: string, options: RequestInit = {}) {
     // 1. Construct URL
-    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "");
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "/api";
     const cleanPath = path.startsWith("/") ? path.substring(1) : path;
-    const url = `${baseUrl}/functions/v1/${cleanPath}`;
+    const url = `${baseUrl}/${cleanPath}`;
 
-    // 2. Prepare Headers (Anon Key Only)
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    // 2. Prepare Headers
     const headers = {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${anonKey}`, // Directly use Anon Key as requested
         ...(options.headers || {}),
     };
 

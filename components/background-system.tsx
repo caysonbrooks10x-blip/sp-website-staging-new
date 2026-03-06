@@ -7,12 +7,20 @@ interface BackgroundSystemProps {
     register: (cb: (progress: number, index: number) => void) => () => void
 }
 
+interface EnvironmentConfig {
+    id: string
+    video?: string
+    image?: string
+    background?: string
+    opacity: number
+}
+
 // Visual definitions for each state background
 const ENVIRONMENTS = [
     {
         id: "hero",
-        video: "/herosection.mp4",
-        opacity: 0.6
+        background: "#ffffff",
+        opacity: 1
     },
     {
         id: "features",
@@ -207,7 +215,7 @@ export function BackgroundSystem({ register }: BackgroundSystemProps) {
                                 loop
                                 playsInline
                                 preload="auto"
-                                className="absolute inset-0 w-full h-full object-cover grayscale-[0.3] bg-black"
+                                className="absolute inset-0 w-full h-full object-cover bg-black grayscale-[0.3]"
                                 style={{ opacity: env.opacity }}
                             >
                                 <source src={env.video} type="video/mp4" />
@@ -225,7 +233,7 @@ export function BackgroundSystem({ register }: BackgroundSystemProps) {
                         )}
 
                         {/* Gradient Overlay for text readability */}
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+                        <div className="absolute inset-0 bg-black/20" />
 
                         {/* Optional: Add subtle noise or grain overlay here that persists - REMOVED due to 404 */}
                     </div>
