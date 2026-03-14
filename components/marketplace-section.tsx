@@ -114,13 +114,13 @@ export function MarketplaceSection() {
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-20">
                     <div className="flex flex-col gap-4">
                         <TypewriterText
-                            text="Collective"
-                            className="text-3xl md:text-4xl font-bold font-sans text-white tracking-tighter"
+                            text="Studio Collective"
+                            className="text-3xl md:text-5xl font-bold font-sans text-white tracking-tighter"
                             cursor={false}
                         />
                         <TypewriterText
-                            text="Explore masterpieces from the collective soul"
-                            className="text-zinc-400 text-lg font-sans tracking-wide"
+                            text="Unlock cinematic blueprints from a world of visual intelligence."
+                            className="text-zinc-400 text-lg font-sans tracking-wide max-w-2xl"
                             delay={0.5}
                             stagger={0.02}
                         />

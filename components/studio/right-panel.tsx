@@ -6,6 +6,7 @@ import { Clock, Download, Share, Archive, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import type { GenerationItem } from "./center-canvas";
+import { ASSET_BASE } from "@/lib/assets";
 
 interface StudioRightPanelProps {
     generations: GenerationItem[];
@@ -53,7 +54,7 @@ export function StudioRightPanel({ generations }: StudioRightPanelProps) {
                                 ) : (
                                     <>
                                         <Image
-                                            src={item.src || "/placeholder.svg"}
+                                            src={item.src || `${ASSET_BASE}/placeholder.svg`}
                                             alt={item.prompt}
                                             fill
                                             className="object-cover transition-transform duration-700 group-hover:scale-105"

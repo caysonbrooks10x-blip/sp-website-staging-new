@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { gsap } from "gsap"
+import { ASSET_BASE } from "@/lib/assets"
 
 interface BackgroundSystemProps {
     register: (cb: (progress: number, index: number) => void) => () => void
@@ -19,22 +20,13 @@ interface EnvironmentConfig {
 const ENVIRONMENTS = [
     {
         id: "hero",
-        background: "#ffffff",
+        background: "linear-gradient(135deg, #2d3a2e 0%, #4a5d3a 18%, #7a8a5a 35%, #c8b88a 55%, #e8c8a0 70%, #f0b8a0 85%, #e8a8a0 100%)",
         opacity: 1
     },
     {
         id: "features",
-        video: "/features-bg.mp4",
+        video: `${ASSET_BASE}/features-bg.mp4`,
         opacity: 0.5
-    },
-    {
-        id: "create",
-        // Teal / Cyan -> Richer, darker base
-        background: `
-            radial-gradient(1200px circle at 50% 70%, rgba(20, 184, 166, 0.15), transparent 60%),
-            linear-gradient(to bottom, #000000 0%, #020617 100%)
-        `,
-        opacity: 1
     },
     {
         id: "refine",
@@ -42,6 +34,15 @@ const ENVIRONMENTS = [
         background: `
             radial-gradient(1200px circle at 50% 70%, rgba(225, 29, 72, 0.15), transparent 60%),
             linear-gradient(to bottom, #000000 0%, #0f0505 100%)
+        `,
+        opacity: 1
+    },
+    {
+        id: "create",
+        // Teal / Cyan -> Richer, darker base
+        background: `
+            radial-gradient(1200px circle at 50% 70%, rgba(20, 184, 166, 0.15), transparent 60%),
+            linear-gradient(to bottom, #000000 0%, #020617 100%)
         `,
         opacity: 1
     },
@@ -65,7 +66,7 @@ const ENVIRONMENTS = [
     },
     {
         id: "workflow",
-        image: "/howitworks-bg.jpg",
+        image: `${ASSET_BASE}/howitworks-bg.jpg`,
         opacity: 0.4
     },
 
@@ -87,7 +88,7 @@ const ENVIRONMENTS = [
     },
     {
         id: "cta",
-        image: "/cta.jpg",
+        image: `${ASSET_BASE}/cta.jpg`,
         opacity: 0.6
     }
 ]
@@ -113,8 +114,8 @@ export function BackgroundSystem({ register }: BackgroundSystemProps) {
     useEffect(() => {
         const ctx = gsap.context(() => {
             if (parallaxRef.current) {
-                xTo.current = gsap.quickTo(parallaxRef.current, "x", { duration: 0.8, ease: "power3" })
-                yTo.current = gsap.quickTo(parallaxRef.current, "y", { duration: 0.8, ease: "power3" })
+                xTo.current = gsap.quickTo(parallaxRef.current, "x", { duration: 1.2, ease: "power2.out" })
+                yTo.current = gsap.quickTo(parallaxRef.current, "y", { duration: 1.2, ease: "power2.out" })
             }
         }, containerRef)
 
@@ -122,8 +123,8 @@ export function BackgroundSystem({ register }: BackgroundSystemProps) {
             if (!xTo.current || !yTo.current) return
 
             const { innerWidth, innerHeight } = window
-            const x = (e.clientX / innerWidth - 0.5) * -50 // Move opposite to mouse, range 50px
-            const y = (e.clientY / innerHeight - 0.5) * -50
+            const x = (e.clientX / innerWidth - 0.5) * -30 // Move opposite to mouse, range 30px
+            const y = (e.clientY / innerHeight - 0.5) * -30
 
             xTo.current(x)
             yTo.current(y)
@@ -139,16 +140,11 @@ export function BackgroundSystem({ register }: BackgroundSystemProps) {
 
     useEffect(() => {
         const unregister = register((globalProgress, currentIndex) => {
-
-            // 1. Parallax (Vertical Depth)
+            // 1. Subtle Scroll Parallax (Vertical Depth)
+            // Added back with a small range and combined with scale(1.05) to hide edges
             if (parallaxRef.current) {
-                // Direct translate is faster than GSAP .to() in a loop if we are careful,
-                // but GSAP handles the transform string construction nicely.
-                // using quickSetter or just .set is good.
-                // Stronger Parallax for "Breathtaking" depth
-                gsap.set(parallaxRef.current, {
-                    yPercent: -25 * globalProgress
-                })
+                const drift = globalProgress * 100 // 100px total drift across entire scroll
+                gsap.set(parallaxRef.current, { y: -drift })
             }
 
             // 2. State Switching
@@ -196,8 +192,11 @@ export function BackgroundSystem({ register }: BackgroundSystemProps) {
 
     return (
         <div ref={containerRef} className="fixed inset-0 w-full h-full -z-50 pointer-events-none bg-background overflow-hidden">
-            {/* Parallax Container */}
-            <div ref={parallaxRef} className="absolute inset-0 w-full h-full scale-125 will-change-transform">
+            {/* Parallax Container with Safety Buffer */}
+            <div 
+                ref={parallaxRef} 
+                className="absolute inset-x-[-2%] -top-[2%] -bottom-[10%] w-[104%] h-[112%] will-change-transform"
+            >
                 {ENVIRONMENTS.map((env, index) => (
                     <div
                         key={index}

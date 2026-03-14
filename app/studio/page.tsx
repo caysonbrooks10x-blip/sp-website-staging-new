@@ -14,6 +14,7 @@ import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ASSET_BASE } from "@/lib/assets";
 
 export default function StudioPage() {
   return (
@@ -87,6 +88,27 @@ function StudioLayout() {
   // Shared state for framing/canvas preview
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+
+  // Auto-open panel on mobile if remixing or empty
+  useEffect(() => {
+    // Small delay to ensure state hydration doesn't conflict
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        const isRemix = searchParams.get("mode") === "remix";
+        const isDirectJob = !!searchParams.get("jobId");
+
+        // If they are strictly remixing, definitely open it
+        if (isRemix && !isDirectJob) {
+          setMobilePanelOpen(true);
+        }
+        // If there's absolutely no history/active job and they just landed, auto-open it
+        else if (!activeGeneration && !isDirectJob && !isGenerating && generations.length === 0) {
+          setMobilePanelOpen(true);
+        }
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [searchParams, activeGeneration, isGenerating, generations.length]);
 
   // GSAP Entrance Animations
   useEffect(() => {
@@ -332,7 +354,7 @@ function StudioLayout() {
             {/* Background Image Container */}
             <div
               className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80"
-              style={{ backgroundImage: `url('/fdshj.jpg')` }}
+              style={{ backgroundImage: `url('${ASSET_BASE}/fdshj.jpg')` }}
             />
             {/* Dim Overlay to ensure text readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
@@ -373,7 +395,7 @@ function StudioLayout() {
         <div className="absolute inset-0 bg-black/80" />
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60 transition-all duration-[20s] ease-linear scale-105"
-          style={{ backgroundImage: `url('/studio/studio3.jpeg')` }}
+          style={{ backgroundImage: `url('${ASSET_BASE}/studio/studio3.jpeg')` }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1)_0%,rgba(0,0,0,0.3)_100%)] backdrop-blur-[6px]" />
@@ -393,7 +415,7 @@ function StudioLayout() {
           )}
         >
           {/* Mobile Close Button Container */}
-          <div className="lg:hidden flex items-center justify-between mb-4 pt-10 px-2 shrink-0">
+          <div className="lg:hidden flex items-center justify-between mb-4 pt-24 px-2 shrink-0">
             <span className="text-[11px] font-black tracking-[0.2em] uppercase text-white/50">Studio Canvas Config</span>
             <Button
               variant="ghost"

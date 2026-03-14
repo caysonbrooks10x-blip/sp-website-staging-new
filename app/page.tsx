@@ -1,11 +1,13 @@
 "use client"
 
 import { Suspense } from "react"
+import dynamic from "next/dynamic"
 import { ScrollExperience } from "@/components/scroll-experience"
-import { MarketplaceSection } from "@/components/marketplace-section"
-import { CommunitySection } from "@/components/community-section"
-import { CTASection } from "@/components/cta-section"
-import { Footer } from "@/components/footer"
+
+const MarketplaceSection = dynamic(() => import("@/components/marketplace-section").then(mod => mod.MarketplaceSection), { ssr: false })
+const CommunitySection = dynamic(() => import("@/components/community-section").then(mod => mod.CommunitySection), { ssr: false })
+const CTASection = dynamic(() => import("@/components/cta-section").then(mod => mod.CTASection), { ssr: false })
+const Footer = dynamic(() => import("@/components/footer").then(mod => mod.Footer), { ssr: false })
 
 function ExplorePage() {
   return (

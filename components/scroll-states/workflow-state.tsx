@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from "react"
 import { gsap } from "gsap"
 import { Badge } from "@/components/ui/badge"
+import { ASSET_BASE } from "@/lib/assets"
 
 interface WorkflowStateProps {
     register: (cb: (progress: number, index: number) => void) => () => void
@@ -58,7 +59,7 @@ export function WorkflowState({ register }: WorkflowStateProps) {
 
             imgs.push({
                 id: i,
-                src: `/seamless-animate/bg${i}.jpg`,
+                src: `${ASSET_BASE}/seamless-animate/bg${i}.jpg`,
                 width: size.width,
                 height: size.height,
                 left: `${x}%`,
@@ -238,6 +239,8 @@ export function WorkflowState({ register }: WorkflowStateProps) {
                             ref={(el) => { imagesRef.current[i] = el }}
                             src={img.src}
                             alt=""
+                            loading="lazy"
+                            decoding="async"
                             className="absolute rounded-[14px] object-cover will-change-transform shadow-[0_10px_30px_rgba(0,0,0,0.08)] bg-gray-100"
                             style={{
                                 width: img.width,

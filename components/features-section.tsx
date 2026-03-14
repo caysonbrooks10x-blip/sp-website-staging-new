@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react"
 import { Sparkles, Shield, Zap, Users } from "lucide-react"
 import { FeatureCard } from "@/components/feature-card"
 import { Typewriter } from "@/components/ui/typewriter"
+import { ASSET_BASE } from "@/lib/assets"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
@@ -96,7 +97,7 @@ export function FeaturesSection() {
             <video
                 ref={videoRef}
                 className="absolute inset-0 w-full h-full object-cover"
-                src="/features-bg.mp4"
+                src={`${ASSET_BASE}/features-bg.mp4`}
                 autoPlay
                 muted
                 loop

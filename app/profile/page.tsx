@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
 import Image from "next/image"
+import { ASSET_BASE } from "@/lib/assets"
 
 
 import { doc, onSnapshot } from "firebase/firestore"
@@ -137,7 +138,7 @@ function ProfileContent() {
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-purple-900/10 rounded-full blur-[150px] animate-pulse-slow" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-900/10 rounded-full blur-[150px] animate-pulse-slow delay-1000" />
-          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
+          <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: `url('${ASSET_BASE}/noise.png')` }} />
         </div>
 
         {/* Hero Banner Area */}
@@ -147,7 +148,7 @@ function ProfileContent() {
           {/* Background Image */}
           <div className="absolute inset-0 w-full h-full overflow-hidden">
             <Image
-              src="/studiox.jpg"
+              src={`${ASSET_BASE}/studiox.jpg`}
               alt="Cover"
               fill
               className="object-cover opacity-60 grayscale-[30%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000 ease-out will-change-transform"

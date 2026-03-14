@@ -8,6 +8,7 @@ import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import Image from "next/image"
 import Link from "next/link"
+import { ASSET_BASE } from "@/lib/assets"
 
 export function CommunitySection() {
     const sectionRef = useRef<HTMLDivElement>(null)
@@ -93,7 +94,7 @@ export function CommunitySection() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-4 mb-10">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
+                    {[1, 10, 11, 2, 6, 9, 14, 12].map((imageId, mapIndex) => {
                         const stylePrompts = [
                             "A beautiful surreal photography of a dreamscape, highly detailed, 8k resolution, cinematic lighting",
                             "A gorgeous landscape painting with vibrant colors, oil on canvas, masterpiece, extreme detail",
@@ -104,11 +105,11 @@ export function CommunitySection() {
                             "A cozy lo-fi bedroom at night, raining outside, warm lamplight, anime style illustration",
                             "A macro shot of a complex biomechanical watch with glowing gears, luxury, extreme detail"
                         ];
-                        const prompt = stylePrompts[(i - 1) % stylePrompts.length];
-                        const previewUrl = `https://picsum.photos/seed/${i + 100}/800/1000`;
+                        const prompt = stylePrompts[mapIndex % stylePrompts.length];
+                        const previewUrl = `${ASSET_BASE}/capabilities/capabilities${imageId}.png`;
 
                         return (
-                            <div key={i} className={`${i % 2 === 0 ? 'md:translate-y-8' : ''}`}>
+                            <div key={imageId} className={`${mapIndex % 2 === 0 ? 'md:translate-y-8' : ''}`}>
                                 <div className="community-card h-full">
                                     <UnifiedCard className="aspect-[4/5] overflow-hidden group relative border-0 bg-secondary/50 backdrop-blur-sm hover:shadow-2xl transition-all duration-500">
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
@@ -118,13 +119,13 @@ export function CommunitySection() {
                                             <div className="w-full h-full bg-cover bg-center transition-all duration-700 grayscale group-hover:grayscale-0"
                                                 style={{
                                                     backgroundImage: `url(${previewUrl})`,
-                                                    backgroundColor: `hsl(var(--accent) / ${0.1 + (i * 0.05)})`
+                                                    backgroundColor: `hsl(var(--accent) / ${0.1 + (mapIndex * 0.05)})`
                                                 }}
                                             />
                                         </div>
 
                                         <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 z-20 px-4 text-center">
-                                            <span className="text-white text-xs font-medium tracking-widest uppercase mb-2 truncate w-full px-2">Remix ID #{2040 + i}</span>
+                                            <span className="text-white text-xs font-medium tracking-widest uppercase mb-2 truncate w-full px-2">Remix ID #{2040 + mapIndex + 1}</span>
                                             <Link href={`/studio?mode=image&prompt=${encodeURIComponent(prompt)}&previewUrl=${encodeURIComponent(previewUrl)}`} className="w-full">
                                                 <Button size="sm" variant="outline" className="rounded-full px-6 border-white/20 bg-white/10 text-white hover:bg-white hover:text-black backdrop-blur-md w-full">
                                                     Remix Art

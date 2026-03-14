@@ -58,6 +58,13 @@ const nextConfig: NextConfig = {
         hostname: "**.firebasestorage.app",
         pathname: "/**",
       },
+
+      // Cloudflare R2 Bucket
+      {
+        protocol: "https",
+        hostname: "pub-68982972900648a6b75dcc11da69a242.r2.dev",
+        pathname: "/**",
+      },
     ],
   },
 };

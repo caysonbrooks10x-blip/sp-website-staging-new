@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { ASSET_BASE } from "@/lib/assets";
 
 export interface GenerationItem {
     id: string;
@@ -114,7 +115,7 @@ export function StudioMainContent({ mode, generations }: StudioMainContentProps)
                                             ) : (
                                                 <>
                                                     <Image
-                                                        src={item.src || "/placeholder.svg"}
+                                                        src={item.src || `${ASSET_BASE}/placeholder.svg`}
                                                         alt={item.prompt}
                                                         fill
                                                         className="object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110"

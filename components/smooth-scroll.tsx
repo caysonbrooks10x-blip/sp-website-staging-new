@@ -20,7 +20,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
             easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             smoothWheel: true,
             wheelMultiplier: 0.8,
-            touchMultiplier: 1.5,
+            // Removing touchMultiplier to let native mobile scrolling handle touch perfectly
         })
 
         lenisRef.current = lenis

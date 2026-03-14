@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Download, Loader2, Maximize2, Share, Sparkles, Wand2 } from "lucide-react";
+import { Download, Loader2, Maximize2, Share, Sparkles, Wand2, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadModal } from "@/components/upload-modal";
 import { MediaRenderer } from "@/components/media-renderer";
+import { ASSET_BASE } from "@/lib/assets";
 
 export interface GenerationItem {
     id: string;
@@ -88,12 +89,10 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
             <div className="lg:hidden w-full flex justify-center py-4 shrink-0 z-50 pointer-events-auto">
                 <button
                     onClick={onOpenPanel}
-                    className="group bg-black/60 backdrop-blur-3xl border border-white/10 px-6 py-2.5 rounded-full flex items-center gap-3 active:scale-95 shadow-2xl transition-all hover:bg-black/80"
+                    className="group bg-zinc-900/90 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-full flex items-center gap-3 active:scale-95 shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-all hover:bg-zinc-800"
                 >
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-black tracking-[0.3em] uppercase text-white/90">Studio Canvas</span>
-                        <div className="h-0.5 w-8 bg-indigo-500 rounded-full mt-1 animate-pulse" />
-                    </div>
+                    <Settings2 className="w-4 h-4 text-violet-400 group-hover:rotate-90 transition-transform duration-500" />
+                    <span className="text-[11px] font-black tracking-[0.2em] uppercase text-white/95">Open Creator Panel</span>
                 </button>
             </div>
 
@@ -113,7 +112,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                         <div className="absolute inset-0 z-0">
                             <div
                                 className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[40s] ease-linear group-hover:scale-110 scale-100 opacity-60 mix-blend-screen"
-                                style={{ backgroundImage: `url('/studio/studio1.jpeg')` }}
+                                style={{ backgroundImage: `url('${ASSET_BASE}/studio/studio1.jpeg')` }}
                             />
                             {/* Overlays to make it clean and readable */}
                             <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
@@ -139,7 +138,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                         ) : activeGeneration.status === 'completed' ? (
                             <div className="relative w-full h-full group/image">
                                 <MediaRenderer
-                                    url={activeGeneration.src || "/studiox.jpg"}
+                                    url={activeGeneration.src || `${ASSET_BASE}/studiox.jpg`}
                                     altText={activeGeneration.prompt}
                                     className="object-cover transition-opacity duration-1000 absolute inset-0 w-full h-full"
                                     fill

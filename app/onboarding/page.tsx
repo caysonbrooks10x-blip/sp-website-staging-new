@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronLeft, Check, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { ASSET_BASE } from "@/lib/assets";
 
 // --- Configuration ---
 
@@ -24,7 +25,7 @@ const onboardingSteps = [
         ],
         media: {
             type: "video",
-            src: "/gallerysignup/video.mp4",
+            src: `${ASSET_BASE}/gallerysignup/video.mp4`,
             overlayPoints: ["Viral Content", "High Engagement", "Brand Storytelling"]
         },
     },
@@ -40,7 +41,7 @@ const onboardingSteps = [
         ],
         media: {
             type: "video",
-            src: "/gallerysignup/edit.mp4",
+            src: `${ASSET_BASE}/gallerysignup/edit.mp4`,
             overlayPoints: ["Smart Tools", "Precision Control", "Workflow Automation"]
         },
     },
@@ -57,7 +58,7 @@ const onboardingSteps = [
         ],
         media: {
             type: "video",
-            src: "/gallerysignup/character.mp4",
+            src: `${ASSET_BASE}/gallerysignup/character.mp4`,
             overlayPoints: ["Character Consistency", "Lip Sync", "Emotion Control"]
         },
     },
@@ -73,7 +74,7 @@ const onboardingSteps = [
         ],
         media: {
             type: "image",
-            src: "/gallerysignup/image.png",
+            src: `${ASSET_BASE}/gallerysignup/image.png`,
             overlayPoints: ["Perfect Consistency", "One-Click Magic", "Instant Preview"]
         },
     },
@@ -365,7 +366,7 @@ export default function OnboardingPage() {
                     </AnimatePresence>
 
                     {/* Persistent Noise/Grain Overlay */}
-                    <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-[url('/noise.svg')]" />
+                    <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: `url('${ASSET_BASE}/noise.svg')` }} />
                 </motion.div>
             </div>
         </div>
