@@ -6,6 +6,7 @@ import "./globals.css"
 import { Navbar } from "@/components/navbar"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { AuthProvider } from "@/context/auth-context"
+import { ASSET_BASE } from "@/lib/assets"
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -24,19 +25,19 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/icon-light-32x32.png",
+        url: `${ASSET_BASE}/icon-light-32x32.png`,
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/icon-dark-32x32.png",
+        url: `${ASSET_BASE}/icon-dark-32x32.png`,
         media: "(prefers-color-scheme: dark)",
       },
       {
-        url: "/icon.svg",
+        url: `${ASSET_BASE}/icon.svg`,
         type: "image/svg+xml",
       },
     ],
-    apple: "/apple-icon.png",
+    apple: `${ASSET_BASE}/apple-icon.png`,
   },
 }
 

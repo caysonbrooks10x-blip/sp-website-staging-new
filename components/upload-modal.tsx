@@ -14,6 +14,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore"
 import { storage, db, functions } from "@/lib/firebaseClient"
 import { useAuth } from "@/context/auth-context"
 import { httpsCallable } from "firebase/functions"
+import { ASSET_BASE } from "@/lib/assets"
 
 interface UploadModalProps {
     isOpen: boolean
@@ -156,7 +157,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                         <div className="relative overflow-hidden rounded-3xl shadow-2xl group max-h-[90vh] overflow-y-auto">
                             {/* Background Image with Parallax-like fixity (or just cover) */}
                             <div className="absolute inset-0 z-0">
-                                <img src="/community_card.jpeg" alt="bg" className="w-full h-full object-cover opacity-60" />
+                                <img src={`${ASSET_BASE}/community_card.jpeg`} alt="bg" className="w-full h-full object-cover opacity-60" />
                                 <div className="absolute inset-0 bg-black/80 backdrop-blur-md" /> {/* Heavy darken for contrast */}
                                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
                             </div>

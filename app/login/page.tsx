@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Mail, Lock, Phone, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { ASSET_BASE } from "@/lib/assets";
 
 // Components for clean UI
 const SocialButton = ({ icon, text, onClick, disabled }: { icon: any, text: string, onClick?: () => void, disabled?: boolean }) => (
@@ -146,7 +147,7 @@ export default function LoginPage() {
                 <div
                     className="relative bg-black/60 rounded-3xl shadow-2xl overflow-hidden border border-white/10"
                     style={{
-                        backgroundImage: "url('/register.png')",
+                        backgroundImage: `url('${ASSET_BASE}/register.png')`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}

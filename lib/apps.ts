@@ -1,88 +1,89 @@
 import type { App } from "@/lib/types"
+import { ASSET_BASE } from "@/lib/assets"
 
 export const marketplaceApps: App[] = [
     {
         id: "1",
-        name: "Faded Aesthetic",
-        description: "Soft, washed-out textures with a nostalgic soul.",
-        image: "/marketplace/bg1.mp4",
-        tags: ["Style", "Film"],
+        name: "Air Bending",
+        description: "Violent environmental distortion with hurricane-force circular vortices.",
+        image: `${ASSET_BASE}/marketplace/bg1.mp4`,
+        tags: ["Cinematic", "VFX"],
         creditCost: 5,
         isNew: true,
         type: "video",
-        prompt: "A beautifully faded nostalgic film reel, soft washed-out colors with visible film grain, light leaks around the edges, vintage 35mm aesthetic, highly cinematic and moody atmosphere"
+        prompt: "air bending - environment trees bend violently dust and debris spiral outward in a perfect circular vortex, clothes and hair whip back with hurricane force. The air itself distorts like heat haze on steroids IMAX-level cinematography"
     },
     {
         id: "2",
-        name: "Cinematic Motion",
-        description: "Dynamic temporal shifts for cinematic storytelling.",
-        image: "/marketplace/bg2.mp4",
-        tags: ["Video", "Motion"],
+        name: "Earth Zoom Out",
+        description: "Smooth epic transition from a ground-level portrait to a full orbital view of Earth.",
+        image: `${ASSET_BASE}/marketplace/bg2.mp4`,
+        tags: ["Epic", "Motion"],
         creditCost: 10,
         isPro: true,
         type: "video",
-        prompt: "Epic dynamic camera sweep through a visually striking surreal landscape, high contrast lighting, smooth temporal shifts, professional cinematography, 8k resolution, IMAX ratio"
+        prompt: "earth zoom out - A fashionable young man with bleached blonde hair and bold sunglasses stands confidently in a vibrant green field dotted with yellow wildflowers, surrounded by pine-covered hills under a deep blue sky. He wears a bright, abstract geometric-print oversized shirt and red pants. The camera is positioned low, looking up at him with a wide lens, emphasizing his presence against the open landscape. As he holds still and looks into the camera, the shot smoothly zooms out — revealing the field, surrounding mountains, the entire valley, then the continent — and finally transitions to a photorealistic full view of Earth from space."
     },
     {
         id: "3",
-        name: "Neural Bloom",
-        description: "Organic recursive patterns inspired by living logic.",
-        image: "/marketplace/bg3.mp4",
-        tags: ["Abstract", "AI"],
+        name: "Fire Lava",
+        description: "Visceral transformation through molten lava and columns of infernal fire.",
+        image: `${ASSET_BASE}/marketplace/bg3.mp4`,
+        tags: ["Transform", "Lava"],
         creditCost: 8,
         type: "video",
-        prompt: "Complex organic fractal blooms expanding and morphing, bioluminescent recursive patterns, deep neural network visualization, glowing tendrils of data, mesmerizing abstract motion"
+        prompt: "firelava - The ground beneath Person A cracks and glows molten — rivers of lava surge upward and swallow them in a column of fire from below. The inferno rages for a beat, then extinguishes instantly. From the cooled, smoking crater, Person B rises, born from the earth's core."
     },
     {
         id: "4",
-        name: "Ethereal Depth",
-        description: "Deep spatial awareness in every pixel.",
-        image: "/marketplace/bg4.mp4",
-        tags: ["3D", "Atmospheric"],
+        name: "Shadow Smoke",
+        description: "Surreal materialization via sentient shadows and collapsing smoke columns.",
+        image: `${ASSET_BASE}/marketplace/bg4.mp4`,
+        tags: ["Shadow", "Smoke"],
         creditCost: 3,
         type: "video",
-        prompt: "Massive volumetric caverns with floating crystalline structures, intense atmospheric perspective and thick fog, ethereal god rays passing through floating particles, cinematic depth of field, 3d render"
+        prompt: "shadow smoke - Person A's shadow peels off the ground and rises as sentient black smoke, consuming Person A from the feet up until they're gone. The smoke column swirls, compresses, and collapses inward — then Person B materializes out of the dissipating smoke, stepping forward from nothingness."
     },
     {
         id: "5",
-        name: "Glitch Resonance",
-        description: "Digital artifacts turned into harmonic visual noise.",
-        image: "/marketplace/bg5.mp4",
-        tags: ["Cyber", "VFX"],
+        name: "Animalization",
+        description: "Terrifyingly detailed visceral morphing into a monstrous beast.",
+        image: `${ASSET_BASE}/marketplace/bg5.mp4`,
+        tags: ["Morph", "Beast"],
         creditCost: 2,
         type: "video",
-        prompt: "Intense digital databending glitch art, chromatic aberration and pixel sorting, harsh neon color palettes corrupted by static noise, VHS tracking errors, highly stylized cyberpunk interference"
+        prompt: "animalization- The subject's face morphs with monstrous intensity — skin splitting, fur bursting through, jaw elongating, eyes going full beast mode. The transformation is visceral, detailed and terrifying — hair follicles extending frame by frame, bones reshaping under the skin. Think werewolf meets Avatar."
     },
     {
         id: "6",
-        name: "Minimalist Pulse",
-        description: "Clean, fundamental forms for pure conceptualization.",
-        image: "/marketplace/bg6.mp4",
-        tags: ["Design", "Static"],
+        name: "Train Rush",
+        description: "High-octane transit transition using a full-speed freight train.",
+        image: `${ASSET_BASE}/marketplace/bg6.mp4`,
+        tags: ["Action", "Speed"],
         creditCost: 12,
         type: "video",
-        prompt: "Ultra-minimalist geometric pulsing shapes in a vast empty white space, soft perfectly calculated shadows, elegant motion design, museum quality contemporary digital art, 4k"
+        prompt: "train rush - A full-speed freight train blasts through the frame from the side — and in the split second it occupies every pixel, it takes Person A with it."
     },
     {
         id: "7",
-        name: "Hyper-Contrast",
-        description: "Extreme lighting for maximum emotional impact.",
-        image: "/marketplace/bg7.mp4",
-        tags: ["Noir", "Lighting"],
+        name: "Mouth In",
+        description: "Surreal portal transition plunging through an expanding perspective.",
+        image: `${ASSET_BASE}/marketplace/bg7.mp4`,
+        tags: ["Surreal", "Portal"],
         creditCost: 7,
         isNew: true,
         type: "video",
-        prompt: "Cinematic film noir style with extreme high contrast chiaroscuro lighting, deep crushing shadows and blinding highlights, dramatic tension, black and white aesthetic with single pop of neon red"
+        prompt: "mouth in - Person A opens their mouth until it fills slowly the entire frame like a portal. The camera plunges inside, rocketing through darkness "
     },
     {
         id: "8",
-        name: "Dream Sequence",
-        description: "Surrealistic interpretations of latent imagination.",
-        image: "/marketplace/bg8.mp4",
-        tags: ["Dreams", "Latent"],
+        name: "Raven Transformation",
+        description: "Cinematic silhouette explosion into a rhythmic vortex of raven feathers.",
+        image: `${ASSET_BASE}/marketplace/bg8.mp4`,
+        tags: ["Cinematic", "Dark"],
         creditCost: 15,
         isPro: true,
         type: "video",
-        prompt: "Breathtaking surrealist dreamscape of gravity-defying architecture blending seamlessly into an ocean of clouds, pastel color palette, soft glowing lighting, hyper-detailed fantasy conceptual art"
+        prompt: "raven transformation - A massive murder of ravens explodes from the subject's silhouette in slow motion, their black feathers consuming the entire frame in a vortex of darkness — then, as the last feather falls, the new scene is revealed underneath. Ultra-cinematic, 4K, dramatic lighting."
     },
 ]

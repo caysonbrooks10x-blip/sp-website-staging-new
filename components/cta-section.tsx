@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { TypewriterText } from "@/components/typewriter-text"
+import { ASSET_BASE } from "@/lib/assets"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
@@ -58,7 +59,7 @@ export function CTASection() {
             <div
                 ref={bgRef}
                 className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: "url(/cta.jpg)" }}
+                style={{ backgroundImage: `url(${ASSET_BASE}/cta.jpg)` }}
             />
             <div className="absolute inset-0 bg-foreground/80" />
 

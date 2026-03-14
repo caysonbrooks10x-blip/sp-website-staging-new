@@ -11,7 +11,7 @@ import { WorkflowStepState } from "@/components/scroll-states/workflow-step-stat
 // ... (imports)
 
 // Constants for tuning
-const TOTAL_STATES = 7
+const TOTAL_STATES = 4
 const SCROLL_HEIGHT_PER_STATE = 300 // Increased to provide much more scroll duration per section
 const TRANSITION_OVERLAP = 0.2
 
@@ -80,7 +80,7 @@ export function ScrollExperience() {
                                 const el = sectionRefs.current[i]
                                 if (!el) return
 
-                                const { opacity, translateY, pointerEvents, zIndex, scale, blur } = calculateState(i, globalProgress)
+                                const { opacity, translateY, pointerEvents, zIndex, scale, blur, visibility } = calculateState(i, globalProgress)
 
                                 gsap.set(el, {
                                     opacity,
@@ -88,6 +88,7 @@ export function ScrollExperience() {
                                     scale: scale,
                                     filter: `blur(${blur}px)`,
                                     pointerEvents,
+                                    visibility,
                                     zIndex
                                 })
                             })
@@ -102,12 +103,7 @@ export function ScrollExperience() {
                         const el = sectionRefs.current[i]
                         if (!el) return
                         gsap.set(el, {
-                            opacity: 1,
-                            yPercent: 0,
-                            scale: 1,
-                            filter: 'blur(0px)',
-                            pointerEvents: 'auto',
-                            zIndex: 10
+                            clearProps: "all"
                         })
                     })
                 }
@@ -151,12 +147,12 @@ export function ScrollExperience() {
         // 3. Exit Phase
         else if (globalProgress >= end && globalProgress < (end + overlap)) {
             const exitProgress = (globalProgress - end) / overlap
-            if (index === 6) {
-                // SCALE SPECIAL (Index 6): Stay Visible? No next section yet.
+            if (index === 3) {
+                // LAST STATE (Index 3): Stay Visible? No next section yet.
                 opacity = 1
             } else {
                 // Standard Exit: Fade out, Blur in, Scale down
-                opacity = 1 - (exitProgress * 0.4)
+                opacity = 1 - exitProgress
                 blur = exitProgress * 6
                 scale = 1 - (exitProgress * 0.03)
             }
@@ -166,35 +162,39 @@ export function ScrollExperience() {
             opacity = 0
         }
 
+        const clampedOpacity = Math.max(0, Math.min(1, opacity))
+        const isActive = clampedOpacity > 0.01
+
         return {
-            opacity: Math.max(0, Math.min(1, opacity)),
+            opacity: clampedOpacity,
             translateY,
             scale,
             blur,
-            pointerEvents: (opacity > 0.5) ? 'auto' as const : 'none' as const,
-            zIndex: index * 10
+            // Active section goes on top; inactive sections hidden completely
+            pointerEvents: (clampedOpacity > 0.5) ? 'auto' as const : 'none' as const,
+            visibility: isActive ? 'visible' as const : 'hidden' as const,
+            zIndex: isActive ? 100 - Math.round((1 - clampedOpacity) * 50) : 0
         }
     }
 
     return (
         <div ref={containerRef} className="relative w-full md:h-screen bg-background text-foreground selection:bg-primary/30">
-            {/* Background System with Subscription */}
-            <div className="fixed inset-0 pointer-events-none">
+            {/* Background System - behind everything, never intercepts clicks */}
+            <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
                 <BackgroundSystem register={register} />
             </div>
 
-            {/* Viewport Content */}
-            <div className="relative w-full h-full flex flex-col md:block">
+            {/* Viewport Content - above background, receives all interactions */}
+            <div className="relative w-full h-full flex flex-col md:block" style={{ zIndex: 10 }}>
 
                 {Array.from({ length: TOTAL_STATES }).map((_, i) => (
                     <div
                         key={i}
                         ref={(el) => { sectionRefs.current[i] = el }}
-                        className={`relative w-full h-auto md:absolute md:inset-0 md:h-full will-change-[opacity,transform,filter] overflow-hidden md:overflow-visible ${i === 0 ? 'md:opacity-100' : 'md:opacity-0'}`}
+                        className={`relative w-full h-auto md:absolute md:inset-0 md:h-full overflow-x-hidden md:overflow-visible ${i === 0 ? 'md:opacity-100' : 'md:opacity-0'}`}
                         style={{
-                            // Only set initial styles that match desktop logic
-                            // Mobile styles are overridden by CSS classes (opacity 1 naturally)
-                            // But inline styles win, so we rely on the GSAP matchMedia to reset these on mobile
+                            pointerEvents: i === 0 ? 'auto' : 'none',
+                            visibility: i === 0 ? 'visible' : 'hidden',
                         }}
                     >
                         {i === 0 && <HeroState register={register} />}
@@ -206,36 +206,10 @@ export function ScrollExperience() {
                             <WorkflowStepState
                                 register={register}
                                 stepIndex={3}
+                                totalSteps={TOTAL_STATES}
                                 title="Create"
                                 description="Start with a spark. Our engine interprets your intent and generates the foundation."
                                 semicircleColor="rgba(45, 212, 191, 0.4)" // Teal glow
-                            />
-                        )}
-                        {i === 4 && (
-                            <WorkflowStepState
-                                register={register}
-                                stepIndex={4}
-                                title="Refine"
-                                description="Iterate directly. Adjust parameters, remix styles, and perfect the details."
-                                semicircleColor="rgba(244, 63, 94, 0.4)" // Rose glow
-                            />
-                        )}
-                        {i === 5 && (
-                            <WorkflowStepState
-                                register={register}
-                                stepIndex={5}
-                                title="Publish"
-                                description="Share with the world. Export in any format and showcase your work instantly."
-                                semicircleColor="rgba(124, 58, 237, 0.5)" // Indigo glow
-                            />
-                        )}
-                        {i === 6 && (
-                            <WorkflowStepState
-                                register={register}
-                                stepIndex={6}
-                                title="Scale"
-                                description="Grow without limits. Our infrastructure scales perfectly with your ambition."
-                                semicircleColor="rgba(56, 189, 248, 0.5)" // Sky blue glow
                             />
                         )}
                     </div>

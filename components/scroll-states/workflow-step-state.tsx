@@ -10,12 +10,20 @@ gsap.registerPlugin(ScrollTrigger)
 interface WorkflowStepStateProps {
     register: (cb: (progress: number, index: number) => void) => () => void
     stepIndex: number
+    totalSteps?: number
     title: string
     description: string
     semicircleColor?: string
 }
 
-export function WorkflowStepState({ register, stepIndex, title, description, semicircleColor = "rgba(100,100,255,0.15)" }: WorkflowStepStateProps) {
+export function WorkflowStepState({ 
+    register, 
+    stepIndex, 
+    totalSteps = 4,
+    title, 
+    description, 
+    semicircleColor = "rgba(100,100,255,0.15)" 
+}: WorkflowStepStateProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const titleRef = useRef<HTMLHeadingElement>(null)
     const descRef = useRef<HTMLParagraphElement>(null)
@@ -50,6 +58,9 @@ export function WorkflowStepState({ register, stepIndex, title, description, sem
         window.addEventListener("mousemove", handleMouseMove)
 
         const loop = () => {
+            // Check if we are active or near active before running heavy loop
+            // We can check if the container is in the viewport or rely on localProgress
+            
             // Lerp (0.1 for smooth delay)
             currentRef.current.x += (targetRef.current.x - currentRef.current.x) * 0.1
             currentRef.current.y += (targetRef.current.y - currentRef.current.y) * 0.1
@@ -57,37 +68,15 @@ export function WorkflowStepState({ register, stepIndex, title, description, sem
             const x = currentRef.current.x
             const y = currentRef.current.y
 
-            // A. Background Gradient Update
-            // Using a large, soft radial gradient that follows the cursor
-            if (bgRef.current) {
-                // We use setProperty for performance if it's a CSS var, or direct style
-                // Direct background string construction is fine for modern browsers on RAF
-                bgRef.current.style.background = `radial-gradient(800px circle at ${x}px ${y}px, ${semicircleColor}, transparent 70%)`
-            }
-
-            // B. Semicircle Interaction (Parallax)
-            // Moves slightly towards the cursor horizontally
+            // B. Core Aura Parallax (Slow, buttery follow)
             if (semicircleRef.current) {
-                // Center is window.innerWidth / 2
-                // Range +/- 50px
                 const centerX = window.innerWidth / 2
-                const deltaX = (x - centerX) * 0.05
+                const centerY = window.innerHeight / 2
+                const deltaX = (x - centerX) * 0.15
+                const deltaY = (y - centerY) * 0.15
 
-                // We use GSAP quickSetter ideally, or just set transform directly here if simple
-                // But let's mix with scroll logic below. 
-                // To avoid conflict, we'll store this value or use CSS var?
-                // Actually, let's just use a transform.
-                // We need to merge with the Y transform from scroll.
-                // Best to split: Semicircle Inner (Cursor) vs Outer (Scroll) ?
-                // For simplicity, let's set CSS Variable --cursor-x
                 semicircleRef.current.style.setProperty('--cursor-x', `${deltaX}px`)
-
-                // Also proximity glow?
-                // We can adjust opacity based on Y distance to bottom
-                const distY = window.innerHeight - y
-                const proximity = Math.max(0, 1 - (distY / 500)) // 0 to 1
-                const brightness = 0.6 + (proximity * 0.4) // 0.6 to 1.0
-                semicircleRef.current.style.opacity = brightness.toFixed(2)
+                semicircleRef.current.style.setProperty('--cursor-y', `${deltaY}px`)
             }
 
             rafIdRef.current = requestAnimationFrame(loop)
@@ -135,23 +124,18 @@ export function WorkflowStepState({ register, stepIndex, title, description, sem
                     gsap.from(targets, {
                         scrollTrigger: {
                             trigger: containerRef.current,
-                            start: "top 65%",
-                            onEnter: () => setStartTypewriter(true)
+                            start: "top 75%",
+                            onEnter: () => setStartTypewriter(true),
+                            onEnterBack: () => setStartTypewriter(true)
                         },
                         opacity: 0,
                         y: 40,
                         filter: "blur(5px)",
                         stagger: 0.2,
-                        duration: 1,
+                        duration: 1.2,
                         ease: "power2.out"
                     })
                 }
-                // Ensure typewriter starts if already in view or forced
-                ScrollTrigger.create({
-                    trigger: containerRef.current,
-                    start: "top 80%",
-                    onEnter: () => setStartTypewriter(true)
-                })
             })
 
         }, containerRef)
@@ -161,28 +145,30 @@ export function WorkflowStepState({ register, stepIndex, title, description, sem
         // If parent DID call it, we'd have a conflict. But we know parent disables it on mobile.
         const unregister = register((globalProgress, currentIndex) => {
             // Local Progress Logic
-            const TOTAL = 7
+            const TOTAL = totalSteps
             const start = stepIndex / TOTAL
             const end = (stepIndex + 1) / TOTAL
             const duration = end - start
             const localProgress = (globalProgress - start) / duration
 
             // Typewriter Trigger (Desktop Fallback)
-            if (localProgress > 0.1 && !startTypewriter) {
+            if (localProgress > 0.05 && !startTypewriter) {
                 setStartTypewriter(true)
             }
 
             // Reveal / Parallax Logic
-            if (localProgress < 0) {
+            if (localProgress < -0.1) {
                 // Reset if scrolled back up far
                 const targets = [titleRef.current, descRef.current].filter((el) => el !== null) as HTMLElement[]
                 if (targets.length > 0) {
+                    gsap.killTweensOf(targets)
                     gsap.set(targets, { opacity: 0, y: 60, filter: "blur(12px)", scale: 0.94 })
+                    setStartTypewriter(false)
                 }
 
-            } else if (localProgress >= 0 && localProgress <= 1) {
-                // ENTRY PHASE (0 - 0.25)
-                const entryP = Math.min(1, localProgress / 0.25)
+            } else if (localProgress >= 0) {
+                // ENTRY PHASE (0 - 0.2)
+                const entryP = Math.min(1, localProgress / 0.2)
 
                 // Ease the entry
                 const easedEntry = 1 - Math.pow(1 - entryP, 3) // Cubic ease out
@@ -193,9 +179,9 @@ export function WorkflowStepState({ register, stepIndex, title, description, sem
                 const currentScale = 0.94 + (0.06 * easedEntry) // 0.94 -> 1.0
                 const currentOpacity = easedEntry
 
-                // Parallax PHASE (0.25 - 1.0)
+                // Parallax PHASE (0.2 - 1.0)
                 // Once entered, we slowly drift up
-                const drift = Math.max(0, localProgress - 0.25) * 50 // 0px to 37.5px
+                const drift = Math.max(0, localProgress - 0.2) * 60 // 0px to 48px
 
                 // Apply Text Transforms
                 if (titleRef.current) {
@@ -216,22 +202,24 @@ export function WorkflowStepState({ register, stepIndex, title, description, sem
                     })
                 }
 
-                // Semicircle Scroll Params
+                // Semicircle/Aura Scroll Params
                 if (semicircleRef.current) {
-                    // Grows as we scroll
-                    const scale = 0.96 + (localProgress * 0.1) // 0.96 -> 1.06
-                    // Moves up slightly
-                    const yPerc = 20 - (localProgress * 20) // 20% -> 0%
+                    // Massive scale up as we scroll
+                    const scale = 0.5 + (localProgress * 1.5) // 0.5 -> 2.0
+                    const yPerc = 10 - (localProgress * 15) 
+                    
+                    // FADE LOGIC: If it's the last step, don't fade out at the end
+                    const isLast = stepIndex === TOTAL - 1
+                    let opac
+                    if (isLast && localProgress > 0.5) {
+                        opac = 0.8 // Hold opacity for last section
+                    } else {
+                        opac = Math.sin(localProgress * Math.PI) * 0.8 // Fade in and out
+                    }
 
-                    // We use CSS var for the scroll Y to allow mixing with cursor X
                     semicircleRef.current.style.setProperty('--scroll-scale', scale.toFixed(3))
                     semicircleRef.current.style.setProperty('--scroll-y', `${yPerc}%`)
-                }
-            } else {
-                // Out of view
-                const targets = [titleRef.current, descRef.current].filter((el) => el !== null) as HTMLElement[]
-                if (targets.length > 0) {
-                    gsap.set(targets, { opacity: 0 })
+                    semicircleRef.current.style.opacity = `${opac}`
                 }
             }
         })
@@ -241,38 +229,41 @@ export function WorkflowStepState({ register, stepIndex, title, description, sem
             mm.revert()
             unregister()
         }
-    }, [register, stepIndex, startTypewriter])
+    }, [register, stepIndex])
 
     return (
-        <section ref={containerRef} className="md:absolute md:inset-0 relative w-full h-auto min-h-[100svh] flex flex-col items-center justify-center overflow-hidden pointer-events-none bg-black">
+        <section ref={containerRef} className="md:absolute md:inset-0 relative w-full h-auto min-h-[100svh] flex flex-col items-center justify-center overflow-hidden pointer-events-none bg-transparent">
 
-            {/* 1. LIVING GRADIENT BACKGROUND */}
-            <div
-                ref={bgRef}
-                className="absolute inset-0 w-full h-full opacity-20 pointer-events-none transition-colors duration-1000 ease-linear"
-                style={{ mixBlendMode: 'screen' }}
-            />
+            {/* 1. MOUSE-TRACKING BACKGROUND WASH */}
+            <div className="absolute inset-0 pointer-events-none z-0">
+                <div
+                    ref={bgRef}
+                    className="absolute inset-0 opacity-20 transition-colors duration-1000 ease-linear mix-blend-screen"
+                />
+            </div>
 
-            {/* 2. SEMICIRCLE (Bottom Anchor) */}
-            <div
-                ref={semicircleRef}
-                className="absolute bottom-[-20vh] left-1/2 w-[60vw] h-[30vw] rounded-t-full z-10 blur-[80px] will-change-transform"
-                style={{
-                    background: semicircleColor,
-                    // Combine Scroll (Scale/Y) + Cursor (X)
-                    transform: `translateX(calc(-50% + var(--cursor-x, 0px))) translateY(var(--scroll-y, 20%)) scale(var(--scroll-scale, 0.96))`
-                }}
-            />
+            {/* 2. THE CORE AURA (Centered, expanding glowing orb) */}
+            <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
+                <div
+                    ref={semicircleRef}
+                    className="w-[50vw] h-[50vw] md:w-[30vw] md:h-[30vw] rounded-full blur-[100px] will-change-transform"
+                    style={{
+                        background: semicircleColor,
+                        opacity: 0,
+                        transform: `translate(var(--cursor-x, 0px), var(--cursor-y, 0px)) translateY(var(--scroll-y, 0%)) scale(var(--scroll-scale, 0.5))`
+                    }}
+                />
+            </div>
 
-            {/* 3. TEXT CONTENT */}
+            {/* 3. PURE TEXT SHOWCASE */}
             <div
                 ref={textContainerRef}
-                className="relative z-20 text-center px-4 flex flex-col items-center justify-center gap-8"
+                className="relative z-20 w-full max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center gap-8"
             >
-                <div className="h-24 md:h-32 flex items-center justify-center">
+                <div className="overflow-hidden py-4">
                     <h2
                         ref={titleRef}
-                        className="text-6xl md:text-8xl font-serif text-white tracking-tight leading-none will-change-transform"
+                        className="text-7xl md:text-8xl lg:text-[10rem] font-serif text-white tracking-tighter leading-none will-change-transform drop-shadow-2xl font-bold mix-blend-screen"
                     >
                         <Typewriter
                             text={title}
@@ -285,10 +276,13 @@ export function WorkflowStepState({ register, stepIndex, title, description, sem
 
                 <p
                     ref={descRef}
-                    className="text-xl md:text-2xl text-zinc-400 font-light max-w-lg leading-relaxed will-change-transform"
+                    className="text-xl md:text-3xl text-zinc-300 font-light max-w-2xl leading-relaxed tracking-wide will-change-transform opacity-90 mt-4 md:mt-8"
                 >
                     {description}
                 </p>
+
+                {/* Elegant central minimal line */}
+                <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30 mt-4" />
             </div>
 
         </section>

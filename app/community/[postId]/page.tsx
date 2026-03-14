@@ -21,6 +21,7 @@ import type { CommunityPost } from "@/lib/types"
 import { usePostLike } from "@/hooks/use-post-like"
 import { cn } from "@/lib/utils"
 import { httpsCallable } from "firebase/functions"
+import { ASSET_BASE } from "@/lib/assets"
 
 export default function PostDetailPage() {
     const params = useParams()
@@ -33,6 +34,14 @@ export default function PostDetailPage() {
     const { user } = useAuth()
     const router = useRouter()
     const [isDeleting, setIsDeleting] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024)
+        checkMobile()
+        window.addEventListener("resize", checkMobile)
+        return () => window.removeEventListener("resize", checkMobile)
+    }, [])
 
     const isOwner = user?.uid === post?.author?.id
 
@@ -234,10 +243,10 @@ export default function PostDetailPage() {
 
                 {/* Right/Bottom: Sidebar */}
                 <div
-                    className="w-full lg:w-[450px] lg:shrink-0 bg-[#09090b] border-l border-white/5 overflow-y-auto lg:h-full p-6 lg:p-8 pt-20 lg:pt-8 z-10 shadow-2xl lg:shadow-none custom-scrollbar overscroll-contain"
-                    data-lenis-prevent="true"
-                    onWheel={(e) => e.stopPropagation()}
-                    onTouchMove={(e) => e.stopPropagation()}
+                    className="w-full lg:w-[450px] lg:shrink-0 bg-[#09090b] border-l border-white/5 lg:overflow-y-auto lg:h-full p-6 lg:p-8 pt-20 lg:pt-8 z-10 shadow-2xl lg:shadow-none custom-scrollbar lg:overscroll-contain"
+                    data-lenis-prevent={isMobile ? undefined : true}
+                    onWheel={isMobile ? undefined : (e) => e.stopPropagation()}
+                    onTouchMove={isMobile ? undefined : (e) => e.stopPropagation()}
                 >
 
                     {/* Author */}
@@ -289,19 +298,19 @@ export default function PostDetailPage() {
                             <DropdownMenuContent className="p-2 w-56 bg-[#111] border-white/10 rounded-xl" align="center">
                                 <DropdownMenuItem onClick={() => handleShare('twitter')} className="cursor-pointer text-zinc-300 hover:text-white focus:bg-white/10 rounded-lg py-2.5 flex items-center gap-3">
                                     <div className="relative w-4 h-4">
-                                        <Image src="/assets/twitter.svg" alt="X" fill className="object-contain invert" />
+                                        <Image src={`${ASSET_BASE}/assets/twitter.svg`} alt="X" fill className="object-contain invert" />
                                     </div>
                                     Twitter / X
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleShare('facebook')} className="cursor-pointer text-zinc-300 hover:text-white focus:bg-white/10 rounded-lg py-2.5 flex items-center gap-3">
                                     <div className="relative w-4 h-4">
-                                        <Image src="/assets/facebook.svg" alt="Facebook" fill className="object-contain" />
+                                        <Image src={`${ASSET_BASE}/assets/facebook.svg`} alt="Facebook" fill className="object-contain" />
                                     </div>
                                     Facebook
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleShare('reddit')} className="cursor-pointer text-zinc-300 hover:text-white focus:bg-white/10 rounded-lg py-2.5 flex items-center gap-3">
                                     <div className="relative w-4 h-4 scale-125">
-                                        <Image src="/assets/reddit.svg" alt="Reddit" fill className="object-contain" />
+                                        <Image src={`${ASSET_BASE}/assets/reddit.svg`} alt="Reddit" fill className="object-contain" />
                                     </div>
                                     Reddit
                                 </DropdownMenuItem>

@@ -324,7 +324,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 <label className="text-[10px] font-medium text-zinc-500 tracking-[0.2em] uppercase flex items-center gap-2 px-1">
                                     <Settings2 className="w-3.5 h-3.5 text-zinc-600" /> Model Engine
                                 </label>
-                                <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+                                <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen} modal={false}>
                                     <DropdownMenuTrigger asChild>
                                         <div className="w-full h-[52px] px-4 bg-white/[0.02] rounded-[16px] border border-white/[0.05] hover:border-white/[0.12] hover:bg-white/[0.04] hover:shadow-[0_0_30px_rgba(255,255,255,0.02)] transition-all duration-300 cursor-pointer flex items-center justify-between group">
                                             <div className="flex flex-1 items-center justify-between">
@@ -348,7 +348,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             </div>
                                         </div>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" sideOffset={8} className="z-50 w-[340px] max-w-[calc(100vw-64px)] bg-[#121217]/95 border border-white/[0.08] shadow-[0_30px_60px_rgba(0,0,0,0.9)] rounded-[20px] p-0 overflow-hidden backdrop-blur-3xl">
+                                    <DropdownMenuContent align="start" sideOffset={8} className="z-[9999] w-[340px] max-w-[calc(100vw-64px)] bg-[#121217]/95 border border-white/[0.08] shadow-[0_30px_60px_rgba(0,0,0,0.9)] rounded-[20px] p-0 overflow-hidden backdrop-blur-3xl">
                                         <div
                                             className="max-h-[300px] overflow-y-auto p-2 custom-scrollbar pointer-events-auto"
                                             onWheel={(e) => e.stopPropagation()}

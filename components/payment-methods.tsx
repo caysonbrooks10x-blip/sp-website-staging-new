@@ -1,14 +1,15 @@
 import Image from "next/image"
+import { ASSET_BASE } from "@/lib/assets"
 
 const paymentMethods = [
-  { name: "Visa", icon: "/payment/visa.svg" },
-  { name: "Mastercard", icon: "/payment/mastercard.svg" },
-  { name: "American Express", icon: "/payment/amex.svg" },
-  { name: "JCB", icon: "/payment/jcb.svg" },
-  { name: "UnionPay", icon: "/payment/unionpay.svg" },
-  { name: "Alipay", icon: "/payment/alipay.svg" },
-  { name: "Apple Pay", icon: "/payment/apple-pay.svg" },
-  { name: "Google Pay", icon: "/payment/google-pay.svg" },
+  { name: "Visa", icon: `${ASSET_BASE}/payment/visa.svg` },
+  { name: "Mastercard", icon: `${ASSET_BASE}/payment/mastercard.svg` },
+  { name: "American Express", icon: `${ASSET_BASE}/payment/amex.svg` },
+  { name: "JCB", icon: `${ASSET_BASE}/payment/jcb.svg` },
+  { name: "UnionPay", icon: `${ASSET_BASE}/payment/unionpay.svg` },
+  { name: "Alipay", icon: `${ASSET_BASE}/payment/alipay.svg` },
+  { name: "Apple Pay", icon: `${ASSET_BASE}/payment/apple-pay.svg` },
+  { name: "Google Pay", icon: `${ASSET_BASE}/payment/google-pay.svg` },
 ]
 
 export function PaymentMethods() {

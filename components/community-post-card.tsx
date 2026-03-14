@@ -251,7 +251,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
 
             {/* Top Overlay - Creator Chip & Tools */}
             <div className="absolute top-4 left-4 right-4 z-20 translate-y-[-10px] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out flex justify-between items-start pointer-events-none">
-              <div className="bg-white/10 backdrop-blur-md rounded-full px-2 py-1 pr-3 border border-white/5 flex items-center gap-2 pointer-events-auto">
+              <div className="bg-zinc-950 rounded-full px-2 py-1 pr-3 border border-white/10 flex items-center gap-2 pointer-events-auto shadow-lg">
                 <div className="relative w-5 h-5 rounded-full overflow-hidden border border-white/10">
                   <Image
                     src={post.author.avatar}
@@ -262,13 +262,13 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
                     sizes="20px"
                   />
                 </div>
-                <span className="text-[10px] font-medium text-white/90 tracking-wide">{post.author.name}</span>
+                <span className="text-[10px] font-medium text-white tracking-wide">{post.author.name}</span>
               </div>
 
               {isOwner && (
                 <button
                   onClick={handleDeleteClick}
-                  className="bg-black/40 backdrop-blur-md hover:bg-red-500/80 hover:text-white text-white/90 p-2 rounded-full border border-white/10 transition-all pointer-events-auto"
+                  className="bg-zinc-950 hover:bg-red-500 hover:text-white text-white p-2 rounded-full border border-white/10 transition-all pointer-events-auto shadow-lg"
                   title="Delete Post"
                 >
                   <Trash2 className="w-4 h-4" />

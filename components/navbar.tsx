@@ -104,7 +104,7 @@ export function Navbar() {
         className={cn(
           "fixed top-0 left-0 right-0 z-[100] px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-[0.32,0.72,0,1]",
           isNavVisible ? "translate-y-0" : "-translate-y-32",
-          scrolled ? "bg-white/80 backdrop-blur-xl border-b border-black/5 py-4" : "bg-transparent py-6"
+          scrolled ? "bg-black/50 backdrop-blur-2xl py-4" : "bg-transparent py-6"
         )}
       >
         <div className="w-full flex items-center justify-between relative">
@@ -123,12 +123,7 @@ export function Navbar() {
               <div className="absolute inset-0 bg-gradient-to-tr from-zinc-200 to-white opacity-100" />
               <span className="relative font-bold text-sm tracking-tighter">Sx</span>
             </div>
-            <span className={cn(
-              "font-medium tracking-wide transition-colors duration-300 pointer-events-none",
-              (pathname.startsWith('/studio') || pathname.startsWith('/community') || pathname.startsWith('/creations') || pathname.startsWith('/profile')) && !scrolled
-                ? "text-white"
-                : "text-zinc-900"
-            )}>
+            <span className="font-medium tracking-wide text-white transition-colors duration-300 pointer-events-none">
               StudioX
             </span>
           </Link>
@@ -242,7 +237,12 @@ export function Navbar() {
 
             {/* Mobile Menu Toggle */}
             <button
-              className="md:hidden relative z-[110] w-10 h-10 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 transition-colors"
+              className={cn(
+                "md:hidden relative z-[110] w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300",
+                mobileMenuOpen
+                  ? "bg-zinc-900 border border-white/20 text-white shadow-xl"
+                  : "bg-white border border-zinc-200 text-black shadow-[0_4px_14px_rgba(0,0,0,0.15)] hover:bg-zinc-100"
+              )}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <AnimatePresence mode="wait">
@@ -254,7 +254,7 @@ export function Navbar() {
                     exit={{ rotate: 90, opacity: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <X className="w-5 h-5 text-white" />
+                    <X className="w-5 h-5" />
                   </motion.div>
                 ) : (
                   <motion.div
@@ -264,7 +264,7 @@ export function Navbar() {
                     exit={{ rotate: -90, opacity: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Menu className="w-5 h-5 text-white" />
+                    <Menu className="w-5 h-5" />
                   </motion.div>
                 )}
               </AnimatePresence>

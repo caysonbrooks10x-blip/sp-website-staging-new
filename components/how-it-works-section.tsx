@@ -5,6 +5,7 @@ import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
 import { Typewriter } from "@/components/ui/typewriter"
+import { ASSET_BASE } from "@/lib/assets"
 import Image from "next/image"
 
 export function HowItWorksSection() {
@@ -114,7 +115,7 @@ export function HowItWorksSection() {
                 {/* Background Image */}
                 <div ref={bgRef} className="absolute inset-0 pointer-events-none select-none w-full h-full -z-10">
                     <Image
-                        src="/howitworks-bg.jpg"
+                        src={`${ASSET_BASE}/howitworks-bg.jpg`}
                         alt="Background"
                         fill
                         className="object-cover opacity-40 mix-blend-screen"

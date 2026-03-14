@@ -1,272 +1,342 @@
 "use client"
 
-import { useRef, useEffect, useState } from "react"
+import { useRef, useEffect } from "react"
 import { Layers, Cpu, Fingerprint, Scale } from "lucide-react"
-import { FeatureCard } from "@/components/feature-card"
-import { Typewriter } from "@/components/ui/typewriter"
-import { WordRotator } from "@/components/ui/word-rotator"
 import { gsap } from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+import Image from "next/image"
+import { ASSET_BASE } from "@/lib/assets"
 
-interface FeaturesStateProps {
-    register: (cb: (progress: number, index: number) => void) => () => void
-}
+gsap.registerPlugin(ScrollTrigger)
+
+// Fine-tuned for an expanded, hyper-slick "Gallery" float with 14 images.
+const IMAGES = [
+    { src: `${ASSET_BASE}/capabilities/capabilities1.png`, top: "-10%", left: "8%", size: "16rem", depth: 3.5, rotate: -4, blur: 0, z: 20 },
+    { src: `${ASSET_BASE}/capabilities/capabilities2.png`, top: "5%", left: "78%", size: "20rem", depth: -2.5, rotate: 6, blur: 4, z: 5 },
+    { src: `${ASSET_BASE}/capabilities/capabilities3.png`, top: "45%", left: "-5%", size: "22rem", depth: 4.0, rotate: 2, blur: 0, z: 30 },
+    { src: `${ASSET_BASE}/capabilities/capabilities4.png`, top: "60%", left: "85%", size: "14rem", depth: 2.2, rotate: -8, blur: 1, z: 25 },
+    { src: `${ASSET_BASE}/capabilities/capabilities5.png`, top: "20%", left: "22%", size: "10rem", depth: -3.5, rotate: 12, blur: 6, z: 2 },
+    { src: `${ASSET_BASE}/capabilities/capabilities6.png`, top: "30%", left: "88%", size: "18rem", depth: 1.5, rotate: -3, blur: 2, z: 15 },
+    { src: `${ASSET_BASE}/capabilities/capabilities7.png`, top: "75%", left: "12%", size: "12rem", depth: -1.8, rotate: -15, blur: 5, z: 4 },
+    { src: `${ASSET_BASE}/capabilities/capabilities8.png`, top: "85%", left: "42%", size: "18rem", depth: 3.2, rotate: 5, blur: 0, z: 22 },
+    { src: `${ASSET_BASE}/capabilities/capabilities9.png`, top: "-5%", left: "45%", size: "14rem", depth: 2.8, rotate: -6, blur: 0, z: 18 },
+    { src: `${ASSET_BASE}/capabilities/capabilities10.png`, top: "95%", left: "75%", size: "11rem", depth: -2.5, rotate: 18, blur: 8, z: 1 },
+    { src: `${ASSET_BASE}/capabilities/capabilities11.png`, top: "35%", left: "10%", size: "11rem", depth: 1.8, rotate: 4, blur: 3, z: 12 },
+    { src: `${ASSET_BASE}/capabilities/capabilities12.png`, top: "15%", left: "55%", size: "9rem", depth: -4.0, rotate: -10, blur: 7, z: 0 },
+    { src: `${ASSET_BASE}/capabilities/capabilities13.png`, top: "80%", left: "95%", size: "15rem", depth: 2.0, rotate: -5, blur: 2, z: 16 },
+    { src: `${ASSET_BASE}/capabilities/capabilities14.png`, top: "50%", left: "70%", size: "13rem", depth: -1.5, rotate: 8, blur: 4, z: 6 },
+]
 
 const FEATURES = [
     {
         icon: Layers,
         title: "Remix Engine",
-        description: "Build on community creations and iterate with one click.",
+        description: "Build on community creations and iterate with one click. Experience the fluidity of creation without limits.",
     },
     {
         icon: Cpu,
         title: "Hybrid Routing",
-        description: "Intelligent model selection for optimal quality and speed.",
+        description: "Intelligent model selection for optimal quality and speed. Our engine anticipates and adapts to your workflow instantaneously.",
     },
     {
         icon: Fingerprint,
         title: "Ethical Core",
-        description: "Consent-based generation with identity-safe practices.",
+        description: "Consent-based generation anchored by identity-safe practices. Craft fearlessly, with security built into the foundation.",
     },
     {
         icon: Scale,
         title: "Fair Credits",
-        description: "Transparent pricing with a flexible control system.",
+        description: "Transparent pricing powered by a flexible control system. Generate assets exactly tailored to fit your ultimate vision.",
     },
 ]
 
+interface FeaturesStateProps {
+    register: (cb: (progress: number, index: number) => void) => () => void
+}
+
 export function FeaturesState({ register }: FeaturesStateProps) {
     const containerRef = useRef<HTMLDivElement>(null)
-    const cardsRef = useRef<(HTMLDivElement | null)[]>([])
-    const indicatorsRef = useRef<(HTMLDivElement | null)[]>([])
-    const videoRef = useRef<HTMLVideoElement>(null)
-    const cardsContainerRef = useRef<HTMLDivElement>(null)
-
-    // State just for the Typewriter trigger (updates once)
-    const [started, setStarted] = useState(false)
+    const imagesRef = useRef<(HTMLDivElement | null)[]>([])
+    const textRef = useRef<(HTMLDivElement | null)[]>([])
+    const dotsRef = useRef<(HTMLDivElement | null)[]>([])
+    const glowRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        // Ensure video plays
-        if (videoRef.current) {
-            videoRef.current.play().catch(() => { })
-        }
+        const updateAnimation = (localProgress: number) => {
+            // Ethereal Parallax Images
+            IMAGES.forEach((img, i) => {
+                const el = imagesRef.current[i]
+                if (el) {
+                    const progressNormalized = localProgress - 0.5 // -0.5 to 0.5
 
-        const unregister = register((globalProgress, index) => {
-            // Index 1 of 7 states
-            // Range: [0.1428, 0.2857]
-            const TOTAL = 7
-            const start = 1 / TOTAL
-            const end = 2 / TOTAL
-            const slice = 1 / TOTAL
+                    // Calculate translation. We scale down the movement factor slightly 
+                    // to prevent jerky mobile scrolling while maintaining depth.
+                    const isMobile = window.innerWidth < 768
+                    const moveMulti = isMobile ? 0.6 : 1
 
-            let localProgress = 0
-            if (globalProgress < start) localProgress = 0
-            else if (globalProgress > end) localProgress = 1
-            else localProgress = (globalProgress - start) / slice
+                    const yOffset = progressNormalized * img.depth * -500 * moveMulti
+                    const xOffset = progressNormalized * img.depth * 80 * moveMulti
 
-            // Trigger Typewriter
-            if (localProgress > 0.05 && !started) {
-                setStarted(true)
-            }
+                    // On mobile, employ subtle 3D adjustments for buttery smooth yet premium Cosmos feel
+                    if (isMobile) {
+                        // Lighter rotation & scaling for mobile GPU safety but retains elegance
+                        const dynamicRotation = img.rotate + (progressNormalized * img.depth * 5)
+                        const distFromCenter = Math.abs(progressNormalized)
+                        const scaleEffect = img.depth > 0 ? 1 + (0.04 * (1 - distFromCenter * 2)) : 1
 
-            // --- PARALLAX BACKGROUND LOGIC ---
-            if (videoRef.current) {
-                const parallaxY = localProgress * 15
-                gsap.set(videoRef.current, {
-                    yPercent: -parallaxY,
-                    scale: 1.1
-                })
-            }
-
-            // --- DECK/STACK ANIMATION LOGIC ---
-            // We want to show 4 cards.
-            // 0 -> 1 : Card 1 active, Card 2 below
-            // ...
-
-            // Total 'steps' = length - 1. 
-            // We want the last card to be fully visible at the end.
-            const totalDistance = FEATURES.length - 1
-            const currentFocus = localProgress * totalDistance
-
-            FEATURES.forEach((_, i) => {
-                const el = cardsRef.current[i]
-                if (!el) return
-
-                const dist = i - currentFocus
-
-                // VISUAL VARS
-                let x = 0
-                let y = 0
-                let scale = 1
-                let opacity = 1
-                let zIndex = 0
-                let blur = 0
-
-                // Refined Logic for "Cosmos" feel
-                // Positive dist = Future cards (waiting in stack)
-                // Negative dist = Past cards (flying away/fading)
-                // dist ~ 0 = Active card
-
-                let pointerEvents = 'none'
-
-                if (dist > 0) {
-                    // WAITING IN STACK (Future cards)
-                    // Stack them visibly behind with nice depth spacing
-                    const depth = dist
-                    scale = 1 - (depth * 0.05) // Subtle scale down
-                    y = depth * 30             // Tighter stack
-                    zIndex = 100 - i
-                    opacity = Math.max(0, 1 - (depth * 0.3)) // Fade out further cards to focus on current
-                    blur = depth * 2            // Blur background cards more to focus on active
-
-                    // Cap visual stack depth
-                    if (depth > 4) {
-                        opacity = 0
-                    }
-                }
-                else {
-                    // ACTIVE OR PAST
-                    // transitions from 0 to -1 (active -> exit)
-
-                    const timeSinceActive = Math.abs(dist)
-
-                    if (timeSinceActive <= 1) {
-                        // EXITING CARD (0 to -1)
-                        // Fly UP significantly to clear the view, but stay opaque longer
-                        const exit = timeSinceActive // 0 -> 1
-
-                        y = -exit * 350    // Fly up much higher to physically reveal next card
-                        scale = 1 - (exit * 0.1) // Slight scale down
-                        blur = exit * 2    // Minimal blur so it remains readable while moving
-
-                        // Opacity: Stay visible (1) until almost gone, then rapid fade
-                        // This fixes "disappears too quick"
-                        opacity = 1 - Math.pow(Math.max(0, exit - 0.5) * 2, 3)
-
-                        zIndex = 100 - i
+                        gsap.set(el, {
+                            y: yOffset,
+                            x: xOffset,
+                            rotation: dynamicRotation,
+                            scale: scaleEffect,
+                            force3D: true
+                        })
                     } else {
-                        // TOTALLY GONE
-                        opacity = 0
-                        y = -400
+                        const dynamicRotation = img.rotate + (progressNormalized * img.depth * 15)
+                        const distFromCenter = Math.abs(progressNormalized)
+                        const scaleEffect = img.depth > 0 ? 1 + (0.1 * (1 - distFromCenter * 2)) : 1
+
+                        gsap.set(el, {
+                            y: yOffset,
+                            x: xOffset,
+                            rotation: dynamicRotation,
+                            scale: scaleEffect,
+                            force3D: true
+                        })
                     }
-                }
-
-                pointerEvents = (dist > -0.5 && dist < 0.5) ? 'auto' : 'none'
-
-                gsap.set(el, {
-                    x: x,
-                    y: y,
-                    scale: Math.max(0, scale),
-                    opacity: Math.max(0, opacity),
-                    zIndex: zIndex,
-                    filter: `blur(${blur}px)`,
-                    pointerEvents: pointerEvents,
-                    transformOrigin: "center bottom"
-                })
-
-                // Indicators
-                const indEl = indicatorsRef.current[i]
-                if (indEl) {
-                    // Active window roughly centered on index
-                    const isActive = dist > -0.5 && dist <= 0.5
-                    indEl.style.width = isActive ? '40px' : '8px'
-                    indEl.style.backgroundColor = isActive ? 'white' : 'rgba(255,255,255,0.2)'
                 }
             })
+
+            // Subtle ambient glow shift inside the glass pane
+            if (glowRef.current) {
+                gsap.set(glowRef.current, {
+                    // Reduce rotation jitter on mobile glow
+                    rotation: window.innerWidth < 768 ? 0 : localProgress * 180,
+                    opacity: 0.3 + (Math.sin(localProgress * Math.PI) * 0.2)
+                })
+            }
+
+            // Cinematic Text Transitions inside Frosted Glass
+            const itemsCount = FEATURES.length
+            const progressPerItem = 1 / itemsCount
+
+            FEATURES.forEach((_, i) => {
+                const el = textRef.current[i]
+                const dotEl = dotsRef.current[i]
+
+                const itemProgressStart = i * progressPerItem
+                const itemProgressEnd = (i + 1) * progressPerItem
+                const center = (itemProgressStart + itemProgressEnd) / 2
+
+                const distFromCenter = Math.abs(localProgress - center)
+                const normalizedDist = distFromCenter / (progressPerItem / 2)
+
+                let opacity = 0
+                let yPos = 100 // Start much lower for a luxurious rise
+                let scale = 0.90 // Start smaller
+                let blur = 20 // Deeper initial blur
+                let isDotActive = false
+
+                if (normalizedDist <= 1) {
+                    const easeIn = 1 - Math.pow(normalizedDist, 3.5) // Sharper snapping ease
+                    opacity = easeIn
+
+                    const direction = localProgress - center
+                    const signedNormalized = direction / (progressPerItem / 2)
+
+                    yPos = signedNormalized * -100
+                    scale = 0.90 + (0.10 * easeIn)
+                    blur = normalizedDist * 16 // Sweeping blur
+
+                    if (easeIn > 0.85) isDotActive = true
+                }
+
+                // Keep first and last "settled" when completely outside the section
+                if (localProgress <= itemProgressStart && i === 0) {
+                    opacity = 1
+                    yPos = 0
+                    scale = 1
+                    blur = 0
+                    isDotActive = true
+                }
+                if (localProgress >= itemProgressEnd && i === itemsCount - 1) {
+                    opacity = 1
+                    yPos = 0
+                    scale = 1
+                    blur = 0
+                    isDotActive = true
+                }
+
+                if (el) {
+                    gsap.set(el, {
+                        opacity: Math.max(0, Math.min(1, opacity)),
+                        y: yPos,
+                        scale: scale,
+                        filter: `blur(${blur}px)`,
+                        pointerEvents: opacity > 0.8 ? 'auto' : 'none'
+                    })
+                }
+
+                if (dotEl) {
+                    gsap.set(dotEl, {
+                        backgroundColor: isDotActive ? '#09090b' : '#e4e4e7', // zinc-950 / zinc-200
+                        scale: isDotActive ? 1.3 : 1
+                    })
+                }
+            })
+        }
+
+        // Initialize perfectly on frame 0
+        updateAnimation(0)
+
+        // 1. Desktop Subscription logic
+        const unregister = register((globalProgress, index) => {
+            if (window.innerWidth >= 768) {
+                const TOTAL = 4
+                const start = 1 / TOTAL
+                const end = 2 / TOTAL
+                const slice = 1 / TOTAL
+
+                let localProgress = 0
+                if (globalProgress < start) localProgress = 0
+                else if (globalProgress > end) localProgress = 1
+                else localProgress = (globalProgress - start) / slice
+
+                updateAnimation(localProgress)
+            }
         })
 
-        return () => unregister && unregister()
-    }, [register, started])
+        // 2. Mobile Standalone Pinning Logic
+        const ctx = gsap.context(() => {
+            ScrollTrigger.matchMedia({
+                "(max-width: 767px)": () => {
+                    ScrollTrigger.create({
+                        trigger: containerRef.current,
+                        start: "top top",
+                        end: "+=400%", // Longer scroll distance for slower, smoother transitions
+                        pin: true,
+                        scrub: 1.5, // High inertia damping for that "buttery" feel
+                        onUpdate: (self) => {
+                            updateAnimation(self.progress)
+                        }
+                    })
+                }
+            })
+        }, containerRef)
+
+        return () => {
+            unregister && unregister()
+            ctx.revert()
+        }
+    }, [register])
 
     return (
-        <section ref={containerRef} className="md:absolute md:inset-0 relative w-full h-auto min-h-[100svh] flex flex-col items-center justify-center overflow-hidden bg-black">
+        <section ref={containerRef} className="md:absolute md:inset-0 relative w-full h-auto min-h-[100svh] flex flex-col items-center justify-center overflow-hidden bg-white origin-center no-scrollbar">
 
-            {/* VIDEO BACKGROUND WITH PARALLAX */}
-            <div className="absolute inset-0 w-full h-full z-0 pointer-events-none overflow-hidden">
-                <div className="absolute inset-0 w-full h-[120%] -top-[10%]"> {/* Container for parallax movement */}
-                    <video
-                        ref={videoRef}
-                        src="/features-bg.mp4"
-                        muted
-                        loop
-                        playsInline
-                        className="w-full h-full object-cover opacity-60"
-                        style={{ willChange: 'transform' }}
-                    />
-                </div>
-                {/* Heavy Vignette / Overlay for Dark Theme */}
-                <div className="absolute inset-0 bg-black/60" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
-            </div>
+            {/* Scattered Parallax Images - The "Gallery" */}
+            <div className="absolute inset-0 z-0 pointer-events-none w-full h-full overflow-hidden">
+                {/* Subtle ultra-light noise overlay strictly for the background */}
+                <div
+                    className="absolute inset-0 opacity-[0.015] mix-blend-multiply z-10"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+                />
 
-
-            {/* Content Container */}
-            <div className="relative z-10 w-full max-w-7xl mx-auto h-full flex flex-col md:flex-row items-center justify-between p-8 md:p-20">
-
-                {/* Left Side: Typography */}
-                <div className="flex-1 space-y-8 md:pr-12 pointer-events-none z-20 text-center md:text-left">
-                    <div className="space-y-4">
-                        <h2 className="text-5xl md:text-7xl font-semibold font-sans tracking-tighter text-white drop-shadow-2xl">
-                            <Typewriter
-                                text="Capabilities"
-                                delay={100}
-                                speed={70}
-                                cursorClassName="bg-white/50"
-                                start={started}
-                            />
-                        </h2>
-                        <div className="h-[2px] w-24 bg-white/30 md:mx-0 mx-auto" />
-                    </div>
-
-                    <div className="text-xl md:text-2xl text-zinc-300 font-light leading-relaxed h-20">
-                        <span className="opacity-70">Engineered for your </span>
-                        <span className="font-medium text-white">
-                            <WordRotator
-                                words={["Vision", "Workflow", "Scale", "Future"]}
-                            />
-                        </span>
-                    </div>
-                </div>
-
-                {/* Right Side: Card Stack */}
-                <div ref={cardsContainerRef} className="flex-1 relative w-full md:h-[500px] h-auto flex flex-col md:flex-row items-center justify-center md:-ml-0 mt-8 md:mt-0">
-                    {FEATURES.map((feature, i) => (
+                {/* Responsive scaling container to shrink the galaxy onto mobile seamlessly */}
+                <div className="absolute inset-0 w-full h-full origin-center scale-[0.6] sm:scale-[0.8] md:scale-100 pointer-events-none">
+                    {IMAGES.map((img, i) => (
                         <div
                             key={i}
-                            ref={(el) => { cardsRef.current[i] = el }}
-                            className="relative md:absolute w-full md:w-[480px] h-[320px] mb-6 md:mb-0 will-change-transform"
+                            ref={el => { imagesRef.current[i] = el }}
+                            className="absolute will-change-[transform,filter]"
+                            style={{
+                                top: img.top,
+                                left: img.left,
+                                width: img.size,
+                                height: img.size,
+                                zIndex: img.z,
+                                filter: img.blur > 0 ? `blur(${img.blur}px)` : 'drop-shadow(0 30px 40px rgba(0,0,0,0.06)) drop-shadow(0 15px 20px rgba(0,0,0,0.03))',
+                            }}
                         >
-                            {/* Glass Card Wrapper */}
-                            <div className="h-full w-full bg-zinc-950/90 border border-white/10 rounded-2xl shadow-2xl overflow-hidden relative group">
-                                {/* Background Image */}
-                                <div
-                                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 opacity-40"
-                                    style={{ backgroundImage: "url('/capabilities.jpeg')" }}
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
-
-                                <div className="relative z-10 h-full p-1">
-                                    <FeatureCard
-                                        icon={feature.icon}
-                                        title={feature.title}
-                                        description={feature.description}
-                                        className="border-none bg-transparent shadow-none h-full"
-                                    />
-                                </div>
-                            </div>
+                            {/* Pure image optimized with Next.js */}
+                            <Image
+                                src={img.src}
+                                alt={`Capability visual ${i}`}
+                                fill
+                                sizes="(max-width: 768px) 40vw, 25vw"
+                                priority={i < 5}
+                                className="object-cover"
+                                style={{
+                                    borderRadius: '2.5rem', // Refined Squircle
+                                    border: '1px solid rgba(0,0,0,0.05)',
+                                    WebkitMaskImage: '-webkit-radial-gradient(white, black)', // Fix safari overflow artifacts
+                                }}
+                            />
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Pagination / Progress Dots */}
-            <div className="absolute md:right-20 right-1/2 md:translate-x-0 translate-x-1/2 bottom-12 flex gap-2 z-20">
-                {FEATURES.map((_, i) => (
-                    <div
-                        key={i}
-                        ref={(el) => { indicatorsRef.current[i] = el }}
-                        className="h-1 rounded-full bg-white/20 transition-all duration-300 w-2"
-                    />
-                ))}
+            {/* Central Frosted Glass Showcase */}
+            {/* Extended width, thinner height, responsive blur to protect mobile GPUs */}
+            <div className="relative z-30 w-[95%] md:w-[85%] max-w-6xl h-[70vh] md:h-[60vh] rounded-[3.5rem] bg-white/30 backdrop-blur-[30px] md:backdrop-blur-[80px] border border-white/60 shadow-xl md:shadow-[0_8px_32px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.05),inset_0_0_0_1px_rgba(255,255,255,0.4)] flex flex-col items-center justify-center text-center overflow-hidden">
+
+                {/* Ethereal Ambient Glow (Replaces harsh blobs) */}
+                <div
+                    ref={glowRef}
+                    className="absolute inset-0 z-0 overflow-hidden pointer-events-none w-[150%] h-[150%] -top-[25%] -left-[25%] flex items-center justify-center origin-center transition-opacity duration-1000"
+                >
+                    {/* Sophisticated neutral/warm breathing gradient */}
+                    <div className="w-[1000px] h-[1000px] bg-[radial-gradient(circle_at_center,rgba(250,250,255,0.9)_0%,rgba(255,255,255,0)_60%)] rotate-45 scale-y-50 blur-[15px]" />
+                </div>
+
+                {/* Inner Bezel highlight */}
+                <div className="absolute inset-0 rounded-[3.5rem] ring-1 ring-inset ring-white/50 pointer-events-none z-10" />
+
+                {/* Header Badge */}
+                <div className="absolute top-10 left-1/2 -translate-x-1/2 z-20">
+                    <div className="flex items-center gap-2 group cursor-default">
+                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-950 shadow-[0_0_15px_rgba(0,0,0,0.3)] ring-1 ring-zinc-950/20" />
+                        <span className="uppercase tracking-[0.3em] text-[10px] font-bold text-zinc-600">
+                            The Paradigm
+                        </span>
+                    </div>
+                </div>
+
+                {/* Cinematic Text Carousel */}
+                <div className="relative z-20 w-full h-full flex items-center justify-center px-6 md:px-24">
+                    {FEATURES.map((feature, i) => {
+                        const Icon = feature.icon
+                        return (
+                            <div
+                                key={i}
+                                ref={el => { textRef.current[i] = el }}
+                                className="absolute inset-x-8 md:inset-x-24 top-0 bottom-0 flex flex-col items-center justify-center will-change-[transform,opacity,filter]"
+                            >
+                                <div className="p-4 bg-white shadow-[0_8px_16px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] rounded-[1.3rem] mb-8 text-zinc-950 border border-zinc-100/50">
+                                    <Icon className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
+                                </div>
+                                <h3 className="text-5xl md:text-7xl font-sans font-semibold tracking-[-0.03em] text-zinc-950 leading-[1.05] mb-6 drop-shadow-[0_2px_40px_rgba(255,255,255,0.8)]">
+                                    {feature.title}.
+                                </h3>
+                                <p className="text-lg md:text-2xl text-zinc-500 font-medium max-w-2xl mx-auto leading-[1.65] tracking-tight">
+                                    {feature.description}
+                                </p>
+                            </div>
+                        )
+                    })}
+                </div>
+
+                {/* Minimalist Progress Indicator at Bottom */}
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+                    {FEATURES.map((_, i) => (
+                        <div
+                            key={i}
+                            ref={el => { dotsRef.current[i] = el }}
+                            className={`w-1.5 h-1.5 rounded-full ring-1 ring-white shadow-sm transition-all duration-300`}
+                            id={`feature-dot-${i}`}
+                        />
+                    ))}
+                </div>
             </div>
 
         </section>

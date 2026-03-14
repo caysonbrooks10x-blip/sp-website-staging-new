@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { ASSET_BASE } from "@/lib/assets"
 
 export function Footer() {
   return (
@@ -10,7 +11,7 @@ export function Footer() {
       {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url(/footer.jpg)" }}
+        style={{ backgroundImage: `url(${ASSET_BASE}/footer.jpg)` }}
       />
       <div className="absolute inset-0 bg-background/85" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_var(--tw-gradient-stops))] from-accent/4 via-background to-background pointer-events-none" />

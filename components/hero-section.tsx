@@ -8,6 +8,7 @@ import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { SplitText } from "@/components/ui/split-text"
 import { Typewriter } from "@/components/ui/typewriter"
+import { ASSET_BASE } from "@/lib/assets"
 
 export function HeroSection() {
     const containerRef = useRef<HTMLDivElement>(null)
@@ -135,7 +136,7 @@ export function HeroSection() {
                         playsInline
                         className="hero-video w-full h-full object-cover opacity-60 grayscale-[0.3] will-change-transform" // Added grayscale for mood
                     >
-                        <source src="/herosection.mp4" type="video/mp4" />
+                        <source src={`${ASSET_BASE}/herosection.mp4`} type="video/mp4" />
                     </video>
                     <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
                     {/* Gradient for smooth transition to next section */}
