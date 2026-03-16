@@ -12,49 +12,38 @@ import { WorkflowStepState } from "@/components/scroll-states/workflow-step-stat
 
 // Constants for tuning
 const TOTAL_STATES = 4
-const SCROLL_HEIGHT_PER_STATE = 300 // Increased to provide much more scroll duration per section
-const TRANSITION_OVERLAP = 0.2
+const SCROLL_HEIGHT_PER_STATE = 450
 
 export function ScrollExperience() {
     const containerRef = useRef<HTMLDivElement>(null)
     const progressBarRef = useRef<HTMLDivElement>(null)
 
     // Registry for components that need to react to scroll
-    // They will be called inside the GSAP ticker
     const listeners = useRef<((progress: number, index: number) => void)[]>([])
 
     const register = useCallback((callback: (progress: number, index: number) => void) => {
         listeners.current.push(callback)
-        // Return cleanup function
         return () => {
             listeners.current = listeners.current.filter(cb => cb !== callback)
         }
     }, [])
 
-    // Direct DOM refs for section containers to avoid re-renders
     const sectionRefs = useRef<(HTMLDivElement | null)[]>([])
-
-    // We use a simple state to force re-render on mount for hydration matching, 
-    // but the real logic is in CSS/GSAP matchMedia
     const [isMounted, setIsMounted] = useState(false)
 
     useEffect(() => {
         setIsMounted(true)
         gsap.registerPlugin(ScrollTrigger)
 
-        // Force refresh to handle dynamic height changes from loading images/fonts
         const timer = setTimeout(() => {
             ScrollTrigger.refresh()
         }, 100)
 
-        // Initial state set - ONLY ON DESKTOP
-        // On mobile, we want to rely on the CSS 'relative' layout, not the GSAP 'absolute' positioning
         if (window.innerWidth >= 768) {
             listeners.current.forEach(cb => cb(0, 0))
         }
 
         const ctx = gsap.context(() => {
-            // DESKTOP ONLY: ScrollTrigger logic
             ScrollTrigger.matchMedia({
                 "(min-width: 768px)": function () {
                     ScrollTrigger.create({
@@ -62,20 +51,17 @@ export function ScrollExperience() {
                         start: "top top",
                         end: `+=${TOTAL_STATES * SCROLL_HEIGHT_PER_STATE}%`,
                         pin: true,
-                        scrub: 1, // Slightly tighter scrub for responsiveness
+                        scrub: 1.2, 
                         onUpdate: (self) => {
                             const globalProgress = self.progress
-                            const currentIndex = Math.floor(globalProgress * TOTAL_STATES)
+                            const currentIndex = Math.min(TOTAL_STATES - 1, Math.floor(globalProgress * TOTAL_STATES))
 
-                            // 1. Update Progress Bar directly
                             if (progressBarRef.current) {
                                 progressBarRef.current.style.width = `${globalProgress * 100}%`
                             }
 
-                            // 2. Broadcast to children
                             listeners.current.forEach(cb => cb(globalProgress, currentIndex))
 
-                            // 3. Handle Transitions (The "Boat" Protocol) directly on Refs
                             Array.from({ length: TOTAL_STATES }).forEach((_, i) => {
                                 const el = sectionRefs.current[i]
                                 if (!el) return
@@ -85,26 +71,22 @@ export function ScrollExperience() {
                                 gsap.set(el, {
                                     opacity,
                                     yPercent: translateY,
-                                    scale: scale,
-                                    filter: `blur(${blur}px)`,
+                                    scale,
                                     pointerEvents,
                                     visibility,
-                                    zIndex
+                                    zIndex,
+                                    force3D: true,
                                 })
                             })
                         }
                     })
                 },
 
-                // MOBILE: Ensure clean state
                 "(max-width: 767px)": function () {
-                    // Reset any GSAP sets that might have lingered
                     Array.from({ length: TOTAL_STATES }).forEach((_, i) => {
                         const el = sectionRefs.current[i]
                         if (!el) return
-                        gsap.set(el, {
-                            clearProps: "all"
-                        })
+                        gsap.set(el, { clearProps: "all" })
                     })
                 }
             })
@@ -116,50 +98,50 @@ export function ScrollExperience() {
         }
     }, [])
 
-    /* 
-       "The Boat" Protocol Logic (Moved out of render)
-    */
     const calculateState = (index: number, globalProgress: number) => {
         const total = TOTAL_STATES
         const slice = 1 / total
         const start = index * slice
         const end = (index + 1) * slice
-        const overlap = slice * 0.15
+        const transition = slice * 0.12 // Tight 12% window for crisp transitions
 
         let opacity = 0
         let translateY = 0
         let scale = 1
-        let blur = 0
 
-        // 1. Entry Phase
-        if (globalProgress >= start && globalProgress < (start + overlap)) {
-            const entryProgress = (globalProgress - start) / overlap
-            // WORKFLOW SPECIAL (index 2): Standard fade in
-            opacity = index === 0 ? 1 : entryProgress
+        // Early exit for out-of-range sections
+        if (globalProgress < start - transition || globalProgress > end + transition) {
+            return { opacity: 0, translateY: 20, scale: 0.98, blur: 0, visibility: 'hidden' as const, zIndex: 0, pointerEvents: 'none' as const }
         }
-        // 2. Active Phase & Dwell
-        else if (globalProgress >= (start + overlap) && globalProgress < end) {
+
+        if (globalProgress >= start && globalProgress < end) {
+            if (globalProgress < start + transition && index !== 0) {
+                // ENTRY: fade in + slide up
+                const p = (globalProgress - start) / transition
+                const eased = p * p * (3 - 2 * p) // smoothstep for buttery ease
+                opacity = eased
+                translateY = (1 - eased) * 15
+                scale = 0.99 + (eased * 0.01)
+            } else if (globalProgress > end - transition && index !== total - 1) {
+                // EXIT: fade out + slide up
+                const p = (end - globalProgress) / transition
+                const eased = p * p * (3 - 2 * p)
+                opacity = eased
+                translateY = (eased - 1) * 15
+                scale = 1 - ((1 - eased) * 0.01)
+            } else {
+                // DWELL: fully visible
+                opacity = 1
+                translateY = 0
+                scale = 1
+            }
+        }
+
+        // Section 0 always starts visible
+        if (index === 0 && globalProgress <= transition) {
             opacity = 1
             translateY = 0
             scale = 1
-            blur = 0
-        }
-        // 3. Exit Phase
-        else if (globalProgress >= end && globalProgress < (end + overlap)) {
-            const exitProgress = (globalProgress - end) / overlap
-            if (index === 3) {
-                // LAST STATE (Index 3): Stay Visible? No next section yet.
-                opacity = 1
-            } else {
-                // Standard Exit: Fade out, Blur in, Scale down
-                opacity = 1 - exitProgress
-                blur = exitProgress * 6
-                scale = 1 - (exitProgress * 0.03)
-            }
-        }
-        // 4. Out of bounds
-        else {
-            opacity = 0
         }
 
         const clampedOpacity = Math.max(0, Math.min(1, opacity))
@@ -169,8 +151,7 @@ export function ScrollExperience() {
             opacity: clampedOpacity,
             translateY,
             scale,
-            blur,
-            // Active section goes on top; inactive sections hidden completely
+            blur: 0, // No blur — GPU compositing only
             pointerEvents: (clampedOpacity > 0.5) ? 'auto' as const : 'none' as const,
             visibility: isActive ? 'visible' as const : 'hidden' as const,
             zIndex: isActive ? 100 - Math.round((1 - clampedOpacity) * 50) : 0
@@ -191,7 +172,7 @@ export function ScrollExperience() {
                     <div
                         key={i}
                         ref={(el) => { sectionRefs.current[i] = el }}
-                        className={`relative w-full h-auto md:absolute md:inset-0 md:h-full overflow-x-hidden md:overflow-visible ${i === 0 ? 'md:opacity-100' : 'md:opacity-0'}`}
+                        className={`relative w-full h-auto md:absolute md:inset-0 md:h-full overflow-x-hidden ${i === 0 ? 'md:opacity-100 md:overflow-hidden' : 'md:opacity-0 md:overflow-visible'}`}
                         style={{
                             pointerEvents: i === 0 ? 'auto' : 'none',
                             visibility: i === 0 ? 'visible' : 'hidden',

@@ -13,7 +13,8 @@ import {
     Image as ImageIcon,
     Video,
     Frame,
-    X
+    X,
+    Loader2
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -142,19 +143,19 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         let parameters: any = {};
 
         // ✅ Universally handle Image-to-Image / Image-to-Video
+        // CRITICAL FIX: Ensure we never send local 'blob:' URLs as remote image_url strings
         if (sourceFile) {
             parameters.sourceFile = sourceFile;
-        } else if (previewUrl) {
-            if (remixType === 'video' || previewUrl.includes('.mp4')) {
+        } else if (previewUrl && !previewUrl.startsWith('blob:')) {
+            // Only send previewUrl if it's a remote URL (already uploaded or from remix history)
+            if (remixType === 'video' || previewUrl.toLowerCase().includes('.mp4') || previewUrl.toLowerCase().includes('.webm')) {
                 parameters.video_url = previewUrl;
             } else {
-                if (selectedModel.id.includes('veo') || selectedModel.id.includes('kling-3.0')) {
-                    parameters.image_urls = [previewUrl];
-                } else {
-                    parameters.image_url = previewUrl;
-                }
+                parameters.image_url = previewUrl;
             }
         }
+        // Note: If previewUrl is a blob: and sourceFile is null, it means there's a state mismatch. 
+        // We gracefully ignore it here as onGenerate in page.tsx will handle error-reporting if no input exists.
 
         if (creationMode === "image") {
             parameters.n = imageCount;
@@ -163,7 +164,13 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 parameters.size = aspectRatio;
                 parameters.prompt = prompt;
             } else if (["gpt-4o-image", "gpt-image-1.5", "seedream-4.5", "seedream-5.0-lite"].includes(selectedModel.id)) {
-                parameters.size = aspectRatio;
+                let finalSize = aspectRatio;
+                if (selectedModel.id.startsWith("gpt-")) {
+                    if (aspectRatio === "16:9" || aspectRatio === "4:3") finalSize = "3:2";
+                    else if (aspectRatio === "9:16") finalSize = "2:3";
+                    else finalSize = "1:1";
+                }
+                parameters.size = finalSize;
                 parameters.prompt = prompt;
             } else if (["nano-banana-2", "nano-banana-2-new", "flux-2-pro"].includes(selectedModel.id)) {
                 parameters.size = aspectRatio;
@@ -175,6 +182,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             }
         }
         else if (creationMode === "remix") {
+            parameters.n = imageCount;
             parameters.prompt = prompt;
             parameters.image_weight = remixStrength / 100; // Map remix strength to standard image_weight for cross-compatibility
             if (["sora-2", "sora-2-pro", "kling-3.0/standard", "kling-2.6"].includes(selectedModel.id)) {
@@ -183,8 +191,14 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             } else if (selectedModel.id === "veo3.1-fast") {
                 parameters.aspect_ratio = aspectRatio;
             } else {
-                parameters.aspect_ratio = aspectRatio;
-                parameters.size = aspectRatio;
+                let finalSize = aspectRatio;
+                if (selectedModel.id.startsWith("gpt-")) {
+                    if (aspectRatio === "16:9" || aspectRatio === "4:3") finalSize = "3:2";
+                    else if (aspectRatio === "9:16") finalSize = "2:3";
+                    else finalSize = "1:1";
+                }
+                parameters.aspect_ratio = finalSize;
+                parameters.size = finalSize;
             }
         }
         else if (creationMode === "video") {
@@ -250,13 +264,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             ...parameters
         });
 
-        // 🚀 PERFECT RESET LOGIC: 
-        // We purge the file attachment from the UI instantly after firing the job payload.
-        // This ensures the user can immediately attach a NEW reference image for their NEXT job 
-        // without accidentally sending the old file again, matching handleResetComplete perfectly!
+        // 🚀 RESET LOGIC:
+        // Only clear the local File object so the *next* job doesn't accidentally re-send
+        // the same binary blob. We intentionally keep previewUrl visible so the user
+        // can see their reference image throughout the generation. 
         setSourceFile(null);
-        setPreviewUrl("");
-        setCreationId("");
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -264,7 +276,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
 
     // UI Conditionals
     const currentModelId = selectedModel.id;
-    const isMultiOutputImage = creationMode === "image";
+    const isMultiOutputImage = creationMode === "image" || creationMode === "remix";
     const isHighResImage = ["nano-banana-2", "nano-banana-2-new", "flux-2-pro", "seedance-1.0-pro", "seedance-1.5-pro", "wan-animate-replace", "wan2.6-text-to-video"].includes(currentModelId);
     const hasDuration = ["sora-2", "sora-2-pro", "kling-3.0/standard", "kling-2.6", "seedance-1.0-pro", "seedance-1.5-pro", "wan2.6-text-to-video", "hailuo-02"].includes(currentModelId);
     const showSoundToggle = ["kling-3.0/standard", "kling-2.6"].includes(currentModelId);
@@ -287,20 +299,18 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             <div className="flex-1 relative z-10 w-full min-h-0">
                 {/* Inner Wrapper for proper layout spacing with absolute inset to secure scroll boundaries */}
                 <div
-                    className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar overscroll-contain"
+                    className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar touch-pan-y pointer-events-auto"
                     data-lenis-prevent="true"
-                    onWheel={(e) => e.stopPropagation()}
-                    onTouchMove={(e) => e.stopPropagation()}
                 >
                     <div className="p-6 pb-12 flex flex-col gap-6 w-full">
 
                         {/* 1. CREATION MODE SWITCH */}
-                        <div className="flex p-1 bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/[0.05] shadow-[inset_0_1px_4px_rgba(255,255,255,0.02)] relative shrink-0">
+                        <div className="flex p-1.5 bg-black/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[inset_0_1px_4px_rgba(255,255,255,0.05)] relative shrink-0">
                             {/* Smooth Animated Highlight Pill */}
                             <div
-                                className="absolute top-1 bottom-1 bg-white/[0.08] border border-white/10 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.05)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] z-0"
+                                className="absolute top-1.5 bottom-1.5 left-1.5 bg-white/[0.08] border border-white/20 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.05)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] z-0"
                                 style={{
-                                    width: `calc((100% - 8px) / 4)`,
+                                    width: `calc((100% - 12px) / 4)`,
                                     transform: `translateX(calc(${['image', 'video', 'remix', 'templates'].indexOf(creationMode)} * 100%))`
                                 }}
                             />
@@ -309,8 +319,8 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     key={mode}
                                     onClick={() => handleModeSwitch(mode)}
                                     className={cn(
-                                        "flex-1 min-w-0 flex items-center justify-center py-2.5 text-[11px] font-semibold transition-colors duration-300 relative z-10",
-                                        creationMode === mode.toLowerCase() ? "text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" : "text-zinc-500 hover:text-zinc-300"
+                                        "flex-1 min-w-0 flex items-center justify-center py-2.5 text-[10px] font-black tracking-wider uppercase transition-all duration-300 relative z-10",
+                                        creationMode === mode.toLowerCase() ? "text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]" : "text-zinc-500 hover:text-zinc-300"
                                     )}
                                 >
                                     {mode}
@@ -326,24 +336,27 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 </label>
                                 <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen} modal={false}>
                                     <DropdownMenuTrigger asChild>
-                                        <div className="w-full h-[52px] px-4 bg-white/[0.02] rounded-[16px] border border-white/[0.05] hover:border-white/[0.12] hover:bg-white/[0.04] hover:shadow-[0_0_30px_rgba(255,255,255,0.02)] transition-all duration-300 cursor-pointer flex items-center justify-between group">
+                                        <div className="w-full h-[54px] px-4.5 bg-black/20 hover:bg-black/40 rounded-[18px] border border-white/5 hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.03)] transition-all duration-500 cursor-pointer flex items-center justify-between group overflow-hidden">
                                             <div className="flex flex-1 items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-7 h-7 rounded-[10px] bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-300">
-                                                        {creationMode === 'video' ? <Video className="w-3.5 h-3.5 text-zinc-300" /> : <Sparkles className="w-3.5 h-3.5 text-zinc-300" />}
+                                                <div className="flex items-center gap-3.5 min-w-0">
+                                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-white/[0.05] to-white/[0.12] border border-white/10 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-500 shrink-0">
+                                                        {creationMode === 'video' ? <Video className="w-4 h-4 text-white/80" /> : <Sparkles className="w-4 h-4 text-white/80" />}
                                                     </div>
-                                                    <span className="text-[13px] font-semibold text-zinc-300 tracking-wide group-hover:text-white transition-colors">{selectedModel.name}</span>
+                                                    <div className="flex flex-col gap-0 min-w-0">
+                                                        <span className="text-[12px] font-bold text-zinc-100 group-hover:text-white transition-colors uppercase tracking-wider truncate">{selectedModel.name}</span>
+                                                        <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Active Engine</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-4">
                                                     {selectedModel.cost !== undefined && (
-                                                        <div className="flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full bg-black/40 border border-white/5 group-hover:border-white/10 transition-all shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)]">
-                                                            <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-[0_0_10px_rgba(99,102,241,0.4)]">
-                                                                <Sparkles className="w-2 h-2 text-white fill-white" />
+                                                        <div className="flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full bg-black/60 border border-white/10 group-hover:border-indigo-500/20 transition-all shadow-inner">
+                                                            <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.5)]">
+                                                                <Sparkles className="w-2.5 h-2.5 text-white fill-white" />
                                                             </div>
-                                                            <span className="text-[11px] font-bold text-zinc-300 group-hover:text-white tabular-nums tracking-wide">{selectedModel.cost}</span>
+                                                            <span className="text-[11px] font-black text-indigo-100 group-hover:text-white tabular-nums tracking-wider">{selectedModel.cost * (isMultiOutputImage ? imageCount : 1)}</span>
                                                         </div>
                                                     )}
-                                                    <ChevronDown className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+                                                    <ChevronDown className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 transition-all group-hover:translate-y-0.5" />
                                                 </div>
                                             </div>
                                         </div>
@@ -371,7 +384,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                                     <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-sm">
                                                                         <Sparkles className="w-2.5 h-2.5 text-white fill-white" />
                                                                     </div>
-                                                                    <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white tabular-nums tracking-wide">{model.cost}</span>
+                                                                    <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white tabular-nums tracking-wide">{model.cost * (isMultiOutputImage ? imageCount : 1)}</span>
                                                                 </div>
                                                             )}
                                                             {model.isNew && <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border border-indigo-500/20">New</span>}
@@ -420,21 +433,43 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     <Textarea
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
-                                        placeholder="Describe your vision in detail..."
-                                        className="resize-none min-h-[140px] lg:min-h-[120px] bg-transparent border-none text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-0 px-5 py-5 text-[15px] lg:text-[14px] font-light leading-relaxed tracking-wide"
+                                        placeholder="Direct your artistic vision..."
+                                        className="resize-none min-h-[140px] lg:min-h-[130px] bg-transparent border-none text-white placeholder:text-zinc-700 focus-visible:ring-0 px-6 py-6 text-[15px] lg:text-[14px] font-medium leading-[1.6] tracking-wide"
                                     />
 
                                     {showImageUpload && previewUrl && (
-                                        <div className="px-5 pb-5 pt-2 animate-in fade-in zoom-in-95 duration-300">
-                                            <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10 group/preview shadow-[0_8px_20px_rgba(0,0,0,0.5)]">
-                                                {(sourceFile?.type.startsWith('video/') || (previewUrl.includes('.mp4') && !sourceFile)) ? (
-                                                    <video src={previewUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
-                                                ) : (
-                                                    <img src={previewUrl} alt="Source Media" className="object-cover w-full h-full" />
-                                                )}
-                                                <button onClick={() => { setPreviewUrl(""); setSourceFile(null); setCreationId(""); }} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity backdrop-blur-sm">
-                                                    <X className="w-5 h-5 text-white drop-shadow-md hover:text-red-400 transition-colors" strokeWidth={2.5} />
-                                                </button>
+                                        <div className="px-5 pb-5 pt-2 animate-in fade-in zoom-in-95 duration-500">
+                                            <div className="relative group/preview shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
+                                                <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl transform transition-transform group-hover/preview:scale-105 active:scale-95 duration-500 bg-black">
+                                                    {(sourceFile?.type.startsWith('video/') || (previewUrl.includes('.mp4') && !sourceFile)) ? (
+                                                        <video src={previewUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <img src={previewUrl} alt="Source Media" className="object-cover w-full h-full" />
+                                                    )}
+                                                    
+                                                    {/* Auto-refresh indicator overlay when new file is added */}
+                                                    {sourceFile && (
+                                                        <div className="absolute inset-0 bg-indigo-500/20 backdrop-blur-[2px] flex items-center justify-center animate-pulse">
+                                                            <Sparkles className="w-5 h-5 text-white" />
+                                                        </div>
+                                                    )}
+
+                                                    <button 
+                                                        onClick={(e) => { 
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setPreviewUrl(""); 
+                                                            setSourceFile(null); 
+                                                            setCreationId(""); 
+                                                        }} 
+                                                        className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity backdrop-blur-sm"
+                                                    >
+                                                        <span className="bg-red-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg shadow-lg">Remove</span>
+                                                    </button>
+                                                </div>
+                                                <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-1.5 rounded-full shadow-lg border border-white/20 z-10">
+                                                    <Wand2 className="w-3 h-3" />
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -506,11 +541,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 </label>
                                 <div className="flex flex-col gap-2">
                                     {isMultiOutputImage && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[16px] p-3 shadow-inner hover:bg-white/[0.03] transition-colors">
-                                            <span className="text-[11px] font-semibold text-zinc-400">Image Count</span>
-                                            <div className="flex gap-1.5">
-                                                {[1, 2, 4].map(n => (
-                                                    <button key={n} onClick={() => setImageCount(n)} className={cn("px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all border", imageCount === n ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
+                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Image Count</span>
+                                            <div className="flex gap-2">
+                                                {[1, 2, 3, 4].map(n => (
+                                                    <button key={n} onClick={() => setImageCount(n)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", imageCount === n ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
                                                         {n}
                                                     </button>
                                                 ))}
@@ -519,11 +554,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {isHighResImage && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[16px] p-3 shadow-inner hover:bg-white/[0.03] transition-colors">
-                                            <span className="text-[11px] font-semibold text-zinc-400">Resolution</span>
-                                            <div className="flex gap-1.5">
+                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Resolution</span>
+                                            <div className="flex gap-2">
                                                 {["1K", "2K", "4K"].map(r => (
-                                                    <button key={r} onClick={() => setResolution(r)} className={cn("px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all border", resolution === r ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
+                                                    <button key={r} onClick={() => setResolution(r)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", resolution === r ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
                                                         {r}
                                                     </button>
                                                 ))}
@@ -545,46 +580,61 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {showSoundToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[16px] p-4 cursor-pointer hover:bg-white/[0.04] transition-all shadow-inner" onClick={() => setSoundEnabled(!soundEnabled)}>
-                                            <span className="text-[11px] font-semibold text-zinc-300">Generate Sound</span>
-                                            <div className={cn("w-8 h-4.5 rounded-full transition-colors relative shadow-inner", soundEnabled ? "bg-indigo-500" : "bg-black/50 border border-white/[0.05]")}>
-                                                <div className={cn("absolute top-[2px] w-3.5 h-3.5 rounded-full bg-white transition-all shadow-sm", soundEnabled ? "left-[16px]" : "left-[2px]")} />
+                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setSoundEnabled(!soundEnabled)}>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Audio Synthesis</span>
+                                                <span className="text-[9px] text-zinc-600 font-medium">Generate matching soundscape</span>
+                                            </div>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", soundEnabled ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                                <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", soundEnabled ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showMultiShotsToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[16px] p-4 cursor-pointer hover:bg-white/[0.04] transition-all shadow-inner" onClick={() => setMultiShots(!multiShots)}>
-                                            <span className="text-[11px] font-semibold text-zinc-300">Multi-Shots</span>
-                                            <div className={cn("w-8 h-4.5 rounded-full transition-colors relative shadow-inner", multiShots ? "bg-indigo-500" : "bg-black/50 border border-white/[0.05]")}>
-                                                <div className={cn("absolute top-[2px] w-3.5 h-3.5 rounded-full bg-white transition-all shadow-sm", multiShots ? "left-[16px]" : "left-[2px]")} />
+                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setMultiShots(!multiShots)}>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Multi-Shots</span>
+                                                <span className="text-[9px] text-zinc-600 font-medium">Dynamic camera cuts & shifts</span>
+                                            </div>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", multiShots ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                                <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", multiShots ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showFixedLensToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[16px] p-4 cursor-pointer hover:bg-white/[0.04] transition-all shadow-inner" onClick={() => setFixedLens(!fixedLens)}>
-                                            <span className="text-[11px] font-semibold text-zinc-300">Fixed Lens</span>
-                                            <div className={cn("w-8 h-4.5 rounded-full transition-colors relative shadow-inner", fixedLens ? "bg-indigo-500" : "bg-black/50 border border-white/[0.05]")}>
-                                                <div className={cn("absolute top-[2px] w-3.5 h-3.5 rounded-full bg-white transition-all shadow-sm", fixedLens ? "left-[16px]" : "left-[2px]")} />
+                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setFixedLens(!fixedLens)}>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Fixed Lens</span>
+                                                <span className="text-[9px] text-zinc-600 font-medium">Maintain consistent focal length</span>
+                                            </div>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", fixedLens ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                                <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", fixedLens ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showGenAudioToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[16px] p-4 cursor-pointer hover:bg-white/[0.04] transition-all shadow-inner" onClick={() => setGenerateAudio(!generateAudio)}>
-                                            <span className="text-[11px] font-semibold text-zinc-300">Audio Synthesis</span>
-                                            <div className={cn("w-8 h-4.5 rounded-full transition-colors relative shadow-inner", generateAudio ? "bg-indigo-500" : "bg-black/50 border border-white/[0.05]")}>
-                                                <div className={cn("absolute top-[2px] w-3.5 h-3.5 rounded-full bg-white transition-all shadow-sm", generateAudio ? "left-[16px]" : "left-[2px]")} />
+                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setGenerateAudio(!generateAudio)}>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Audio Synthesis</span>
+                                                <span className="text-[9px] text-zinc-600 font-medium">AI generated foley & sound</span>
+                                            </div>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", generateAudio ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                                <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", generateAudio ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showPromptOptimizerToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[16px] p-4 cursor-pointer hover:bg-white/[0.04] transition-all shadow-inner" onClick={() => setPromptOptimizer(!promptOptimizer)}>
-                                            <span className="text-[11px] font-semibold text-zinc-300">Prompt Optimizer</span>
-                                            <div className={cn("w-8 h-4.5 rounded-full transition-colors relative shadow-inner", promptOptimizer ? "bg-indigo-500" : "bg-black/50 border border-white/[0.05]")}>
-                                                <div className={cn("absolute top-[2px] w-3.5 h-3.5 rounded-full bg-white transition-all shadow-sm", promptOptimizer ? "left-[16px]" : "left-[2px]")} />
+                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setPromptOptimizer(!promptOptimizer)}>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Prompt Optimizer</span>
+                                                <span className="text-[9px] text-zinc-600 font-medium">Auto-enhance vision description</span>
+                                            </div>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", promptOptimizer ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                                <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", promptOptimizer ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
@@ -596,41 +646,44 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 </div>
             </div>
 
-            {/* Sticky Action Footer */}
-            <div className="flex-none p-6 pt-2 bg-gradient-to-t from-black/80 to-transparent backdrop-blur-md z-30 flex gap-3">
+            {/* Sticky Action Footer - CINEMATIC ACTION */}
+            <div className="flex-none p-6 pt-2 bg-gradient-to-t from-black/90 via-black/40 to-transparent backdrop-blur-3xl z-30 flex gap-3">
                 {isGenerating && onCancel && (
                     <Button
                         onClick={onCancel}
                         variant="destructive"
-                        className="w-14 h-[56px] rounded-2xl flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 shadow-none transition-all duration-300"
+                        className="w-14 h-[58px] rounded-[22px] flex items-center justify-center bg-red-500/5 hover:bg-red-500/15 text-red-500 border border-red-500/15 shadow-none transition-all duration-300 active:scale-95"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-5.5 h-5.5" />
                     </Button>
                 )}
                 <Button
                     onClick={handleGenerate}
                     disabled={isGenerating || !prompt}
                     className={cn(
-                        "flex-1 h-[56px] rounded-2xl text-[14px] font-semibold tracking-[0.15em] uppercase transition-all duration-500 group relative overflow-hidden",
+                        "flex-1 h-[58px] rounded-[22px] text-[13px] font-black tracking-[0.2em] uppercase transition-all duration-500 group relative overflow-hidden",
                         isGenerating || !prompt
-                            ? "bg-white/[0.03] text-zinc-600 cursor-not-allowed shadow-none border border-white/[0.05]"
-                            : "bg-white hover:bg-zinc-100 text-black border-none shadow-[0_0_40px_rgba(255,255,255,0.15)] hover:shadow-[0_0_60px_rgba(255,255,255,0.25)] hover:scale-[1.01] active:scale-[0.99]"
+                            ? "bg-white/[0.04] text-zinc-600 cursor-not-allowed shadow-none border border-white/[0.05]"
+                            : "bg-white hover:bg-zinc-100 text-black border-none shadow-[0_20px_40px_rgba(255,255,255,0.12)] hover:shadow-[0_25px_50px_rgba(255,255,255,0.2)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                     )}
                 >
                     {isGenerating ? (
-                        <span className="flex items-center gap-2 animate-pulse text-zinc-500">
-                            <span className="text-[11px] uppercase font-bold tracking-widest text-[#8B5CF6] px-3 py-1 rounded-full">Processing</span>
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 rounded-full border border-indigo-500/20 animate-pulse">
+                                <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Synthesis</span>
+                            </div>
+                        </div>
                     ) : (
-                        <span className="flex items-center justify-center gap-2 relative z-10 transition-transform duration-300">
-                            <Sparkles className={cn("w-4 h-4 transition-transform duration-500 group-hover:rotate-12", isGenerating || !prompt ? "opacity-50" : "text-black")} />
-                            Generate
+                        <span className="flex items-center justify-center gap-2.5 relative z-10">
+                            <Sparkles className={cn("w-4 h-4 transition-all duration-700 group-hover:rotate-12 group-hover:scale-110", isGenerating || !prompt ? "opacity-50" : "text-black")} />
+                            <span className="relative top-[0.5px]">Generate</span>
                             {selectedModel.cost !== undefined && (
-                                <div className="flex items-center gap-1.5 ml-2 pl-2 pr-3 py-1 rounded-full bg-black/10 border border-black/10 shadow-inner group-hover:bg-black/15 transition-colors">
+                                <div className="flex items-center gap-1.5 ml-1.5 pl-2 pr-3 py-1.5 rounded-full bg-black/[0.08] border border-black/5 shadow-inner group-hover:bg-black/[0.12] transition-colors">
                                     <div className="w-3 h-3 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-sm">
                                         <Sparkles className="w-2 h-2 text-white fill-white" />
                                     </div>
-                                    <span className="text-[11px] font-bold text-black tabular-nums tracking-widest">{selectedModel.cost}</span>
+                                    <span className="text-[11px] font-black text-black tabular-nums tracking-widest">{selectedModel.cost * (isMultiOutputImage ? imageCount : 1)}</span>
                                 </div>
                             )}
                         </span>

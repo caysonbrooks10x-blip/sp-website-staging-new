@@ -138,23 +138,23 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Backdrop */}
+                    {/* Backdrop — z-[200] to sit above ALL page content including studio panels */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
+                        className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm"
                     />
 
-                    {/* Modal */}
+                    {/* Modal — z-[201] to sit above backdrop */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed left-1/2 top-1/2 z-50 w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 p-4"
+                        className="fixed inset-0 z-[201] flex items-end sm:items-center justify-center p-0 sm:p-4"
                     >
-                        <div className="relative overflow-hidden rounded-3xl shadow-2xl group max-h-[90vh] overflow-y-auto">
+                        <div className="relative overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl group w-full sm:max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto bg-[#0a0a0c]">
                             {/* Background Image with Parallax-like fixity (or just cover) */}
                             <div className="absolute inset-0 z-0">
                                 <img src={`${ASSET_BASE}/community_card.jpeg`} alt="bg" className="w-full h-full object-cover opacity-60" />
@@ -162,12 +162,12 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
                             </div>
 
-                            <div className="relative z-10 flex flex-col md:flex-row min-h-[500px] md:h-[600px]">
+                            <div className="relative z-10 flex flex-col md:flex-row min-h-0 md:h-[600px]">
                                 {/* Left: Preview / Upload Area - Glassy & Featured */}
                                 <div
                                     className={cn(
-                                        "relative w-full md:w-[55%] flex flex-col items-center justify-center p-8 transition-all border-b md:border-b-0 md:border-r border-white/10 bg-white/[0.02]",
-                                        !preview && "hover:bg-white/[0.05] cursor-pointer group/upload"
+                                        "relative w-full md:w-[55%] flex flex-col items-center justify-center p-6 sm:p-8 transition-all border-b md:border-b-0 md:border-r border-white/10 bg-white/[0.02]",
+                                        !preview ? "min-h-[200px] sm:min-h-[280px] hover:bg-white/[0.05] cursor-pointer group/upload" : "min-h-[240px] sm:min-h-[320px]"
                                     )}
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={handleDrop}
@@ -185,7 +185,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                         <motion.div
                                             initial={{ opacity: 0, scale: 0.9 }}
                                             animate={{ opacity: 1, scale: 1 }}
-                                            className="relative h-full w-full overflow-hidden rounded-xl shadow-2xl border border-white/10"
+                                            className="relative h-full w-full overflow-hidden rounded-xl shadow-2xl border border-white/10 min-h-[200px] sm:min-h-[280px]"
                                         >
                                             {((file?.type.startsWith('video')) || (!file && initialData?.type === "video")) ? (
                                                 <video src={preview} className="h-full w-full object-cover" controls autoPlay loop muted />
@@ -207,16 +207,16 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                             </Button>
                                         </motion.div>
                                     ) : (
-                                        <div className="flex flex-col items-center gap-6 text-center">
+                                        <div className="flex flex-col items-center gap-4 sm:gap-6 text-center">
                                             <div className="relative group-hover/upload:scale-110 transition-transform duration-500">
                                                 <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full" />
-                                                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-xl">
-                                                    <Upload className="h-8 w-8 text-white/80" />
+                                                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-xl">
+                                                    <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white/80" />
                                                 </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <h3 className="text-xl font-light text-white tracking-tight">Upload Creation</h3>
-                                                <p className="text-xs text-zinc-400 max-w-[200px] leading-relaxed mx-auto">
+                                            <div className="space-y-1.5 sm:space-y-2">
+                                                <h3 className="text-lg sm:text-xl font-light text-white tracking-tight">Upload Creation</h3>
+                                                <p className="text-[11px] sm:text-xs text-zinc-400 max-w-[200px] leading-relaxed mx-auto">
                                                     Drag & drop or click to browse. Supports high-res IMG & Video.
                                                 </p>
                                             </div>
@@ -225,30 +225,30 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                 </div>
 
                                 {/* Right: Metadata Form - Clean & Minimal */}
-                                <div className="flex-1 flex flex-col p-8 md:p-10 relative">
+                                <div className="flex-1 flex flex-col p-6 sm:p-8 md:p-10 relative">
                                     {/* Close Button Absolute */}
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         onClick={onClose}
-                                        className="absolute right-6 top-6 h-8 w-8 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors z-20"
+                                        className="absolute right-4 top-4 sm:right-6 sm:top-6 h-8 w-8 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors z-20"
                                     >
                                         <X className="h-4 w-4" />
                                     </Button>
 
-                                    <div className="mb-8">
-                                        <h2 className="text-2xl font-light text-white mb-1">Details</h2>
-                                        <p className="text-xs text-zinc-500 uppercase tracking-widest">Metadata & Settings</p>
+                                    <div className="mb-5 sm:mb-8 pr-10">
+                                        <h2 className="text-xl sm:text-2xl font-light text-white mb-1">Details</h2>
+                                        <p className="text-[10px] sm:text-xs text-zinc-500 uppercase tracking-widest">Metadata & Settings</p>
                                     </div>
 
-                                    <div className="flex-1 space-y-8">
+                                    <div className="flex-1 space-y-5 sm:space-y-8">
                                         {/* Seamless Title Input */}
                                         <div className="group/input">
                                             <input
                                                 placeholder="Give it a title..."
                                                 value={title}
                                                 onChange={(e) => setTitle(e.target.value)}
-                                                className="w-full bg-transparent border-none text-2xl font-light text-white placeholder:text-white/20 focus:outline-none focus:ring-0 px-0 py-2 border-b border-white/10 focus:border-white/50 transition-all"
+                                                className="w-full bg-transparent border-none text-xl sm:text-2xl font-light text-white placeholder:text-white/20 focus:outline-none focus:ring-0 px-0 py-2 border-b border-white/10 focus:border-white/50 transition-all"
                                             />
                                         </div>
 
@@ -258,14 +258,14 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                                 placeholder="What's the story behind this?"
                                                 value={description}
                                                 onChange={(e) => setDescription(e.target.value)}
-                                                className="w-full bg-transparent border-none text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-0 px-0 py-2 resize-none h-24 border-b border-white/10 focus:border-white/50 transition-all leading-relaxed"
+                                                className="w-full bg-transparent border-none text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-0 px-0 py-2 resize-none h-20 sm:h-24 border-b border-white/10 focus:border-white/50 transition-all leading-relaxed"
                                             />
                                         </div>
 
                                         {/* Toggles - Elegant Row */}
-                                        <div className="space-y-5">
+                                        <div className="space-y-4 sm:space-y-5">
                                             <div className="flex items-center justify-between group/toggle cursor-pointer" onClick={() => setIsPublic(!isPublic)}>
-                                                <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-3 sm:gap-4">
                                                     <div className={`p-2 rounded-lg transition-colors ${isPublic ? 'bg-blue-500/10' : 'bg-white/5'}`}>
                                                         {isPublic ? <Globe className="h-4 w-4 text-blue-400" /> : <Lock className="h-4 w-4 text-zinc-400" />}
                                                     </div>
@@ -278,7 +278,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                             </div>
 
                                             <div className="flex items-center justify-between group/toggle cursor-pointer" onClick={() => setAllowRemix(!allowRemix)}>
-                                                <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-3 sm:gap-4">
                                                     <div className={`p-2 rounded-lg transition-colors ${allowRemix ? 'bg-purple-500/10' : 'bg-white/5'}`}>
                                                         <Film className="h-4 w-4 text-purple-400" />
                                                     </div>
@@ -293,15 +293,15 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                     </div>
 
                                     {/* Footer Actions */}
-                                    <div className="mt-8 flex items-center justify-end gap-4 pt-6 border-t border-white/5">
-                                        <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-white hover:bg-white/5">
+                                    <div className="mt-6 sm:mt-8 flex items-center justify-end gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-white/5">
+                                        <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-white hover:bg-white/5 h-10 sm:h-auto">
                                             Cancel
                                         </Button>
                                         <Button
                                             onClick={handlePublish}
                                             disabled={(!file && !initialData) || isUploading}
                                             className={cn(
-                                                "min-w-[140px] h-11 rounded-xl font-medium transition-all shadow-lg",
+                                                "min-w-[120px] sm:min-w-[140px] h-10 sm:h-11 rounded-xl font-medium transition-all shadow-lg text-sm",
                                                 (!file && !initialData) ? "bg-white/10 text-zinc-500" : "bg-white text-black hover:bg-zinc-200 hover:scale-105 shadow-white/10"
                                             )}
                                         >
