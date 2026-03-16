@@ -115,8 +115,8 @@ function StudioLayout() {
     const ctx = gsap.context(() => {
       gsap.fromTo(
         ".studio-panel",
-        { y: 30, opacity: 0, filter: "blur(10px)" },
-        { y: 0, opacity: 1, filter: "blur(0px)", duration: 1, stagger: 0.1, ease: "power3.out", clearProps: "filter" }
+        { y: 40, opacity: 0, scale: 0.98, filter: "blur(15px)" },
+        { y: 0, opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.2, stagger: 0.1, ease: "expo.out", clearProps: "filter,scale" }
       );
     });
     return () => ctx.revert();
@@ -177,30 +177,30 @@ function StudioLayout() {
         model: usedModel,
         parameters: {
           ...dynamicParameters,
-          n: count // Backend natively processes this now!
+          n: Number(count), 
+          num_outputs: Number(count) 
         }
       });
 
       const jobId = (result.data as any).jobId;
-      console.log(`Job queued! Initiating Poller for ID:`, jobId);
-      toast.success(`Generation task queued successfully!`, { id: 'gen-toast' });
+      console.log(`Job queued! ID:`, jobId);
+      toast.success(`Task queued! Rendering ${count} results...`, { id: 'gen-toast' });
 
-      // Since we only have ONE result now, update your generation items:
       const newItem: GenerationItem = {
         id: jobId,
         type: settings.mode === 'video' ? 'video' : 'image',
         prompt: prompt,
         status: "queued" as const,
-        settings: settings
+        settings: {
+            ...settings,
+            n: count,
+            // AUTO-REFRESH FIX: Update previewUrl to the remote URL so future requests are valid
+            previewUrl: dynamicParameters.image_url || settings.previewUrl 
+        }
       };
 
-      // Set the first item as the currently active generation
       setActiveGeneration(newItem);
-
-      // Add all new items to the history list
       setGenerations((prev: GenerationItem[]) => [newItem, ...prev]);
-
-      // Start poller for every job independently
       startJobPoller(jobId, newItem);
 
     } catch (error: any) {
@@ -237,28 +237,50 @@ function StudioLayout() {
         const data = result.data as any;
 
         if (data.status === "completed") {
-          console.log("Finished Rendering!", data.outputUrl);
+          console.log("Finished Rendering!", data);
 
-          if (data.outputUrls && Array.isArray(data.outputUrls) && data.outputUrls.length > 1) {
-            // Multiple images generated!
-            const completedItems = data.outputUrls.map((url: string, index: number) => ({
+          // Standardize multi-output detection (handles outputUrls, output_urls, results, etc.)
+          const rawUrls = data.outputUrls || data.output_urls || data.images || data.urls || data.result_urls || (Array.isArray(data.outputUrl) ? data.outputUrl : null);
+          const urls = Array.isArray(rawUrls) ? rawUrls.filter(u => !!u) : [];
+          
+          if (urls.length > 1) {
+            // Multiple images detected!
+            const completedItems = urls.map((url: string, index: number) => ({
               ...item,
               id: index === 0 ? jobId : `${jobId}_${index}`,
-              creationId: data.creationIds?.[index] || data.creationId,
+              creationId: (data.creationIds || data.creation_ids)?.[index] || data.creationId,
               status: "completed" as const,
-              src: url
+              src: url,
+              srcs: undefined // Individual items don't have srcs
             }));
 
-            // Set active as the first one
-            setActiveGeneration(completedItems[0]);
+            // Create the collage/batch item for the active view
+            const batchItem: GenerationItem = {
+              ...item,
+              id: jobId,
+              status: "completed" as const,
+              src: urls[0], // Fallback for components that don't support multi-view
+              srcs: urls,
+              creationIds: data.creationIds || data.creation_ids || Array(urls.length).fill(data.creationId)
+            };
 
-            // Replace the generating item in the list with ALL of the completed items!
+            setActiveGeneration(batchItem);
+
+            // History tracking: Keep them as individual items for granular control
             setGenerations((prev: GenerationItem[]) => {
               const cleaned = prev.filter(g => g.id !== jobId);
               return [...completedItems, ...cleaned];
             });
           } else {
-            const completedItem: GenerationItem = { ...item, status: "completed" as const, src: data.outputUrl, creationId: data.creationId };
+            // Single image result
+            const finalUrl = urls[0] || data.outputUrl;
+            const completedItem: GenerationItem = { 
+                ...item, 
+                status: "completed" as const, 
+                src: finalUrl, 
+                srcs: undefined,
+                creationId: data.creationId 
+            };
             setActiveGeneration(completedItem);
             setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? completedItem : g));
           }
@@ -270,14 +292,24 @@ function StudioLayout() {
           setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? failedItem : g));
           setIsGenerating(false);
         } else {
-          console.log("Still processing, polling again in 3 seconds...");
-          setActiveGeneration((prev: GenerationItem | null) => prev ? { ...prev, status: "generating" } : null);
-          setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? { ...g, status: "generating" } : g));
-          setTimeout(checkStatus, 3000); // Poll strictly every 3 seconds to avoid rate limits
+          console.log("Still processing, polling again in 1.5 seconds...");
+          
+          // Capture batch progress if available
+          const progress = data.progress || 0;
+          const completedCount = data.completedCount || 0;
+          const totalCount = data.totalCount || item.settings?.n || 1;
+
+          setActiveGeneration((prev: GenerationItem | null) => 
+            prev ? { ...prev, status: "generating", progress, completedCount, totalCount } : null
+          );
+          setGenerations((prev: GenerationItem[]) => 
+            prev.map(g => g.id === jobId ? { ...g, status: "generating", progress, completedCount, totalCount } : g)
+          );
+          setTimeout(checkStatus, 1500); // Polling faster for better user experience
         }
       } catch (error) {
         console.error("Polling error:", error);
-        setTimeout(checkStatus, 3000);
+        setTimeout(checkStatus, 2000);
       }
     };
     checkStatus();
@@ -390,19 +422,27 @@ function StudioLayout() {
         </div>
       )}
 
-      {/* Background Lighting & Image Layer */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-black/80" />
+      {/* Background Lighting & Image Layer - CINEMATIC DEPTH */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[#020203]" />
+        
+        {/* Primary Ambient Image with subtle Infinite Float */}
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60 transition-all duration-[20s] ease-linear scale-105"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.45] mix-blend-screen scale-110 blur-[1px] animate-pulse duration-[8000ms]"
           style={{ backgroundImage: `url('${ASSET_BASE}/studio/studio3.jpeg')` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1)_0%,rgba(0,0,0,0.3)_100%)] backdrop-blur-[6px]" />
+
+        {/* Dynamic Light Pools */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08)_0%,transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(6,182,212,0.05)_0%,transparent_40%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(236,72,153,0.05)_0%,transparent_40%)]" />
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-[#050505]/80" />
+        <div className="absolute inset-0 backdrop-blur-[100px]" />
       </div>
 
-      {/* Main Layout Container */}
-      <div className="relative z-10 flex flex-col lg:flex-row w-full h-full lg:h-[calc(100vh-24px)] pt-[72px] lg:pt-[104px] px-0 lg:px-6 gap-0 lg:gap-6 max-w-[2000px] mx-auto overflow-hidden">
+      {/* Main Layout Container - SCROLL FIX: Use dynamic viewport height (dvh) for mobile stability */}
+      <div className="relative z-10 flex flex-col lg:flex-row w-full h-[100dvh] lg:h-[calc(100vh-24px)] pt-[72px] lg:pt-[104px] px-0 lg:px-6 gap-0 lg:gap-6 max-w-[2000px] mx-auto overflow-hidden">
 
         {/* Perfect Mobile Workspace (No sticky header overlap) */}
         <div className="lg:hidden h-2" />
@@ -410,7 +450,7 @@ function StudioLayout() {
         {/* Left Panel - Tool Control (Now a slide-over on mobile) */}
         <div
           className={cn(
-            "fixed inset-y-0 left-0 w-[90%] max-w-[380px] lg:relative lg:inset-auto lg:w-[340px] lg:shrink-0 h-[100dvh] lg:h-[calc(100vh-130px)] flex flex-col z-[100] lg:z-20 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] bg-[#050505]/95 lg:bg-transparent backdrop-blur-3xl shadow-[30px_0_60px_rgba(0,0,0,0.8)] lg:shadow-none p-4 pb-6 lg:p-0 border-r border-white/5 lg:border-none",
+            "fixed inset-y-0 left-0 w-[90%] max-w-[380px] lg:relative lg:inset-auto lg:w-[340px] lg:shrink-0 h-[100dvh] lg:h-full flex flex-col z-[100] lg:z-20 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] bg-[#050505]/95 lg:bg-transparent backdrop-blur-3xl shadow-[30px_0_60px_rgba(0,0,0,0.8)] lg:shadow-none p-4 pb-6 lg:p-0 border-r border-white/5 lg:border-none",
             mobilePanelOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           )}
         >
@@ -427,7 +467,7 @@ function StudioLayout() {
             </Button>
           </div>
 
-          <div className="studio-panel flex-1 flex flex-col min-h-0 w-full relative pb-safe">
+          <div className="studio-panel flex-1 flex flex-col min-h-0 w-full relative">
             <StudioLeftPanel
               onGenerate={(prompt, settings) => {
                 handleGenerate(prompt, settings);
@@ -452,7 +492,7 @@ function StudioLayout() {
         />
 
         {/* Center Panel - Creation Canvas (Hero Content) */}
-        <div className="studio-panel flex-1 h-full min-w-0 flex flex-col relative z-10 pb-0 lg:pb-0">
+        <div className="flex-1 h-full min-w-0 flex flex-col relative z-10">
           <StudioCenterCanvas
             activeGeneration={activeGeneration}
             mode={mode}

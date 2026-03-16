@@ -1,10 +1,12 @@
 "use client"
 
 import { useRef, useLayoutEffect, useEffect, useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Play, Plus, Workflow, SlidersHorizontal, MessageCircle, History, LayoutGrid } from "lucide-react"
+import { ArrowRight, Play, Plus, Workflow, SlidersHorizontal, MessageCircle, History, LayoutGrid, RotateCcw } from "lucide-react"
 import { ASSET_BASE } from "@/lib/assets"
 import { gsap } from "gsap"
+import { BrandScroll } from "@/components/brand-scroll"
 
 interface HeroStateProps {
     register: (cb: (progress: number, index: number) => void) => () => void
@@ -27,7 +29,7 @@ export function HeroState({ register }: HeroStateProps) {
     const canvasInnerRef = useRef<HTMLDivElement>(null)
     const dotCanvasRef = useRef<HTMLCanvasElement>(null)
     const shimmerCanvasRef = useRef<HTMLCanvasElement>(null)
-    const hintRef = useRef<HTMLDivElement>(null)
+    const videoRef = useRef<HTMLVideoElement>(null)
 
     // Card refs for pixel-accurate wire tracking
     const cardRefs = useRef<Record<string, HTMLDivElement | null>>({
@@ -94,6 +96,52 @@ export function HeroState({ register }: HeroStateProps) {
         window.addEventListener('pointerup', handleUp)
         return () => { window.removeEventListener('pointermove', handleMove); window.removeEventListener('pointerup', handleUp) }
     }, [dragging])
+
+    const resetCards = useCallback(() => {
+        const isMobile = window.innerWidth < 768;
+        const targets = isMobile ? {
+            reference: { x: -8, y: 30 },
+            imageGen: { x: 38, y: 2 },
+            videoGen: { x: 38, y: 56 },
+            prompt: { x: 58, y: 34 },
+        } : {
+            reference: { x: 2.3, y: 14.8 },
+            imageGen: { x: 38.3, y: 2.5 },
+            videoGen: { x: 30.5, y: 46.0 },
+            prompt: { x: 68.5, y: 37.0 },
+        };
+
+        // Animate all cards back to initial positions
+        Object.entries(cardRefs.current).forEach(([id, el]) => {
+            if (!el) return;
+            const target = targets[id as keyof typeof targets];
+            if (!target) return;
+
+            gsap.to(el, {
+                left: `${target.x}%`,
+                top: `${target.y}%`,
+                duration: 1.2,
+                ease: "elastic.out(1, 0.8)",
+                onUpdate: () => setWireUpdate(v => v + 1),
+                onComplete: () => {
+                    // Update state to formalize the reset
+                    setPositions(targets);
+                }
+            });
+        });
+
+        // Spin the refresh icon
+        const refreshIcon = document.getElementById('hero-refresh-icon');
+        if (refreshIcon) {
+            gsap.fromTo(refreshIcon, { rotate: 0 }, { rotate: 360, duration: 0.8, ease: "power2.inOut" });
+        }
+
+        // Restart video
+        if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.play();
+        }
+    }, []);
 
     // --- Get card edge lateral centers for perfect wire attachment ---
     const getCardEdge = useCallback((fromId: string, toId: string): { x1: number; y1: number; x2: number; y2: number } | null => {
@@ -231,25 +279,35 @@ export function HeroState({ register }: HeroStateProps) {
         return () => ctx.revert()
     }, [])
 
-    // Hint pulsing
-    useEffect(() => {
-        if (!hintRef.current) return
-        gsap.fromTo(hintRef.current, { opacity: 0 }, { opacity: 0.5, duration: 1, delay: 2, ease: "power2.out" })
-    }, [])
 
-    // Scroll exit
+    // Internal scroll: lets user see full hero content before transition
     useEffect(() => {
         const unregister = register((globalProgress) => {
             if (!contentRef.current) return
             const TOTAL = 4
             const slice = 1 / TOTAL
-            if (globalProgress < slice) gsap.set(contentRef.current, { y: globalProgress * 500 })
-            const exitStart = slice * 0.6
-            if (globalProgress > exitStart) {
-                const p = Math.min(1, (globalProgress - exitStart) / (slice - exitStart))
-                gsap.set(contentRef.current, { opacity: 1 - p, scale: 1 - 0.05 * p, filter: `blur(${p * 10}px)` })
+            const heroProgress = Math.min(1, globalProgress / slice)
+
+            const SCROLL_PHASE = 0.7
+            const MAX_SCROLL = 400
+
+            if (heroProgress <= SCROLL_PHASE) {
+                const scrollP = heroProgress / SCROLL_PHASE
+                gsap.set(contentRef.current, { 
+                    y: -(scrollP * MAX_SCROLL),
+                    opacity: 1, 
+                    scale: 1,
+                    force3D: true,
+                })
             } else {
-                gsap.set(contentRef.current, { opacity: 1, scale: 1, filter: "blur(0px)" })
+                const exitP = (heroProgress - SCROLL_PHASE) / (1 - SCROLL_PHASE)
+                const eased = exitP * exitP // quadratic ease for smooth exit
+                gsap.set(contentRef.current, { 
+                    y: -(MAX_SCROLL + eased * 80),
+                    opacity: 1 - eased, 
+                    scale: 1 - 0.02 * eased,
+                    force3D: true,
+                })
             }
         })
         return () => unregister?.()
@@ -482,23 +540,24 @@ export function HeroState({ register }: HeroStateProps) {
 
                     {/* Left Sidebar Toolbar */}
                     <div
-                        className="absolute left-0 top-0 bottom-0 z-30 flex flex-col items-center py-4 gap-1"
+                        className="absolute left-0 top-0 bottom-0 z-30 flex flex-col items-center py-4 px-1.5 gap-2"
                         style={{
-                            width: '48px',
-                            background: 'rgba(14,14,14,0.95)',
-                            borderRight: '1px solid rgba(255,255,255,0.08)',
+                            width: '52px',
+                            background: 'rgba(12, 12, 12, 0.85)',
+                            backdropFilter: 'blur(12px)',
+                            borderRight: '1px solid rgba(255,255,255,0.05)',
                         }}
                     >
-                        <SidebarBtn icon={<Plus className="w-4 h-4" />} active />
-                        <SidebarBtn icon={<Workflow className="w-3.5 h-3.5" />} />
-                        <SidebarBtn icon={<SlidersHorizontal className="w-3.5 h-3.5" />} />
-                        <SidebarBtn icon={<MessageCircle className="w-3.5 h-3.5" />} />
-                        <SidebarBtn icon={<History className="w-3.5 h-3.5" />} />
-                        <SidebarBtn icon={<LayoutGrid className="w-3.5 h-3.5" />} />
+                        <SidebarBtn icon={<Plus className="w-4 h-4" />} active label="Create New" href="/studio" />
+                        <SidebarBtn icon={<Workflow className="w-3.5 h-3.5" />} label="Workflow" href="/studio" />
+                        <SidebarBtn icon={<SlidersHorizontal className="w-3.5 h-3.5" />} label="Settings" href="/profile" />
+                        <SidebarBtn icon={<MessageCircle className="w-3.5 h-3.5" />} label="Messages" href="/community" />
+                        <SidebarBtn icon={<History className="w-3.5 h-3.5" />} label="History" href="/creations" />
+                        <SidebarBtn icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Studio" href="/studio" />
                         {/* Avatar at bottom */}
-                        <div className="mt-auto">
+                        <div className="mt-auto group flex items-center justify-center p-1 cursor-pointer">
                             <div
-                                className="w-7 h-7 rounded-full"
+                                className="w-7 h-7 rounded-full border border-white/10 transition-transform duration-300 group-hover:scale-110 group-active:scale-95 shadow-lg"
                                 style={{ background: 'linear-gradient(135deg, #f472b6, #fb923c)' }}
                             />
                         </div>
@@ -628,6 +687,7 @@ export function HeroState({ register }: HeroStateProps) {
                                 }}
                             >
                                 <video
+                                    ref={videoRef}
                                     src="https://pub-68982972900648a6b75dcc11da69a242.r2.dev/public/hero-section-card/video.mp4"
                                     autoPlay
                                     loop
@@ -643,7 +703,7 @@ export function HeroState({ register }: HeroStateProps) {
                             ref={el => { cardRefs.current.prompt = el }}
                             className="absolute z-20 select-none group touch-none"
                             style={{
-                                right: '2%',
+                                left: `${positions.prompt.x}%`,
                                 top: `${positions.prompt.y}%`,
                                 cursor: dragging === 'prompt' ? 'grabbing' : 'grab',
                             }}
@@ -699,23 +759,23 @@ export function HeroState({ register }: HeroStateProps) {
                         }}
                     >
                         <div
-                            className="w-6 h-6 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors"
+                            className="w-6 h-6 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors group"
+                            onClick={resetCards}
+                            title="Reset Positions"
                             style={{
                                 background: 'rgba(255,255,255,0.06)',
                                 border: '1px solid rgba(255,255,255,0.1)',
                             }}
                         >
-                            <History className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.45)' }} />
+                            <RotateCcw id="hero-refresh-icon" className="w-3 h-3 transition-colors group-hover:text-white" style={{ color: 'rgba(255,255,255,0.45)' }} />
                         </div>
                         <span className="ml-auto text-[11px] font-light" style={{ color: 'rgba(255,255,255,0.45)' }}>100%</span>
                     </div>
                 </div>
 
-                {/* Drag hint */}
-                <div ref={hintRef} className="flex justify-center mt-7 opacity-0">
-                    <p className="text-[11px] tracking-[0.5px] font-light" style={{ color: 'rgba(100,100,100,0.6)' }}>
-                        Drag nodes · Connect ideas · Generate
-                    </p>
+                {/* Brand Scroll */}
+                <div className="w-full mt-8">
+                    <BrandScroll />
                 </div>
             </div>
 
@@ -744,16 +804,45 @@ export function HeroState({ register }: HeroStateProps) {
 }
 
 // Sidebar button component
-function SidebarBtn({ icon, active }: { icon: React.ReactNode; active?: boolean }) {
+function SidebarBtn({ icon, active, label, href }: { icon: React.ReactNode; active?: boolean; label: string; href: string }) {
     return (
-        <button
-            className="w-[34px] h-[34px] rounded-lg border-none flex items-center justify-center cursor-pointer transition-all duration-150 hover:bg-white/[0.07]"
-            style={{
-                background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
-                color: active ? 'rgba(240,237,232,0.9)' : 'rgba(255,255,255,0.3)',
-            }}
-        >
-            {icon}
-        </button>
+        <Link href={href}>
+            <button
+                className="group relative w-10 h-10 flex items-center justify-center cursor-pointer transition-all duration-300 outline-none"
+            >
+                {/* Super Classy Info Capsule */}
+                <div 
+                    className="absolute left-[58px] px-4 py-2 rounded-xl bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/[0.08] whitespace-nowrap opacity-0 -translate-x-4 pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:translate-x-0 z-50 flex items-center gap-2.5"
+                    style={{ 
+                        boxShadow: '0 20px 50px -12px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.05)',
+                    }}
+                >
+                    <div className="w-[3px] h-[3px] rounded-full bg-white/40" />
+                    <span className="text-[11px] font-semibold tracking-[0.08em] text-white/90 font-sans uppercase">{label}</span>
+                </div>
+
+                {/* iOS-style capsule highlight */}
+                <div 
+                    className={`absolute inset-0 rounded-[14px] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
+                        ${active 
+                            ? 'bg-white/10 opacity-100 scale-100' 
+                            : 'bg-white/10 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 group-active:scale-90'
+                        }`}
+                />
+                
+                {/* Active indicator dot */}
+                {active && (
+                    <div className="absolute left-0 w-0.5 h-3 bg-white rounded-r-full shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                )}
+
+                {/* Icon */}
+                <div 
+                    className={`relative z-10 transition-all duration-300 ease-out transform group-hover:scale-110 
+                        ${active ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-200'}`}
+                >
+                    {icon}
+                </div>
+            </button>
+        </Link>
     )
 }

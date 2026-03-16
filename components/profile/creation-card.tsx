@@ -1,7 +1,7 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { Share2, Clock, Sparkles, Download, Trash2, Loader2, Wand2 } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Share2, Clock, Sparkles, Download, Trash2, Loader2, Wand2, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -33,12 +33,27 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
 
     const handleRemix = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(item.previewUrl)}&prompt=${encodeURIComponent(item.prompt || "")}&remixType=${item.type || 'image'}&creationId=${item.id}`;
         router.push(remixUrl);
+    };
+
+    // Robustly resolve true file extension from URL or type hint
+    const getFileExtension = (url: string, type?: string): string => {
+        try {
+            const pathname = new URL(url).pathname.toLowerCase();
+            if (pathname.endsWith(".mp4")) return "mp4";
+            if (pathname.endsWith(".webm")) return "webm";
+            if (pathname.endsWith(".gif")) return "gif";
+            if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) return "jpg";
+            if (pathname.endsWith(".webp")) return "webp";
+            if (pathname.endsWith(".png")) return "png";
+        } catch {}
+        return type === "video" ? "mp4" : "png";
     };
 
     const handleDownload = async (e: React.MouseEvent) => {
@@ -53,7 +68,7 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
-            link.download = `StudioX_Creation_${item.id}.${item.previewUrl.includes('.mp4') || item.type === 'video' ? 'mp4' : 'png'}`;
+            link.download = `StudioX_Creation_${item.id}.${getFileExtension(item.previewUrl, item.type)}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -93,7 +108,10 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
             transition={{ duration: 0.6, delay: index * 0.05, ease: [0.21, 0.47, 0.32, 0.98] }}
             className="group relative"
         >
-            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-slate-900 ring-1 ring-white/10 transition-all duration-500 hover:ring-white/20 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]">
+            <div 
+                className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-slate-900 ring-1 ring-white/10 transition-all duration-500 hover:ring-white/20 cursor-pointer hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+                onClick={() => setShowPreview(true)}
+            >
                 {/* Subtle Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 transition-opacity duration-500 group-hover:opacity-40 z-10" />
 
@@ -192,6 +210,51 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                     }}
                 />
             )}
+
+            <AnimatePresence>
+                {showPreview && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.3, ease: [0.21, 0.47, 0.32, 0.98] }}
+                        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl"
+                        onClick={() => setShowPreview(false)}
+                    >
+                        <Button
+                            variant="ghost"
+                            onClick={(e) => { e.stopPropagation(); setShowPreview(false); }}
+                            className="absolute top-6 left-6 z-[210] text-white/80 hover:text-white hover:bg-white/10 h-11 px-5 rounded-full bg-white/5 border border-white/10 flex items-center font-semibold tracking-wide"
+                        >
+                            <X className="w-4 h-4 mr-2" />
+                            Back to Gallery
+                        </Button>
+                        
+                        <div 
+                            className="relative w-full h-full max-w-[95vw] max-h-[90vh] p-8 flex mx-auto items-center justify-center pointer-events-none"
+                        >
+                            <div className="pointer-events-auto max-w-full max-h-full">
+                                {(item.type === 'video' || item.previewUrl.includes('.mp4')) ? (
+                                    <video
+                                        src={item.previewUrl}
+                                        controls
+                                        autoPlay
+                                        loop
+                                        playsInline
+                                        className="max-w-full max-h-full object-contain rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+                                    />
+                                ) : (
+                                    <img
+                                        src={item.previewUrl}
+                                        alt={item.appName || item.prompt}
+                                        className="max-w-full max-h-full object-contain rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     )
 }
