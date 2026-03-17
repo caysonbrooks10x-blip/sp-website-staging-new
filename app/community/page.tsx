@@ -115,7 +115,6 @@ function CommunityContent() {
           size="lg"
           className="gap-3 text-neutral-500 hover:text-white hover:bg-transparent rounded-full px-8 h-auto text-sm tracking-widest uppercase transition-all duration-500 group"
         >
-          View Archive
           <ArrowUpRight className="h-3 w-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
         </Button>
       </section>
