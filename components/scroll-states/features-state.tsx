@@ -9,7 +9,7 @@ import { ASSET_BASE } from "@/lib/assets"
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Fine-tuned for an expanded, hyper-slick "Gallery" float with 14 images.
+
 const IMAGES = [
     { src: `${ASSET_BASE}/capabilities/capabilities1.png`, top: "-10%", left: "8%", size: "16rem", depth: 3.5, rotate: -4, blur: 0, z: 20 },
     { src: `${ASSET_BASE}/capabilities/capabilities2.png`, top: "5%", left: "78%", size: "20rem", depth: -2.5, rotate: 6, blur: 4, z: 5 },
@@ -63,23 +63,23 @@ export function FeaturesState({ register }: FeaturesStateProps) {
 
     useEffect(() => {
         const updateAnimation = (localProgress: number) => {
-            // Ethereal Parallax Images
+            
             IMAGES.forEach((img, i) => {
                 const el = imagesRef.current[i]
                 if (el) {
-                    const progressNormalized = localProgress - 0.5 // -0.5 to 0.5
+                    const progressNormalized = localProgress - 0.5 
 
-                    // Calculate translation. We scale down the movement factor slightly 
-                    // to prevent jerky mobile scrolling while maintaining depth.
+                    
+                    
                     const isMobile = window.innerWidth < 768
                     const moveMulti = isMobile ? 0.6 : 1
 
                     const yOffset = progressNormalized * img.depth * -500 * moveMulti
                     const xOffset = progressNormalized * img.depth * 80 * moveMulti
 
-                    // On mobile, employ subtle 3D adjustments for buttery smooth yet premium Cosmos feel
+                    
                     if (isMobile) {
-                        // Lighter rotation & scaling for mobile GPU safety but retains elegance
+                        
                         const dynamicRotation = img.rotate + (progressNormalized * img.depth * 5)
                         const distFromCenter = Math.abs(progressNormalized)
                         const scaleEffect = img.depth > 0 ? 1 + (0.04 * (1 - distFromCenter * 2)) : 1
@@ -107,16 +107,16 @@ export function FeaturesState({ register }: FeaturesStateProps) {
                 }
             })
 
-            // Subtle ambient glow shift inside the glass pane
+            
             if (glowRef.current) {
                 gsap.set(glowRef.current, {
-                    // Reduce rotation jitter on mobile glow
+                    
                     rotation: window.innerWidth < 768 ? 0 : localProgress * 180,
                     opacity: 0.3 + (Math.sin(localProgress * Math.PI) * 0.2)
                 })
             }
 
-            // Cinematic Text Transitions inside Frosted Glass
+            
             const itemsCount = FEATURES.length
             const progressPerItem = 1 / itemsCount
 
@@ -132,13 +132,13 @@ export function FeaturesState({ register }: FeaturesStateProps) {
                 const normalizedDist = distFromCenter / (progressPerItem / 2)
 
                 let opacity = 0
-                let yPos = 100 // Start much lower for a luxurious rise
-                let scale = 0.90 // Start smaller
-                let blur = 20 // Deeper initial blur
+                let yPos = 100 
+                let scale = 0.90 
+                let blur = 20 
                 let isDotActive = false
 
                 if (normalizedDist <= 1) {
-                    const easeIn = 1 - Math.pow(normalizedDist, 3.5) // Sharper snapping ease
+                    const easeIn = 1 - Math.pow(normalizedDist, 3.5) 
                     opacity = easeIn
 
                     const direction = localProgress - center
@@ -146,12 +146,12 @@ export function FeaturesState({ register }: FeaturesStateProps) {
 
                     yPos = signedNormalized * -100
                     scale = 0.90 + (0.10 * easeIn)
-                    blur = normalizedDist * 16 // Sweeping blur
+                    blur = normalizedDist * 16 
 
                     if (easeIn > 0.85) isDotActive = true
                 }
 
-                // Keep first and last "settled" when completely outside the section
+                
                 if (localProgress <= itemProgressStart && i === 0) {
                     opacity = 1
                     yPos = 0
@@ -179,17 +179,17 @@ export function FeaturesState({ register }: FeaturesStateProps) {
 
                 if (dotEl) {
                     gsap.set(dotEl, {
-                        backgroundColor: isDotActive ? '#09090b' : '#e4e4e7', // zinc-950 / zinc-200
+                        backgroundColor: isDotActive ? '#09090b' : '#e4e4e7', 
                         scale: isDotActive ? 1.3 : 1
                     })
                 }
             })
         }
 
-        // Initialize perfectly on frame 0
+        
         updateAnimation(0)
 
-        // 1. Desktop Subscription logic
+        
         const unregister = register((globalProgress, index) => {
             if (window.innerWidth >= 768) {
                 const TOTAL = 4
@@ -206,16 +206,16 @@ export function FeaturesState({ register }: FeaturesStateProps) {
             }
         })
 
-        // 2. Mobile Standalone Pinning Logic
+        
         const ctx = gsap.context(() => {
             ScrollTrigger.matchMedia({
                 "(max-width: 767px)": () => {
                     ScrollTrigger.create({
                         trigger: containerRef.current,
                         start: "top top",
-                        end: "+=400%", // Longer scroll distance for slower, smoother transitions
+                        end: "+=400%", 
                         pin: true,
-                        scrub: 1.5, // High inertia damping for that "buttery" feel
+                        scrub: 1.5, 
                         onUpdate: (self) => {
                             updateAnimation(self.progress)
                         }
@@ -233,15 +233,15 @@ export function FeaturesState({ register }: FeaturesStateProps) {
     return (
         <section ref={containerRef} className="md:absolute md:inset-0 relative w-full h-auto min-h-[100svh] flex flex-col items-center justify-center overflow-hidden bg-white origin-center no-scrollbar">
 
-            {/* Scattered Parallax Images - The "Gallery" */}
+            {}
             <div className="absolute inset-0 z-0 pointer-events-none w-full h-full overflow-hidden">
-                {/* Subtle ultra-light noise overlay strictly for the background */}
+                {}
                 <div
                     className="absolute inset-0 opacity-[0.015] mix-blend-multiply z-10"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
                 />
 
-                {/* Responsive scaling container to shrink the galaxy onto mobile seamlessly */}
+                {}
                 <div className="absolute inset-0 w-full h-full origin-center scale-[0.6] sm:scale-[0.8] md:scale-100 pointer-events-none">
                     {IMAGES.map((img, i) => (
                         <div
@@ -257,7 +257,7 @@ export function FeaturesState({ register }: FeaturesStateProps) {
                                 filter: img.blur > 0 ? `blur(${img.blur}px)` : 'drop-shadow(0 30px 40px rgba(0,0,0,0.06)) drop-shadow(0 15px 20px rgba(0,0,0,0.03))',
                             }}
                         >
-                            {/* Pure image optimized with Next.js */}
+                            {}
                             <Image
                                 src={img.src}
                                 alt={`Capability visual ${i}`}
@@ -266,9 +266,9 @@ export function FeaturesState({ register }: FeaturesStateProps) {
                                 priority={i < 5}
                                 className="object-cover"
                                 style={{
-                                    borderRadius: '2.5rem', // Refined Squircle
+                                    borderRadius: '2.5rem', 
                                     border: '1px solid rgba(0,0,0,0.05)',
-                                    WebkitMaskImage: '-webkit-radial-gradient(white, black)', // Fix safari overflow artifacts
+                                    WebkitMaskImage: '-webkit-radial-gradient(white, black)', 
                                 }}
                             />
                         </div>
@@ -276,23 +276,23 @@ export function FeaturesState({ register }: FeaturesStateProps) {
                 </div>
             </div>
 
-            {/* Central Frosted Glass Showcase */}
-            {/* Extended width, thinner height, responsive blur to protect mobile GPUs */}
+            {}
+            {}
             <div className="relative z-30 w-[95%] md:w-[85%] max-w-6xl h-[70vh] md:h-[60vh] rounded-[3.5rem] bg-white/30 backdrop-blur-[30px] md:backdrop-blur-[80px] border border-white/60 shadow-xl md:shadow-[0_8px_32px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.05),inset_0_0_0_1px_rgba(255,255,255,0.4)] flex flex-col items-center justify-center text-center overflow-hidden">
 
-                {/* Ethereal Ambient Glow (Replaces harsh blobs) */}
+                {}
                 <div
                     ref={glowRef}
                     className="absolute inset-0 z-0 overflow-hidden pointer-events-none w-[150%] h-[150%] -top-[25%] -left-[25%] flex items-center justify-center origin-center transition-opacity duration-1000"
                 >
-                    {/* Sophisticated neutral/warm breathing gradient */}
+                    {}
                     <div className="w-[1000px] h-[1000px] bg-[radial-gradient(circle_at_center,rgba(250,250,255,0.9)_0%,rgba(255,255,255,0)_60%)] rotate-45 scale-y-50 blur-[15px]" />
                 </div>
 
-                {/* Inner Bezel highlight */}
+                {}
                 <div className="absolute inset-0 rounded-[3.5rem] ring-1 ring-inset ring-white/50 pointer-events-none z-10" />
 
-                {/* Header Badge */}
+                {}
                 <div className="absolute top-10 left-1/2 -translate-x-1/2 z-20">
                     <div className="flex items-center gap-2 group cursor-default">
                         <div className="w-1.5 h-1.5 rounded-full bg-zinc-950 shadow-[0_0_15px_rgba(0,0,0,0.3)] ring-1 ring-zinc-950/20" />
@@ -302,7 +302,7 @@ export function FeaturesState({ register }: FeaturesStateProps) {
                     </div>
                 </div>
 
-                {/* Cinematic Text Carousel */}
+                {}
                 <div className="relative z-20 w-full h-full flex items-center justify-center px-6 md:px-24">
                     {FEATURES.map((feature, i) => {
                         const Icon = feature.icon
@@ -326,7 +326,7 @@ export function FeaturesState({ register }: FeaturesStateProps) {
                     })}
                 </div>
 
-                {/* Minimalist Progress Indicator at Bottom */}
+                {}
                 <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-3">
                     {FEATURES.map((_, i) => (
                         <div

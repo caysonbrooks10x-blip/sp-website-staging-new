@@ -47,7 +47,7 @@ function CreationsContent() {
     setCreations(prev => prev.filter(c => c.id !== id))
   }
 
-  // GSAP Entry Animation
+  
   useEffect(() => {
     if (gridRef.current && !loading && creations.length > 0) {
       const cards = gridRef.current.querySelectorAll(".creation-card-anim")
@@ -70,9 +70,9 @@ function CreationsContent() {
   return (
     <main className="min-h-screen bg-[#050505] text-zinc-100">
 
-      {/* 1. HERO / HEADER ZONE */}
+      {}
       <section className="relative border-b border-white/5 bg-[#050505] overflow-hidden">
-        {/* Subtle decorative gradient */}
+        {}
         <div className="absolute top-0 left-0 w-full h-[300px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/10 via-[#050505] to-[#050505] pointer-events-none" />
 
         <div className="relative mx-auto max-w-[1600px] px-6 lg:px-12 py-20 md:py-32">
@@ -86,12 +86,12 @@ function CreationsContent() {
             </p>
           </div>
 
-          {/* Decorative Glow */}
+          {}
           <div className="absolute top-1/2 right-10 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none opacity-50" />
         </div>
       </section>
 
-      {/* 2. CREATIONS GRID */}
+      {}
       <section className="mx-auto max-w-[1600px] px-6 lg:px-12 py-16 min-h-[500px]">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 space-y-6">

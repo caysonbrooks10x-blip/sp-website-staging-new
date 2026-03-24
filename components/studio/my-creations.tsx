@@ -20,7 +20,7 @@ export function StudioRightPanel({ generations }: StudioRightPanelProps) {
     return (
         <div className="w-[320px] h-[calc(100vh-140px)] flex flex-col bg-white/[0.05] backdrop-blur-[20px] border border-white/[0.08] shadow-[0_10px_40px_rgba(0,0,0,0.5)] rounded-[20px] relative z-20 flex-shrink-0 text-zinc-100 overflow-hidden transition-all duration-500">
 
-            {/* Tabs */}
+            {}
             <div className="flex items-center justify-between p-4 border-b border-white/[0.05] bg-white/[0.02]">
                 <div className="flex gap-2">
                     <button
@@ -38,7 +38,7 @@ export function StudioRightPanel({ generations }: StudioRightPanelProps) {
                 </div>
             </div>
 
-            {/* Scrollable History Grid */}
+            {}
             <div className="flex-1 overflow-y-auto no-scrollbar p-4 flex flex-col gap-3">
                 {generations.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center opacity-50">
@@ -74,7 +74,7 @@ export function StudioRightPanel({ generations }: StudioRightPanelProps) {
                 )}
             </div>
 
-            {/* Fixed Footer Actions */}
+            {}
             <div className="flex-shrink-0 p-4 border-t border-white/[0.05] bg-white/[0.02]">
                 <div className="flex gap-2">
                     <Button variant="ghost" className="flex-1 bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.05] text-xs font-semibold rounded-xl text-zinc-300">

@@ -46,33 +46,34 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
     e.preventDefault();
     e.stopPropagation();
     setShowConfirm(false);
+    console.log("[Community] Starting deletion for post:", post.id);
     setIsDeleting(true);
 
-    if (onRemovePost) {
-      setTimeout(() => onRemovePost(post.id), 300);
-    }
-
     try {
-      const deletePost = httpsCallable(functions, "deletePost");
-      await deletePost({ postId: post.id });
+      const removePostFn = httpsCallable(functions, "removePost");
+      await removePostFn({ postId: post.id });
+      
+      console.log("[Community] Deletion successful in backend");
       toast.success("Post deleted permanently");
-    } catch (error) {
-      console.error("Delete failed:", error);
-      toast.error("Failed to delete post. It has been restored.");
-      setIsDeleting(false);
-      if (onRestorePost) {
-        onRestorePost(post.id);
+      
+      
+      if (onRemovePost) {
+        onRemovePost(post.id);
       }
+    } catch (error) {
+      console.error("[Community] Delete failed:", error);
+      toast.error("Failed to delete post. Please try again.");
+      setIsDeleting(false);
     }
   };
 
-  // Use the aspect ratio defined in the data
+  
   const aspectClass =
     post.aspectRatio === "portrait" ? "aspect-[3/4]" :
       post.aspectRatio === "square" ? "aspect-square" :
         "aspect-[4/3]";
 
-  // IntersectionObserver: only play videos when visible
+  
   useEffect(() => {
     const el = cardRef.current
     if (!el) return
@@ -88,13 +89,13 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
     return () => observer.disconnect()
   }, [])
 
-  // Play/pause video based on visibility
+  
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
 
     if (isVisible) {
-      video.play().catch(() => { /* autoplay blocked, ignore */ })
+      video.play().catch(() => {  })
     } else {
       video.pause()
     }
@@ -115,10 +116,10 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
     setIsRemixing(true);
     toast.success("Blueprint loaded! Taking you to the studio...");
 
-    // Taking the user straight to the Studio setup with the prompt and asset mapped into the Left Panel
+    
     router.push(`/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&remixType=${post.type}`);
 
-    setTimeout(() => setIsRemixing(false), 2000); // unlock after navigation
+    setTimeout(() => setIsRemixing(false), 2000); 
   }, [user, post.prompt, post.assetUrl, post.creationId, router, isRemixing])
 
   const navigateToStudio = useCallback((mode: string, prompt: string) => {
@@ -139,7 +140,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       let ext = post.assetUrl.split('?')[0].split('.').pop() || (post.type === "video" ? "mp4" : "png")
-      if (ext.length > 4) ext = post.type === "video" ? "mp4" : "png"; // Fallback safety
+      if (ext.length > 4) ext = post.type === "video" ? "mp4" : "png"; 
 
       a.href = url
       a.download = `StudioX_${post.title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20)}_${post.id.slice(0, 6)}.${ext}`
@@ -166,7 +167,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
             isDeleting && "opacity-50 pointer-events-none grayscale blur-sm"
           )}
         >
-          {/* Confirmation Overlay */}
+          {}
           <AnimatePresence>
             {showConfirm && (
               <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
@@ -184,7 +185,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
                   className="relative w-[85%] max-w-[260px] bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[24px] p-6 shadow-2xl flex flex-col items-center text-center overflow-hidden"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Subtle Red Glow behind the trash icon */}
+                  {}
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-24 bg-red-500/20 rounded-full blur-[32px] pointer-events-none" />
 
                   <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 z-10 transition-transform duration-300 hover:scale-110">
@@ -215,13 +216,13 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
             )}
           </AnimatePresence>
 
-          {/* Image/Video - Clickable link to detail */}
+          {}
           <Link
             href={`/community/${post.id}`}
             className={`group relative block w-full overflow-hidden cursor-pointer ${aspectClass} hover:shadow-2xl transition-all duration-500`}
             prefetch={false}
           >
-            {/* Media Layer */}
+            {}
             <div className="absolute inset-0 overflow-hidden bg-black/50">
               {post.type === "video" ? (
                 <video
@@ -246,10 +247,10 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
               )}
             </div>
 
-            {/* Gradient Overlay */}
+            {}
             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-300" />
 
-            {/* Top Overlay - Creator Chip & Tools */}
+            {}
             <div className="absolute top-4 left-4 right-4 z-20 translate-y-[-10px] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out flex justify-between items-start pointer-events-none">
               <div className="bg-zinc-950 rounded-full px-2 py-1 pr-3 border border-white/10 flex items-center gap-2 pointer-events-auto shadow-lg">
                 <div className="relative w-5 h-5 rounded-full overflow-hidden border border-white/10">
@@ -276,7 +277,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
               )}
             </div>
 
-            {/* Center Interaction - Minimalist Remix */}
+            {}
             {post.allowRemix && (
               <div className="absolute inset-0 flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
                 <Button
@@ -290,7 +291,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
               </div>
             )}
 
-            {/* Bottom Content */}
+            {}
             <div className="absolute bottom-0 left-0 right-0 p-5 z-20 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
               <div className="space-y-1.5">
                 <h3 className="text-base font-medium text-white leading-snug tracking-tight truncate">
@@ -306,8 +307,8 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
                     <button
                       onClick={(e) => {
                         e.preventDefault()
-                        e.stopPropagation() // Disallow parent link container opening on interaction
-                        toggleLike() // Invoke Headless mapping action!
+                        e.stopPropagation() 
+                        toggleLike() 
                       }}
                       disabled={isLoading}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all duration-300 group/btn"
@@ -316,13 +317,13 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
                         className={cn(
                           "w-4 h-4 transition-all duration-500",
                           isLiked
-                            // Liked active states mapping
+                            
                             ? "fill-red-500 text-red-500 scale-110 drop-shadow-[0_0_12px_rgba(239,68,68,0.7)]"
-                            // Inactive default visual mappings (White Outline)
+                            
                             : "text-white group-hover/btn:scale-110"
                         )}
                       />
-                      {/* Output mapped count logic purely formatted */}
+                      {}
                       <span className="text-sm font-medium text-white/90 tabular-nums">
                         {Intl.NumberFormat('en-US', { notation: 'compact' }).format(likesCount)}
                       </span>
@@ -333,9 +334,9 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
             </div>
           </Link>
 
-          {/* Information Panel */}
+          {}
           <div className="border-t border-white/5">
-            {/* Header - Always Visible */}
+            {}
             <button
               onClick={() => setShowInfo(!showInfo)}
               className="w-full flex items-center justify-between px-4 py-3 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
@@ -347,7 +348,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
               {showInfo ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </button>
 
-            {/* Expandable Content */}
+            {}
             {showInfo && (
               <>
                 <div className="divide-y divide-white/5 border-t border-white/5">
@@ -388,7 +389,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
                   </div>
                 </div>
 
-                {/* Action Buttons */}
+                {}
                 <div className="p-3 pt-2 space-y-2 border-t border-white/5">
                   <Button
                     disabled={isRemixing}

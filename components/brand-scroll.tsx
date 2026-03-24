@@ -71,8 +71,8 @@ export function BrandScroll() {
         const track = trackRef.current
         if (!track) return
 
-        // Measure width of one brand set (we have 4 copies)
-        // Small delay to let layout settle
+        
+        
         const measureTimer = setTimeout(() => {
             singleSetRef.current = track.scrollWidth / 4
         }, 100)
@@ -80,7 +80,7 @@ export function BrandScroll() {
         let lastTime = 0
         let offset = 0
         let rafId: number
-        const SPEED = 30 // pixels per second — consistent on all displays
+        const SPEED = 30 
 
         const animate = (timestamp: number) => {
             if (!lastTime) lastTime = timestamp

@@ -30,14 +30,14 @@ export function TypewriterText({
         const el = textRef.current
         if (!el) return
 
-        // Split text into characters manually to avoid extra dependencies if possible
-        // But for accessibility and simple DOM structure, we'll create a span for each char
+        
+        
         const chars = text.split("").map((char) => {
             const span = document.createElement("span")
             span.textContent = char
             span.style.opacity = "0"
-            span.className = "inline-block" // Allows transform
-            if (char === " ") span.style.width = "0.3em" // Preserve space width
+            span.className = "inline-block" 
+            if (char === " ") span.style.width = "0.3em" 
             return span
         })
 
@@ -63,7 +63,7 @@ export function TypewriterText({
             })
 
             if (cursor && cursorRef.current) {
-                // Blink cursor forever
+                
                 gsap.to(cursorRef.current, {
                     opacity: 0,
                     repeat: -1,
@@ -72,11 +72,11 @@ export function TypewriterText({
                     ease: "steps(1)"
                 })
 
-                // Hide cursor after typing matches end
+                
                 const totalTime = delay + (chars.length * stagger) + duration
                 gsap.to(cursorRef.current, {
                     opacity: 0,
-                    delay: totalTime + 1, // Keep blinking for a second after typing
+                    delay: totalTime + 1, 
                     onComplete: () => {
                         if (cursorRef.current) cursorRef.current.style.display = "none"
                     }

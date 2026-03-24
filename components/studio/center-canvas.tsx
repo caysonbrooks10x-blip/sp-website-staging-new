@@ -16,6 +16,7 @@ export interface GenerationItem {
     creationId?: string;
     creationIds?: string[];
     prompt: string;
+    model?: string;
     status: "queued" | "generating" | "completed" | "failed";
     settings?: any;
     error?: string;
@@ -110,36 +111,46 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         switch (ratio) {
             case "1:1": return "aspect-square";
             case "4:3": return "aspect-[4/3]";
+            case "3:4": return "aspect-[3/4]";
             case "16:9": return "aspect-video";
             case "9:16": return "aspect-[9/16]";
+            case "2:3": return "aspect-[2/3]";
+            case "3:2": return "aspect-[3/2]";
+            case "21:9": return "aspect-[21/9]";
+            case "16:21": return "aspect-[16/21]";
             default: return "aspect-video";
         }
     };
 
-    const currentRatio = activeGeneration?.settings?.aspectRatio || aspectRatio;
+    const currentRatio = activeGeneration?.settings?.size || activeGeneration?.settings?.aspect_ratio || activeGeneration?.settings?.aspectRatio || aspectRatio;
     const isMultiImage = (activeGeneration?.srcs && activeGeneration.srcs.length > 0) || (activeGeneration?.settings?.n > 1 && activeGeneration?.status !== "completed");
 
     let maxWidthStyle = "850px";
     if (isMultiImage) {
         maxWidthStyle = "min(1600px, 100%)";
-    } else if (currentRatio === "9:16") {
-        maxWidthStyle = "min(480px, 95%, calc((100vh - 120px) * 9 / 16))";
+    } else if (currentRatio === "9:16" || currentRatio === "16:21") {
+        maxWidthStyle = "min(420px, 90%, calc((100vh - 160px) * 9 / 16))";
+    } else if (currentRatio === "2:3" || currentRatio === "3:4") {
+        maxWidthStyle = "min(500px, 90%, calc((100vh - 140px) * 2 / 3))";
     } else if (currentRatio === "1:1") {
         maxWidthStyle = "min(650px, 98%, calc(100vh - 120px))";
-    } else if (currentRatio === "4:3") {
+    } else if (currentRatio === "4:3" || currentRatio === "3:2") {
         maxWidthStyle = "min(850px, 98%, calc((100vh - 120px) * 4 / 3))";
+    } else if (currentRatio === "21:9") {
+        maxWidthStyle = "min(1400px, 98%, calc((100vh - 120px) * 21 / 9))";
     } else {
         maxWidthStyle = "min(1200px, 98%, calc((100vh - 120px) * 16 / 9))";
     }
 
     const getGridClass = (count: number) => {
-        // ULTIMATE FULL-SIZE SCROLL: Always 1 column for maximum impact and detail.
-        return "grid-cols-1 max-w-[1400px] gap-24 md:gap-32 pb-40";
+        if (count === 1) return "grid-cols-1 max-w-[1000px]";
+        if (count === 2) return "grid-cols-1 md:grid-cols-2 max-w-[1400px] gap-12 md:gap-16 pb-32";
+        return "grid-cols-1 md:grid-cols-2 max-w-[1700px] gap-8 md:gap-12 pb-40";
     };
 
     return (
         <div className="w-full h-full flex flex-col items-center p-0 md:p-4 relative">
-            {/* High-End Mobile Floating Trigger */}
+            {}
             <div className="lg:hidden w-full flex justify-center py-4 shrink-0 z-50 pointer-events-auto">
                 <button
                     onClick={onOpenPanel}
@@ -194,7 +205,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(src)}&prompt=${encodeURIComponent(activeGeneration.prompt)}&remixType=image&creationId=${activeGeneration.creationIds?.[idx] || activeGeneration.id}`;
+                                                        const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(src)}&prompt=${encodeURIComponent(activeGeneration.prompt)}&remixType=image&creationId=${activeGeneration.creationIds?.[idx] || activeGeneration.id}&aspectRatio=${encodeURIComponent(activeGeneration.settings?.aspectRatio || activeGeneration.settings?.size || "1:1")}&model=${encodeURIComponent(activeGeneration.model || activeGeneration.settings?.model || "gpt-image-1.5")}`;
                                                         window.history.pushState({}, '', remixUrl);
                                                         window.dispatchEvent(new PopStateEvent('popstate'));
                                                     }}

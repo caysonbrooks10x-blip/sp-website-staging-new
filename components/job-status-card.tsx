@@ -52,7 +52,7 @@ export function JobStatusCard({ job, className }: JobStatusCardProps) {
   return (
     <motion.div initial={{ y: 15 }} animate={{ y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className={className}>
       <Card className="p-6 space-y-4 border-border bg-card/80 backdrop-blur-sm">
-        {/* Status Header */}
+        {}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2">
@@ -66,7 +66,7 @@ export function JobStatusCard({ job, className }: JobStatusCardProps) {
           </Badge>
         </div>
 
-        {/* Progress Bar - Only show during warming/processing */}
+        {}
         <AnimatePresence mode="wait">
           {isLoading && (
             <motion.div
@@ -94,7 +94,7 @@ export function JobStatusCard({ job, className }: JobStatusCardProps) {
           )}
         </AnimatePresence>
 
-        {/* Result Preview - Only show when completed */}
+        {}
         <AnimatePresence mode="wait">
           {job.status === "completed" && (
             <motion.div
@@ -113,7 +113,7 @@ export function JobStatusCard({ job, className }: JobStatusCardProps) {
           )}
         </AnimatePresence>
 
-        {/* Error Message - Only show when failed */}
+        {}
         <AnimatePresence mode="wait">
           {job.status === "failed" && (
             <motion.div
@@ -136,7 +136,7 @@ export function JobStatusCard({ job, className }: JobStatusCardProps) {
           )}
         </AnimatePresence>
 
-        {/* Timestamp */}
+        {}
         <div className="pt-2 border-t border-border/50">
           <p className="text-xs text-muted-foreground">
             Started: {new Date(job.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}

@@ -50,13 +50,15 @@ export default function PostDetailPage() {
         if (!confirmed || !post) return
 
         setIsDeleting(true)
+        console.log("[Community] Detail Page: Triggering removePost for", post.id);
         try {
-            const deletePost = httpsCallable(functions, "deletePost")
-            await deletePost({ postId: post.id })
+            const removePostFn = httpsCallable(functions, "removePost")
+            await removePostFn({ postId: post.id })
+            console.log("[Community] Detail Page: Deletion confirmed");
             toast.success("Post deleted")
             router.push('/community')
         } catch (error) {
-            console.error("Delete failed:", error)
+            console.error("[Community] Detail Page: Delete failed:", error)
             toast.error("Failed to delete post.")
             setIsDeleting(false)
         }
@@ -65,14 +67,14 @@ export default function PostDetailPage() {
     useEffect(() => {
         const fetchPost = async () => {
             try {
-                // Check Firestore
+                
                 const docRef = doc(db, "posts", postId)
                 const docSnap = await getDoc(docRef)
 
                 if (docSnap.exists()) {
                     const data = docSnap.data()
 
-                    // Securely block soft-deleted documents
+                    
                     if (data.isDeleted === true || data.status === "deleted") {
                         setPost(null)
                         return
@@ -144,7 +146,7 @@ export default function PostDetailPage() {
         }
     }, [post?.title])
 
-    // Loading State
+    
     if (isLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-[#020202] text-white">
@@ -153,7 +155,7 @@ export default function PostDetailPage() {
         )
     }
 
-    // Fallback if not found
+    
     if (!post) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-[#020202] text-white">
@@ -170,7 +172,7 @@ export default function PostDetailPage() {
     return (
         <main className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30">
 
-            {/* Navbar Overlay */}
+            {}
             <nav className="fixed top-0 left-0 right-0 lg:right-[450px] z-[9999] flex items-center justify-between p-4 md:p-6 pointer-events-none">
                 <a
                     href="/community"
@@ -193,9 +195,9 @@ export default function PostDetailPage() {
             </nav>
 
             <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen">
-                {/* Left/Top: Image Content */}
+                {}
                 <div className="relative w-full lg:flex-1 lg:h-full bg-[#0b0b0b] flex items-center justify-center overflow-hidden">
-                    {/* Blurry Background */}
+                    {}
                     <div className="absolute inset-0 opacity-30 scale-110 pointer-events-none">
                         {post.thumbnailUrl.endsWith('.mp4') ? (
                             <video
@@ -218,7 +220,7 @@ export default function PostDetailPage() {
                         )}
                     </div>
 
-                    {/* Main Content */}
+                    {}
                     <div className="relative w-full h-[60vh] lg:h-[85vh] max-w-[90%] lg:max-w-4xl shadow-2xl overflow-hidden rounded-xl">
                         {post.type === "video" ? (
                             <video
@@ -241,7 +243,7 @@ export default function PostDetailPage() {
                     </div>
                 </div>
 
-                {/* Right/Bottom: Sidebar */}
+                {}
                 <div
                     className="w-full lg:w-[450px] lg:shrink-0 bg-[#09090b] border-l border-white/5 lg:overflow-y-auto lg:h-full p-6 lg:p-8 pt-20 lg:pt-8 z-10 shadow-2xl lg:shadow-none custom-scrollbar lg:overscroll-contain"
                     data-lenis-prevent={isMobile ? undefined : true}
@@ -249,7 +251,7 @@ export default function PostDetailPage() {
                     onTouchMove={isMobile ? undefined : (e) => e.stopPropagation()}
                 >
 
-                    {/* Author */}
+                    {}
                     <div className="flex items-center gap-3 mb-6">
                         <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10">
                             <Image src={post.author.avatar} alt={post.author.name} fill className="object-cover" sizes="40px" />
@@ -260,7 +262,7 @@ export default function PostDetailPage() {
                         </div>
                     </div>
 
-                    {/* Title & Description */}
+                    {}
                     <div className="space-y-4 mb-8">
                         <h1 className="text-3xl font-light text-white leading-tight">{post.title}</h1>
                         <p className="text-zinc-400 font-light leading-relaxed">
@@ -268,7 +270,7 @@ export default function PostDetailPage() {
                         </p>
                     </div>
 
-                    {/* Actions Bar */}
+                    {}
                     <div className="flex items-center gap-3 mb-8">
                         <Button
                             variant="outline"
@@ -333,15 +335,15 @@ export default function PostDetailPage() {
                         )}
                     </div>
 
-                    {/* Information Panel */}
+                    {}
                     <div className="mb-8 rounded-2xl bg-[#111113] border border-white/5 overflow-hidden">
-                        {/* Header */}
+                        {}
                         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/5">
                             <Info className="h-4 w-4 text-emerald-400" />
                             <span className="text-xs font-semibold uppercase tracking-wider text-zinc-300">Information</span>
                         </div>
 
-                        {/* Collapsible Content */}
+                        {}
                         {showInfo && (
                             <div className="divide-y divide-white/5">
                                 {post.model && (
@@ -382,7 +384,7 @@ export default function PostDetailPage() {
                             </div>
                         )}
 
-                        {/* Toggle */}
+                        {}
                         <button
                             onClick={() => setShowInfo(!showInfo)}
                             className="w-full flex items-center justify-between px-5 py-3 border-t border-white/5 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
@@ -392,7 +394,7 @@ export default function PostDetailPage() {
                         </button>
                     </div>
 
-                    {/* Action Buttons */}
+                    {}
                     <div className="mb-8 space-y-3">
                         <Button
                             className="w-full h-12 rounded-xl bg-[#c8ff00] hover:bg-[#b8ef00] text-black font-semibold text-sm transition-all duration-200"
@@ -488,7 +490,7 @@ export default function PostDetailPage() {
                         </div>
                     </div>
 
-                    {/* Remix CTA */}
+                    {}
                     {post.allowRemix && (
                         <div className="mb-8 p-1 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
                             <div className="bg-[#0f0f11] rounded-[14px] p-5 text-center">

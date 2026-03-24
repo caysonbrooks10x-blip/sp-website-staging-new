@@ -37,7 +37,7 @@ export function StudioCreationCard({
         }
     }
 
-    // Handle potential statuses that might not be in the config type fully but exist in data
+    
     const statusKey = creation.status as keyof typeof statusConfig
     const config = statusConfig[statusKey] || statusConfig.draft
 
@@ -49,7 +49,7 @@ export function StudioCreationCard({
                 className="group relative flex items-center gap-4 p-3 rounded-xl bg-zinc-900/50 hover:bg-zinc-800/50 border border-white/5 hover:border-white/10 transition-all duration-300 cursor-pointer"
                 onClick={onClick}
             >
-                {/* Thumbnail */}
+                {}
                 <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
                     {creation.thumbnail ? (
                         <MediaRenderer
@@ -62,7 +62,7 @@ export function StudioCreationCard({
                     )}
                 </div>
 
-                {/* Content */}
+                {}
                 <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
                         {creation.appName}
@@ -76,7 +76,7 @@ export function StudioCreationCard({
                     </p>
                 </div>
 
-                {/* Status */}
+                {}
                 <div className="shrink-0 flex items-center gap-4">
                     <Badge variant="outline" className={cn("text-[10px] h-5 px-2 font-normal border", config.className)}>
                         {config.label}
@@ -92,7 +92,7 @@ export function StudioCreationCard({
         )
     }
 
-    // Grid Layout
+    
     return (
         <motion.div
             whileHover={{ y: -4 }}
@@ -100,7 +100,7 @@ export function StudioCreationCard({
             className="group relative flex flex-col rounded-2xl bg-zinc-900/40 hover:bg-zinc-900/80 border border-white/5 hover:border-white/10 shadow-sm hover:shadow-xl hover:shadow-black/20 overflow-hidden cursor-pointer transition-colors duration-300"
             onClick={onClick}
         >
-            {/* Thumbnail Area */}
+            {}
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-800/50">
                 {creation.thumbnail ? (
                     <MediaRenderer
@@ -112,7 +112,7 @@ export function StudioCreationCard({
                     <div className="h-full w-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
                 )}
 
-                {/* Overlay */}
+                {}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
                     <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
                         <Eye className="w-4 h-4" />
@@ -121,7 +121,7 @@ export function StudioCreationCard({
                 </div>
             </div>
 
-            {/* Metadata */}
+            {}
             <div className="p-4 flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">

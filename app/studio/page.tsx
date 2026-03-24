@@ -40,7 +40,7 @@ function StudioLayout() {
   const processedJobIdRef = useRef<string | null>(null);
   const cancelledJobsRef = useRef<Set<string>>(new Set());
 
-  // Restore persistent state on mount
+  
   useEffect(() => {
     try {
       const savedActive = localStorage.getItem("studio_active_generation");
@@ -48,26 +48,27 @@ function StudioLayout() {
       const savedGens = localStorage.getItem("studio_generations_history");
 
       if (savedActive && savedActiveTime) {
-        // Enforce a strict 5-minute timeout. If you reload much later, the active card is gone (clean slate)
         const isStale = Date.now() - parseInt(savedActiveTime, 10) > 5 * 60 * 1000;
         if (!isStale) {
           setActiveGeneration(JSON.parse(savedActive));
+          if (savedGens) setGenerations(JSON.parse(savedGens));
         } else {
           localStorage.removeItem("studio_active_generation");
+          localStorage.removeItem("studio_generations_history");
           localStorage.removeItem("studio_active_time");
         }
-      } else if (savedActive) {
-        // Purge legacy ghost caches lacking timestamps
+      } else if (savedActive || savedGens) {
+        
         localStorage.removeItem("studio_active_generation");
+        localStorage.removeItem("studio_generations_history");
+        localStorage.removeItem("studio_active_time");
       }
-
-      if (savedGens) setGenerations(JSON.parse(savedGens));
     } catch (error) {
       console.warn("Failed to load generic studio state:", error);
     }
   }, []);
 
-  // Sync state to local storage to persist across immediate/accidental navigations
+  
   useEffect(() => {
     if (activeGeneration) {
       localStorage.setItem("studio_active_generation", JSON.stringify(activeGeneration));
@@ -80,28 +81,37 @@ function StudioLayout() {
 
   useEffect(() => {
     if (generations.length > 0) {
-      // Keep only the most recent 10 to avoid bloating local storage string length
+      
       localStorage.setItem("studio_generations_history", JSON.stringify(generations.slice(0, 10)));
     }
   }, [generations]);
 
-  // Shared state for framing/canvas preview
-  const [aspectRatio, setAspectRatio] = useState("16:9");
+  
+  const [aspectRatio, _setAspectRatio] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("studio_aspect_ratio") || "1:1";
+    }
+    return "1:1";
+  });
+  const setAspectRatio = (val: string) => {
+    _setAspectRatio(val);
+    try { localStorage.setItem("studio_aspect_ratio", val); } catch (e) {}
+  };
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
-  // Auto-open panel on mobile if remixing or empty
+  
   useEffect(() => {
-    // Small delay to ensure state hydration doesn't conflict
+    
     const timer = setTimeout(() => {
       if (typeof window !== 'undefined' && window.innerWidth < 1024) {
         const isRemix = searchParams.get("mode") === "remix";
         const isDirectJob = !!searchParams.get("jobId");
 
-        // If they are strictly remixing, definitely open it
+        
         if (isRemix && !isDirectJob) {
           setMobilePanelOpen(true);
         }
-        // If there's absolutely no history/active job and they just landed, auto-open it
+        
         else if (!activeGeneration && !isDirectJob && !isGenerating && generations.length === 0) {
           setMobilePanelOpen(true);
         }
@@ -110,7 +120,7 @@ function StudioLayout() {
     return () => clearTimeout(timer);
   }, [searchParams, activeGeneration, isGenerating, generations.length]);
 
-  // GSAP Entrance Animations
+  
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(
@@ -124,12 +134,17 @@ function StudioLayout() {
 
   const handleGenerate = async (prompt: string, settings: any) => {
     setIsGenerating(true);
+    
+    setGenerations([]);
+    setActiveGeneration(null);
+    localStorage.removeItem("studio_generations_history");
+    localStorage.removeItem("studio_active_generation");
+    localStorage.removeItem("studio_active_time");
 
     const createStudioJob = httpsCallable(functions, "createStudioJob");
-    const getJobStatus = httpsCallable(functions, "getJobStatus");
 
     try {
-      const { model, mode: genMode, sourceFile, sourceVideo, sourceFiles, sourceVideos, ...dynamicParameters } = settings;
+      const { model, mode: genMode, sourceFile, sourceVideo, sourceFiles, sourceVideos, end_image_file, aspectRatio: _ar, ...dynamicParameters } = settings;
 
       const uploadAsset = async (file: File) => {
         const extension = file.name.split('.').pop() || "png";
@@ -145,7 +160,7 @@ function StudioLayout() {
         if (sourceFile.type.startsWith('video/')) {
           dynamicParameters.video_url = url;
         } else {
-          // Pass it strictly as image_url for the backend Universal Mapper
+          
           dynamicParameters.image_url = url;
         }
         toast.success('Media fully uploaded!', { id: 'gen-toast' });
@@ -166,6 +181,11 @@ function StudioLayout() {
         dynamicParameters.video_urls = await Promise.all(sourceVideos.map(f => uploadAsset(f)));
         toast.success('All videos uploaded!', { id: 'gen-toast' });
       }
+      if (end_image_file) {
+        toast.loading('Uploading end frame image...', { id: 'gen-toast' });
+        dynamicParameters.end_image_url = await uploadAsset(end_image_file);
+        toast.success('End frame uploaded!', { id: 'gen-toast' });
+      }
 
       toast.loading('Initiating AI Model creation...', { id: 'gen-toast' });
 
@@ -176,9 +196,9 @@ function StudioLayout() {
         provider: "poyo",
         model: usedModel,
         parameters: {
+          ...(prompt ? { prompt } : {}),
           ...dynamicParameters,
-          n: Number(count), 
-          num_outputs: Number(count) 
+          n: Number(count),
         }
       });
 
@@ -192,31 +212,26 @@ function StudioLayout() {
         prompt: prompt,
         status: "queued" as const,
         settings: {
-            ...settings,
-            n: count,
-            // AUTO-REFRESH FIX: Update previewUrl to the remote URL so future requests are valid
-            previewUrl: dynamicParameters.image_url || settings.previewUrl 
+          ...settings,
+          n: count,
+          previewUrl: dynamicParameters.image_url || settings.previewUrl
         }
       };
 
       setActiveGeneration(newItem);
-      setGenerations((prev: GenerationItem[]) => [newItem, ...prev]);
+      setGenerations([newItem]);
       startJobPoller(jobId, newItem);
 
     } catch (error: any) {
       setIsGenerating(false);
       toast.dismiss('gen-toast');
 
-      // Check the specific Application Code we set in the backend
       const appCode = error.details?.code;
       if (appCode === "INSUFFICIENT_TOKENS") {
-        // Show the billing overlay only if the USER is out of tokens
         setShowBillingAlert(true);
       } else if (appCode === "PROVIDER_ERROR") {
-        // Show a system toast if the AI ENGINE (Poyo) is failing
         toast.error("AI Provider is currently at capacity or low on credits. Your tokens have been refunded. Please try again or switch models.", { duration: 6000 });
       } else {
-        // Handle other errors (Network, Timeout, etc.)
         console.error("Failed to deduct tokens or create job:", error);
         toast.error(`Job failed: ${error?.message || 'Unknown error'}`, { id: 'gen-toast' });
       }
@@ -239,47 +254,47 @@ function StudioLayout() {
         if (data.status === "completed") {
           console.log("Finished Rendering!", data);
 
-          // Standardize multi-output detection (handles outputUrls, output_urls, results, etc.)
+          
           const rawUrls = data.outputUrls || data.output_urls || data.images || data.urls || data.result_urls || (Array.isArray(data.outputUrl) ? data.outputUrl : null);
           const urls = Array.isArray(rawUrls) ? rawUrls.filter(u => !!u) : [];
-          
+
           if (urls.length > 1) {
-            // Multiple images detected!
+            
             const completedItems = urls.map((url: string, index: number) => ({
               ...item,
               id: index === 0 ? jobId : `${jobId}_${index}`,
               creationId: (data.creationIds || data.creation_ids)?.[index] || data.creationId,
               status: "completed" as const,
               src: url,
-              srcs: undefined // Individual items don't have srcs
+              srcs: undefined 
             }));
 
-            // Create the collage/batch item for the active view
+            
             const batchItem: GenerationItem = {
               ...item,
               id: jobId,
               status: "completed" as const,
-              src: urls[0], // Fallback for components that don't support multi-view
+              src: urls[0], 
               srcs: urls,
               creationIds: data.creationIds || data.creation_ids || Array(urls.length).fill(data.creationId)
             };
 
             setActiveGeneration(batchItem);
 
-            // History tracking: Keep them as individual items for granular control
+            
             setGenerations((prev: GenerationItem[]) => {
               const cleaned = prev.filter(g => g.id !== jobId);
               return [...completedItems, ...cleaned];
             });
           } else {
-            // Single image result
+            
             const finalUrl = urls[0] || data.outputUrl;
-            const completedItem: GenerationItem = { 
-                ...item, 
-                status: "completed" as const, 
-                src: finalUrl, 
-                srcs: undefined,
-                creationId: data.creationId 
+            const completedItem: GenerationItem = {
+              ...item,
+              status: "completed" as const,
+              src: finalUrl,
+              srcs: undefined,
+              creationId: data.creationId
             };
             setActiveGeneration(completedItem);
             setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? completedItem : g));
@@ -293,19 +308,19 @@ function StudioLayout() {
           setIsGenerating(false);
         } else {
           console.log("Still processing, polling again in 1.5 seconds...");
+
           
-          // Capture batch progress if available
           const progress = data.progress || 0;
           const completedCount = data.completedCount || 0;
           const totalCount = data.totalCount || item.settings?.n || 1;
 
-          setActiveGeneration((prev: GenerationItem | null) => 
+          setActiveGeneration((prev: GenerationItem | null) =>
             prev ? { ...prev, status: "generating", progress, completedCount, totalCount } : null
           );
-          setGenerations((prev: GenerationItem[]) => 
+          setGenerations((prev: GenerationItem[]) =>
             prev.map(g => g.id === jobId ? { ...g, status: "generating", progress, completedCount, totalCount } : g)
           );
-          setTimeout(checkStatus, 1500); // Polling faster for better user experience
+          setTimeout(checkStatus, 1500); 
         }
       } catch (error) {
         console.error("Polling error:", error);
@@ -321,11 +336,11 @@ function StudioLayout() {
       cancelledJobsRef.current.add(jobId);
 
       const cancelledItem: GenerationItem = { ...activeGeneration, status: "failed" };
-      setActiveGeneration(null); // Clear completely so canvas resets back to editing mode
+      setActiveGeneration(null); 
       setGenerations((prev) => prev.map(g => g.id === jobId ? cancelledItem : g));
       setIsGenerating(false);
 
-      // Clean local storage explicitly so a refresh doesn't magically resurrect it from cache
+      
       localStorage.removeItem("studio_active_generation");
       localStorage.removeItem("studio_active_time");
 
@@ -341,12 +356,12 @@ function StudioLayout() {
     }
   };
 
-  // Automatically start tracking if we navigated here from a direct Remix button
+  
   useEffect(() => {
     const urlJobId = searchParams.get("jobId");
 
     if (urlJobId && processedJobIdRef.current !== urlJobId) {
-      processedJobIdRef.current = urlJobId; // Lock it immediately
+      processedJobIdRef.current = urlJobId; 
       setIsGenerating(true);
 
       const newItem: GenerationItem = {
@@ -364,9 +379,9 @@ function StudioLayout() {
       });
 
       startJobPoller(urlJobId, newItem);
-      router.replace('/studio', { scroll: false }); // Clean URL silently
+      router.replace('/studio', { scroll: false }); 
     }
-    // Also handle restoring polling if user reloads a page while something was generating
+    
     else if (!urlJobId && activeGeneration && (activeGeneration.status === 'generating' || activeGeneration.status === 'queued')) {
       if (!isGenerating) {
         setIsGenerating(true);
@@ -379,19 +394,19 @@ function StudioLayout() {
   return (
     <div className="min-h-screen bg-[#050505] text-zinc-100 font-sans relative selection:bg-cyan-500/40 overflow-hidden">
 
-      {/* Zero Tokens Premium Alert Overlay */}
+      {}
       {showBillingAlert && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xl px-4">
           <div className="relative rounded-3xl overflow-hidden max-w-[380px] w-full shadow-2xl transform animate-in zoom-in-95 duration-200 border border-white/10">
-            {/* Background Image Container */}
+            {}
             <div
               className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80"
               style={{ backgroundImage: `url('${ASSET_BASE}/fdshj.jpg')` }}
             />
-            {/* Dim Overlay to ensure text readability */}
+            {}
             <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
 
-            {/* Content Container */}
+            {}
             <div className="relative z-10 py-10 px-8 text-center flex flex-col items-center">
               <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10 backdrop-blur-md shadow-2xl">
                 <Sparkles className="w-5 h-5 text-white/80" />
@@ -422,39 +437,39 @@ function StudioLayout() {
         </div>
       )}
 
-      {/* Background Lighting & Image Layer - CINEMATIC DEPTH */}
+      {}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute inset-0 bg-[#020203]" />
-        
-        {/* Primary Ambient Image with subtle Infinite Float */}
+
+        {}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.45] mix-blend-screen scale-110 blur-[1px] animate-pulse duration-[8000ms]"
           style={{ backgroundImage: `url('${ASSET_BASE}/studio/studio3.jpeg')` }}
         />
 
-        {/* Dynamic Light Pools */}
+        {}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08)_0%,transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(6,182,212,0.05)_0%,transparent_40%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(236,72,153,0.05)_0%,transparent_40%)]" />
-        
+
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-[#050505]/80" />
         <div className="absolute inset-0 backdrop-blur-[100px]" />
       </div>
 
-      {/* Main Layout Container - SCROLL FIX: Use dynamic viewport height (dvh) for mobile stability */}
+      {}
       <div className="relative z-10 flex flex-col lg:flex-row w-full h-[100dvh] lg:h-[calc(100vh-24px)] pt-[72px] lg:pt-[104px] px-0 lg:px-6 gap-0 lg:gap-6 max-w-[2000px] mx-auto overflow-hidden">
 
-        {/* Perfect Mobile Workspace (No sticky header overlap) */}
+        {}
         <div className="lg:hidden h-2" />
 
-        {/* Left Panel - Tool Control (Now a slide-over on mobile) */}
+        {}
         <div
           className={cn(
             "fixed inset-y-0 left-0 w-[90%] max-w-[380px] lg:relative lg:inset-auto lg:w-[340px] lg:shrink-0 h-[100dvh] lg:h-full flex flex-col z-[100] lg:z-20 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] bg-[#050505]/95 lg:bg-transparent backdrop-blur-3xl shadow-[30px_0_60px_rgba(0,0,0,0.8)] lg:shadow-none p-4 pb-6 lg:p-0 border-r border-white/5 lg:border-none",
             mobilePanelOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           )}
         >
-          {/* Mobile Close Button Container */}
+          {}
           <div className="lg:hidden flex items-center justify-between mb-4 pt-24 px-2 shrink-0">
             <span className="text-[11px] font-black tracking-[0.2em] uppercase text-white/50">Studio Canvas Config</span>
             <Button
@@ -471,7 +486,7 @@ function StudioLayout() {
             <StudioLeftPanel
               onGenerate={(prompt, settings) => {
                 handleGenerate(prompt, settings);
-                setMobilePanelOpen(false); // Auto close panel on generation starting!
+                setMobilePanelOpen(false); 
               }}
               onCancel={handleCancel}
               isGenerating={isGenerating}
@@ -482,7 +497,7 @@ function StudioLayout() {
           </div>
         </div>
 
-        {/* Panel Overlay for Mobile */}
+        {}
         <div
           className={cn(
             "lg:hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[95] transition-opacity duration-500",
@@ -491,7 +506,7 @@ function StudioLayout() {
           onClick={() => setMobilePanelOpen(false)}
         />
 
-        {/* Center Panel - Creation Canvas (Hero Content) */}
+        {}
         <div className="flex-1 h-full min-w-0 flex flex-col relative z-10">
           <StudioCenterCanvas
             activeGeneration={activeGeneration}

@@ -80,7 +80,7 @@ export function StudioMainContent({ mode, generations }: StudioMainContentProps)
                 </header>
             </div>
 
-            {/* Content Area */}
+            {}
             <main className="flex-1 relative z-10">
                 <div className="w-full">
                     <div className="mb-8">
@@ -120,7 +120,7 @@ export function StudioMainContent({ mode, generations }: StudioMainContentProps)
                                                         fill
                                                         className="object-cover transition-transform duration-[800ms] ease-out group-hover:scale-110"
                                                     />
-                                                    {/* Overlay Actions */}
+                                                    {}
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-3.5">
                                                         <div className="flex justify-end">
                                                             <button className="w-7 h-7 rounded-full border border-white/40 bg-black/40 backdrop-blur-md flex items-center justify-center cursor-pointer hover:bg-white/30 hover:scale-110 transition-all shadow-lg">
@@ -146,7 +146,7 @@ export function StudioMainContent({ mode, generations }: StudioMainContentProps)
                     </div>
                 </div>
 
-                {/* Output Settings Panel (Floating) */}
+                {}
                 <AnimatePresence>
                     {showOutputSettings && (
                         <motion.div

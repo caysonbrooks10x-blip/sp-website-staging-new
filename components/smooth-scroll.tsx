@@ -20,11 +20,11 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
             easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             smoothWheel: true,
             wheelMultiplier: 0.8,
-            // Removing touchMultiplier to let native mobile scrolling handle touch perfectly
+            
         })
 
         lenisRef.current = lenis
-            // Expose globally for Navbar and other components to trigger soft scrolls
+            
             ; (window as any).lenis = lenis
 
         ScrollTrigger.scrollerProxy(document.body, {
@@ -53,32 +53,32 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
         gsap.ticker.add(rafRef.current)
         gsap.ticker.lagSmoothing(0)
 
-        // Initial refresh
+        
         requestAnimationFrame(() => {
             ScrollTrigger.refresh()
         })
 
         return () => {
-            // We don't destroy lenis here because it might be needed fast? 
-            // actually standard cleanup is fine.
+            
+            
             lenis.destroy()
             if (rafRef.current) gsap.ticker.remove(rafRef.current)
             ScrollTrigger.killAll()
         }
     }, [])
 
-    // Handle Route Changes
-    // Handle Route Changes
+    
+    
     useEffect(() => {
         if (!lenisRef.current) return
 
-        // Instant jump to top to prevent "laggy" scrollback
+        
         lenisRef.current.scrollTo(0, { immediate: true })
 
-        // Debounced Refresh: Wait for rapid navigation to settle
+        
         const timer = setTimeout(() => {
             ScrollTrigger.refresh()
-        }, 150) // 150ms delay to catch rapid clicks
+        }, 150) 
 
         return () => clearTimeout(timer)
     }, [pathname])

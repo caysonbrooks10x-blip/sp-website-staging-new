@@ -26,14 +26,14 @@ export function FeatureCard({ title, description, icon: Icon, className }: Featu
         const x = e.clientX - centerX
         const y = e.clientY - centerY
 
-        // Calculate rotation (tilt)
-        // Max rotation roughly 10 deg
+        
+        
         const rotateX = (y / (rect.height / 2)) * -10
         const rotateY = (x / (rect.width / 2)) * 10
 
         setRotation({ x: rotateX, y: rotateY })
 
-        // Calculate spotlight position relative to card
+        
         setPosition({
             x: e.clientX - rect.left,
             y: e.clientY - rect.top
@@ -61,7 +61,7 @@ export function FeatureCard({ title, description, icon: Icon, className }: Featu
                 transformStyle: "preserve-3d",
             }}
         >
-            {/* Spotlight Effect */}
+            {}
             <div
                 className="pointer-events-none absolute -inset-px opacity-0 transitionDuration-300 group-hover:opacity-100 z-10"
                 style={{
@@ -69,7 +69,7 @@ export function FeatureCard({ title, description, icon: Icon, className }: Featu
                 }}
             />
 
-            {/* Glowing Border Gradient */}
+            {}
             <div
                 className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"
                 style={{
@@ -95,7 +95,7 @@ export function FeatureCard({ title, description, icon: Icon, className }: Featu
                 </p>
             </div>
 
-            {/* Bottom shine */}
+            {}
             <div
                 className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"
             />

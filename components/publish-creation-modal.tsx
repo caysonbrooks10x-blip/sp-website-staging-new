@@ -15,7 +15,7 @@ export function PublishCreationModal({ creationId, onSuccess, onClose }: Publish
     const [caption, setCaption] = useState("");
     const [isPublishing, setIsPublishing] = useState(false);
 
-    // Lock body scroll
+    
     useEffect(() => {
         document.body.style.overflow = "hidden";
         return () => {
@@ -23,7 +23,7 @@ export function PublishCreationModal({ creationId, onSuccess, onClose }: Publish
         };
     }, []);
 
-    // Wire up the publish function
+    
     const publishPost = httpsCallable(functions, "publishPost");
     const handlePublish = async () => {
         if (!creationId) return;
@@ -32,13 +32,13 @@ export function PublishCreationModal({ creationId, onSuccess, onClose }: Publish
             await publishPost({
                 creationId: creationId,
                 caption: caption,
-                // Optional: Provide custom tags. If none, AI/backend handles it.
+                
                 tags: ["community", "creation"]
             });
 
             console.log("Successfully published to the public Community Feed!");
             if (onSuccess) onSuccess();
-            // Close the modal
+            
             onClose();
         } catch (e: any) {
             console.error("Publishing Failed:", e);
@@ -51,7 +51,7 @@ export function PublishCreationModal({ creationId, onSuccess, onClose }: Publish
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
             <div className="bg-[#111] border border-white/[0.08] shadow-2xl rounded-2xl w-full max-w-lg overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-300">
-                {/* Header */}
+                {}
                 <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
@@ -68,7 +68,7 @@ export function PublishCreationModal({ creationId, onSuccess, onClose }: Publish
                     </button>
                 </div>
 
-                {/* Body */}
+                {}
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-zinc-400 leading-relaxed">
                         Share your creation with the world. Feel free to add a caption to describe your vision or technique.
@@ -84,7 +84,7 @@ export function PublishCreationModal({ creationId, onSuccess, onClose }: Publish
                     </div>
                 </div>
 
-                {/* Footer */}
+                {}
                 <div className="p-5 border-t border-white/[0.06] bg-black/20 flex justify-end gap-3">
                     <Button
                         variant="ghost"

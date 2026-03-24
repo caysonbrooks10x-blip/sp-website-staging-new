@@ -21,7 +21,7 @@ export function HeroSection() {
         const isMobile = window.innerWidth < 768
 
         const ctx = gsap.context(() => {
-            // 1. Intro Animation
+            
             const introTl = gsap.timeline({ defaults: { ease: "power4.out" } })
 
             introTl
@@ -54,7 +54,7 @@ export function HeroSection() {
                     ease: "power2.out"
                 }, 0)
 
-            // 2. Video Ambient Motion
+            
             gsap.to(".hero-video", {
                 scale: 1.05,
                 duration: 20,
@@ -63,39 +63,39 @@ export function HeroSection() {
                 ease: "sine.inOut"
             })
 
-            // 3. Scroll Pinning & Parallax
+            
             if (!isMobile) {
                 const scrubTl = gsap.timeline({
                     scrollTrigger: {
                         trigger: heroRef.current,
                         start: "top top",
-                        end: "+=120%", // Extended pin for smoother feel
+                        end: "+=120%", 
                         pin: true,
                         pinSpacing: false,
-                        scrub: 1.2, // Smoother scrub
+                        scrub: 1.2, 
                         anticipatePin: 1,
                     }
                 })
 
-                // Text moves up and fades out relative to scroll
+                
                 scrubTl
                     .to(".hero-content", {
                         y: -150,
                         opacity: 0,
                         scale: 0.95,
-                        ease: "power2.inOut", // Smoother easing
+                        ease: "power2.inOut", 
                     }, 0)
                     .to(".hero-video-container", {
                         y: 100,
-                        scale: 1.15, // Slightly more scale for depth
+                        scale: 1.15, 
                         ease: "none"
                     }, 0)
                     .to(".hero-bg-overlay", {
-                        opacity: 0.8, // Darker overlay on scroll
+                        opacity: 0.8, 
                         ease: "none"
                     }, 0)
             } else {
-                // Mobile Parallax
+                
                 gsap.to(".hero-content", {
                     y: -80,
                     opacity: 0,
@@ -127,23 +127,23 @@ export function HeroSection() {
         <section ref={containerRef} className="relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden bg-background">
             <div ref={heroRef} className="w-full h-full absolute inset-0 flex flex-col items-center justify-center pt-[100px] md:pt-[120px]">
 
-                {/* Video Background */}
+                {}
                 <div className="hero-video-container absolute inset-0 z-0 pointer-events-none overflow-hidden">
                     <video
                         autoPlay
                         muted
                         loop
                         playsInline
-                        className="hero-video w-full h-full object-cover opacity-60 grayscale-[0.3] will-change-transform" // Added grayscale for mood
+                        className="hero-video w-full h-full object-cover opacity-60 grayscale-[0.3] will-change-transform" 
                     >
                         <source src={`${ASSET_BASE}/herosection.mp4`} type="video/mp4" />
                     </video>
                     <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
-                    {/* Gradient for smooth transition to next section */}
+                    {}
                     <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background via-background/60 to-transparent" />
                 </div>
 
-                {/* Overlay */}
+                {}
                 <div className="hero-bg-overlay absolute inset-0 bg-background/0 z-1 pointer-events-none" />
 
                 <div className="hero-content relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left flex flex-col items-start justify-center gap-6 md:gap-8 mt-12 md:mt-16 w-full lg:w-[800px] xl:w-[1000px] self-start md:ml-12 lg:ml-24">
@@ -162,7 +162,7 @@ export function HeroSection() {
                         </Badge>
                     </div>
 
-                    <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold tracking-tight leading-[0.95] md:leading-[0.9] font-serif text-balance drop-shadow-2xl text-zinc-400/90 mix-blend-overlay w-full text-left"> {/* Greyish text with overlay blend */}
+                    <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold tracking-tight leading-[0.95] md:leading-[0.9] font-serif text-balance drop-shadow-2xl text-zinc-400/90 mix-blend-overlay w-full text-left"> {}
                         <div className="overflow-hidden py-2 block">
                             <SplitText>Lightning fast creation meets</SplitText>
                         </div>
@@ -192,7 +192,7 @@ export function HeroSection() {
 
                 </div>
 
-                {/* Scroll Indicator */}
+                {}
                 <div className="hero-btn absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30 animate-pulse cursor-pointer z-10 hover:opacity-100 transition-opacity duration-300"
                     onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}>
                     <div className="w-[1px] h-16 bg-gradient-to-b from-transparent via-zinc-500 to-transparent" />

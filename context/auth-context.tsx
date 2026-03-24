@@ -57,9 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const router = useRouter();
 
-    // Mock credits for now since backend integration is removed
+    
     const fetchCredits = async (userId: string) => {
-        setCredits(100); // Default mock credits
+        setCredits(100); 
     };
 
     useEffect(() => {

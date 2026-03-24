@@ -29,21 +29,21 @@ export function MarketplaceState({ progress, isVisible = true }: MarketplaceStat
     useEffect(() => {
         if (!isVisible) return
 
-        // 3D Grid Animation
-        // Concept: A wall of cards that slides diagonally or zooms past
-        // Let's do a vertical scroll simulation where new rows appear
+        
+        
+        
 
-        // 0 -> 1 progress
-        // Move entire grid up by Y pixels
+        
+        
 
-        const totalHeight = 800 // Virtual scroll height
+        const totalHeight = 800 
         const currentY = -progress * totalHeight
 
-        // Title Float
+        
         if (titleRef.current) {
             gsap.set(titleRef.current, {
-                y: progress * 200, // Parallax down slower
-                opacity: 1 - Math.pow(progress, 3) // Fade out near end
+                y: progress * 200, 
+                opacity: 1 - Math.pow(progress, 3) 
             })
         }
 
@@ -51,24 +51,24 @@ export function MarketplaceState({ progress, isVisible = true }: MarketplaceStat
             const el = cardsRef.current[i]
             if (!el) return
 
-            // Grid Layout Math
-            // 3 columns
+            
+            
             const col = i % 3
             const row = Math.floor(i / 3)
 
-            const xBase = (col - 1) * 320 // -320, 0, 320
-            const yBase = row * 320 // 0, 320, 640
+            const xBase = (col - 1) * 320 
+            const yBase = row * 320 
 
-            // Apply global scroll movement
-            const finalY = yBase + currentY + 200 // Start lower
+            
+            const finalY = yBase + currentY + 200 
 
-            // 3D Tilt based on position (Perspective center is 0,0)
-            // If card is far left, tilt Y positive (face right)
+            
+            
             const rotateY = -(col - 1) * 15
-            const rotateX = (finalY / 500) * 15 // Tilt based on height
+            const rotateX = (finalY / 500) * 15 
 
-            // Distance from "Focus Zone" (center screen)
-            // Center roughly at Y = 0 to 300
+            
+            
             const distFromCenter = Math.abs(finalY - 100)
             const scale = Math.max(0.8, 1 - (distFromCenter / 2000))
             const opacity = Math.max(0, 1 - (distFromCenter / 1200))
@@ -76,7 +76,7 @@ export function MarketplaceState({ progress, isVisible = true }: MarketplaceStat
             gsap.set(el, {
                 x: xBase,
                 y: finalY,
-                z: -Math.abs(col - 1) * 50, // Center col is closer
+                z: -Math.abs(col - 1) * 50, 
                 rotateY: rotateY,
                 rotateX: rotateX,
                 scale: scale,
@@ -90,9 +90,9 @@ export function MarketplaceState({ progress, isVisible = true }: MarketplaceStat
     return (
         <section className="absolute inset-0 w-full h-full flex flex-col items-center justify-center overflow-hidden perspective-[1000px] pointer-events-none">
 
-            {/* Background elements? */}
+            {}
 
-            {/* Title - Fixed at somewhat top */}
+            {}
             <div ref={titleRef} className="absolute top-[15%] z-20 text-center pointer-events-auto">
                 <h2 className="text-sm font-mono text-cyan-400 mb-4 tracking-widest uppercase">Ecosystem</h2>
                 <h3 className="text-5xl md:text-7xl font-serif font-bold text-white tracking-tight">
@@ -103,7 +103,7 @@ export function MarketplaceState({ progress, isVisible = true }: MarketplaceStat
                 </p>
             </div>
 
-            {/* Grid Container */}
+            {}
             <div className="relative w-full max-w-5xl h-full flex items-center justify-center transform-style-3d top-[10%]">
                 {ASSETS.map((asset, i) => (
                     <div

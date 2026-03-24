@@ -45,20 +45,20 @@ function CommunityContent() {
   return (
     <main ref={headerRef} className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30 overflow-x-hidden">
 
-      {/* Upload Modal */}
+      {}
       <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
 
-      {/* Sophisticated Ambient Background - Optimized for mobile */}
+      {}
       <div className="fixed inset-0 z-0 pointer-events-none transform-gpu overflow-hidden">
-        {/* Desktop Heavy Blur */}
+        {}
         <div className="hidden md:block absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-purple-900/5 rounded-full blur-[180px] will-change-transform" />
         <div className="hidden md:block absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-blue-900/5 rounded-full blur-[150px] will-change-transform" />
-        {/* Mobile Lightweight Gradients (No CSS Blur) */}
+        {}
         <div className="md:hidden absolute top-[-10%] left-[10%] w-[80%] h-[60%] rounded-full bg-[radial-gradient(circle,rgba(88,28,135,0.15)_0%,transparent_70%)] will-change-transform" />
         <div className="md:hidden absolute bottom-[0%] right-[-10%] w-[70%] h-[50%] rounded-full bg-[radial-gradient(circle,rgba(30,58,138,0.15)_0%,transparent_70%)] will-change-transform" />
       </div>
 
-      {/* Refined Header */}
+      {}
       <section className="relative z-10 pt-40 md:pt-48 pb-12 md:pb-24 px-6 md:px-16 max-w-[2000px] mx-auto">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 md:gap-10 mb-12 md:mb-20">
           <div className="space-y-4 md:space-y-6 max-w-3xl">
@@ -102,12 +102,12 @@ function CommunityContent() {
           </div>
         </div>
 
-        {/* Masonry Layout via Component */}
+        {}
         <CommunityGrid />
 
       </section>
 
-      {/* Minimal Load More */}
+      {}
       <section className="relative z-10 mx-auto max-w-7xl px-4 pb-32 text-center">
         <div className="h-[1px] w-full max-w-xs mx-auto bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8"></div>
         <Button

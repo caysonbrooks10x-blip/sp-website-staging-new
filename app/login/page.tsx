@@ -11,7 +11,7 @@ import { Loader2, Mail, Lock, Phone, ArrowLeft, Eye, EyeOff } from "lucide-react
 import Link from "next/link";
 import { ASSET_BASE } from "@/lib/assets";
 
-// Components for clean UI
+
 const SocialButton = ({ icon, text, onClick, disabled }: { icon: any, text: string, onClick?: () => void, disabled?: boolean }) => (
     <Button
         variant="outline"
@@ -41,11 +41,11 @@ export default function LoginPage() {
 
     const [view, setView] = useState<"selection" | "email" | "phone">("selection");
 
-    // Email State
+    
     const [emailCreds, setEmailCreds] = useState({ email: "", password: "" });
     const [showPassword, setShowPassword] = useState(false);
 
-    // Phone State
+    
     const [phoneNumber, setPhoneNumber] = useState("");
     const [verificationCode, setVerificationCode] = useState("");
     const [phoneStep, setPhoneStep] = useState<"phone" | "code">("phone");
@@ -56,7 +56,7 @@ export default function LoginPage() {
     const redirectPath = useRef("/");
 
     useEffect(() => {
-        // Capture redirect params once on mount
+        
         const params = new URLSearchParams(window.location.search);
         redirectPath.current = params.get('redirect') || "/onboarding";
     }, []);
@@ -78,7 +78,7 @@ export default function LoginPage() {
         setIsSubmitting(true);
         try {
             await signInWithEmail(emailCreds.email, emailCreds.password);
-            // Redirect handled by user effect
+            
         } catch (err: any) {
             setError(err.message || "Failed to login");
             setIsSubmitting(false);
@@ -109,7 +109,7 @@ export default function LoginPage() {
         setIsSubmitting(true);
         try {
             await verifyOtp(verificationCode);
-            // Redirect handled by user effect
+            
         } catch (err: any) {
             setError("Invalid verification code");
             setIsSubmitting(false);
@@ -127,7 +127,7 @@ export default function LoginPage() {
     return (
         <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center bg-[#050505] px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
 
-            {/* Background Ambience */}
+            {}
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none" />
 
@@ -138,12 +138,17 @@ export default function LoginPage() {
                 className="w-full max-w-[500px] relative z-10"
             >
                 <div className="text-center mb-8">
-                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold text-xl mb-4 shadow-lg shadow-purple-500/20">
-                        S
+                    <div className="inline-flex h-32 w-32 items-center justify-center transition-all duration-500 hover:scale-110">
+                        <img 
+                            src="/studio_logo.svg" 
+                            alt="StudioX Logo" 
+                            draggable="false"
+                            className="w-full h-full object-contain filter drop-shadow-[0_0_40px_rgba(168,85,247,0.5)] select-none"
+                        />
                     </div>
                 </div>
 
-                {/* Card Container with Background Image */}
+                {}
                 <div
                     className="relative bg-black/60 rounded-3xl shadow-2xl overflow-hidden border border-white/10"
                     style={{
@@ -152,7 +157,7 @@ export default function LoginPage() {
                         backgroundPosition: 'center',
                     }}
                 >
-                    {/* Dark Overlay for Readability */}
+                    {}
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
                     <div className="relative p-10 z-10">

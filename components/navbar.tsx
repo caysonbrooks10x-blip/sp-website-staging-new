@@ -70,7 +70,7 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Lock body scroll when menu is open
+  
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = "hidden"
@@ -94,7 +94,7 @@ export function Navbar() {
     { href: "/pricing", label: "Pricing" },
   ]
 
-  // Hide global navbar on community post detail pages (they have their own nav)
+  
   const isCommunityPostDetail = /^\/community\/.+/.test(pathname)
   if (isCommunityPostDetail) return null
 
@@ -104,10 +104,12 @@ export function Navbar() {
         className={cn(
           "fixed top-0 left-0 right-0 z-[100] px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-[0.32,0.72,0,1]",
           isNavVisible ? "translate-y-0" : "-translate-y-32",
-          scrolled ? "bg-black/50 backdrop-blur-2xl py-4" : "bg-transparent py-6"
+          scrolled 
+            ? "bg-black/60 backdrop-blur-2xl py-3 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]" 
+            : "bg-black/20 backdrop-blur-lg py-5 border-b border-white/5"
         )}
       >
-        <div className="w-full flex items-center justify-between relative">
+        <div className="max-w-7xl mx-auto flex items-center justify-between relative">
           {/* Logo */}
           <Link
             href="/"
@@ -119,21 +121,31 @@ export function Navbar() {
             }}
             className="flex items-center gap-3 group relative z-[110]"
           >
-            <div className="relative w-8 h-8 flex items-center justify-center bg-white text-black rounded-lg overflow-hidden transition-transform duration-500">
-              <div className="absolute inset-0 bg-gradient-to-tr from-zinc-200 to-white opacity-100" />
-              <span className="relative font-bold text-sm tracking-tighter">Sx</span>
+            <div className="relative w-13 h-13 flex items-center justify-center transition-all duration-500 group-hover:scale-105">
+              <img 
+                src="/studio_logo.svg" 
+                alt="StudioX Logo" 
+                draggable="false"
+                className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)] select-none"
+              />
             </div>
-            <span className="font-medium tracking-wide text-white transition-colors duration-300 pointer-events-none">
-              StudioX
-            </span>
+            <img 
+              src="/studio_brandname.svg" 
+              alt="StudioX" 
+              draggable="false"
+              className={cn(
+                "h-8 sm:h-9 object-contain transition-all duration-300 brightness-0 invert opacity-90 group-hover:opacity-100 select-none",
+                scrolled ? "h-7 sm:h-8" : "h-8 sm:h-9"
+              )}
+            />
           </Link>
 
-          {/* Desktop Navigation Capsule */}
-          <nav ref={navRef} className="hidden md:flex items-center gap-1 p-1.5 rounded-full bg-white/5 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.02)] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[110]">
+          {/* Desktop Nav */}
+          <nav ref={navRef} className="hidden md:flex items-center gap-1 p-1.5 rounded-full bg-black/20 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[110]">
 
-            {/* Smooth Sliding Pill */}
+            {/* Sliding Pill */}
             <div
-              className="absolute top-1.5 bottom-1.5 rounded-full bg-gradient-to-tr from-white to-zinc-200 shadow-md pointer-events-none transition-all duration-500 ease-[0.32,0.72,0,1]"
+              className="absolute top-1.5 bottom-1.5 rounded-full bg-gradient-to-tr from-white to-zinc-200 shadow-[0_2px_10px_rgba(255,255,255,0.3)] pointer-events-none transition-all duration-500 ease-[0.32,0.72,0,1]"
               style={{
                 left: pillStyle.left,
                 width: pillStyle.width,
@@ -152,8 +164,10 @@ export function Navbar() {
                   href={link.href}
                   data-active={isActive}
                   className={cn(
-                    "relative px-5 py-2 text-sm font-medium transition-colors duration-300 rounded-full z-10",
-                    isActive ? "text-black" : "text-zinc-400 hover:text-white hover:bg-white/5"
+                    "relative px-6 py-2.5 text-[13px] font-black uppercase tracking-widest transition-all duration-300 rounded-full z-10",
+                    isActive 
+                      ? "text-black drop-shadow-sm" 
+                      : "text-zinc-400 hover:text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.3)]"
                   )}
                 >
                   {link.label}
@@ -162,9 +176,9 @@ export function Navbar() {
             })}
           </nav>
 
-          {/* Right Section */}
+          {}
           <div className="flex items-center gap-4 relative z-[110]">
-            {/* Credits Pill */}
+            {}
             <div className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-zinc-900/80 border border-white/10 shadow-lg backdrop-blur-md">
               <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center">
                 <Sparkles className="w-3 h-3 text-white fill-white" />
@@ -172,7 +186,7 @@ export function Navbar() {
               <span className="text-xs font-semibold text-zinc-100 tabular-nums tracking-wide">{balance}</span>
             </div>
 
-            {/* User Profile */}
+            {}
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -235,7 +249,7 @@ export function Navbar() {
               </div>
             )}
 
-            {/* Mobile Menu Toggle */}
+            {}
             <button
               className={cn(
                 "md:hidden relative z-[110] w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300",
@@ -273,7 +287,7 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
+      {}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -283,7 +297,7 @@ export function Navbar() {
             transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
             className="fixed inset-0 z-[90] bg-black flex flex-col pt-24 pb-8 px-6"
           >
-            {/* Background Gradient */}
+            {}
             <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/20 to-black pointer-events-none" />
 
             <div className="flex-1 flex flex-col relative z-10">
@@ -366,7 +380,7 @@ export function Navbar() {
                   )}
                 </div>
 
-                {/* Mobile Credits / Status Indicator (Refined) */}
+                {}
                 <div className="flex items-center justify-between px-2 pt-2">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner backdrop-blur-md">
@@ -377,7 +391,7 @@ export function Navbar() {
                       <span className="text-lg font-bold text-white tabular-nums leading-none mt-0.5">{balance}</span>
                     </div>
                   </div>
-                  {/* Version Removed as requested */}
+                  {}
                 </div>
               </motion.div>
             </div>

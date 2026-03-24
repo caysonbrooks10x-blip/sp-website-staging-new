@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from "react"
 import { gsap } from "gsap"
-// import { Users, MessageCircle, Heart, Share2 } from "lucide-react"
+
 
 interface CommunityStateProps {
     progress: number
@@ -25,16 +25,16 @@ export function CommunityState({ progress, isVisible = true }: CommunityStatePro
     useEffect(() => {
         if (!isVisible) return
 
-        // Orbital / Galaxy Animation
-        // Nodes swirl around the center
+        
+        
 
-        // Progress 0 -> 1: Rotation 0deg -> 90deg?
+        
         const rotation = progress * 90
 
         if (centerRef.current) {
             gsap.set(centerRef.current, {
-                scale: 0.8 + (progress * 0.4), // Grows slightly
-                opacity: Math.min(1, progress * 4) // Fades in quickly
+                scale: 0.8 + (progress * 0.4), 
+                opacity: Math.min(1, progress * 4) 
             })
         }
 
@@ -42,14 +42,14 @@ export function CommunityState({ progress, isVisible = true }: CommunityStatePro
             const el = nodesRef.current[i]
             if (!el) return
 
-            // Convert initial XY to polar, add rotation, convert back
+            
             const rad = Math.atan2(node.y, node.x)
             const dist = Math.sqrt(node.x * node.x + node.y * node.y)
 
-            // Add scroll rotation
+            
             const currentRad = rad + (rotation * (Math.PI / 180))
 
-            // Expand distance slightly as we scroll? "Big Bang" effect
+            
             const currentDist = dist * (1 + progress * 0.5)
 
             const finalX = Math.cos(currentRad) * currentDist
@@ -58,8 +58,8 @@ export function CommunityState({ progress, isVisible = true }: CommunityStatePro
             gsap.set(el, {
                 x: finalX,
                 y: finalY,
-                scale: node.scale * (0.8 + progress * 0.4), // individual scale grow
-                opacity: Math.min(1, (progress - 0.1) * 3) // Fade in a bit later than center
+                scale: node.scale * (0.8 + progress * 0.4), 
+                opacity: Math.min(1, (progress - 0.1) * 3) 
             })
         })
 
@@ -68,10 +68,10 @@ export function CommunityState({ progress, isVisible = true }: CommunityStatePro
     return (
         <section className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden pointer-events-none">
 
-            {/* Center Hub */}
+            {}
             <div ref={centerRef} className="absolute z-20 flex flex-col items-center justify-center pointer-events-auto">
                 <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border border-white/10 bg-white/5 backdrop-blur-2xl flex items-center justify-center shadow-[0_0_100px_rgba(255,255,255,0.1)] relative">
-                    {/* Ripples */}
+                    {}
                     <div className="absolute inset-0 rounded-full border border-white/5 animate-ping opacity-20" />
                     <div className="absolute -inset-4 rounded-full border border-white/5 opacity-10" />
 
@@ -83,7 +83,7 @@ export function CommunityState({ progress, isVisible = true }: CommunityStatePro
                 </div>
             </div>
 
-            {/* Orbiting Nodes */}
+            {}
             {NODES.map((node, i) => (
                 <div
                     key={i}

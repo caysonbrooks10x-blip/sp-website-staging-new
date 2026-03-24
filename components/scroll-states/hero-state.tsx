@@ -12,7 +12,6 @@ interface HeroStateProps {
     register: (cb: (progress: number, index: number) => void) => () => void
 }
 
-// Wireframe connections: [fromCard, toCard]
 const CONNECTIONS: [string, string][] = [
     ['reference', 'imageGen'],
     ['reference', 'videoGen'],
@@ -31,7 +30,7 @@ export function HeroState({ register }: HeroStateProps) {
     const shimmerCanvasRef = useRef<HTMLCanvasElement>(null)
     const videoRef = useRef<HTMLVideoElement>(null)
 
-    // Card refs for pixel-accurate wire tracking
+    
     const cardRefs = useRef<Record<string, HTMLDivElement | null>>({
         prompt: null, reference: null, imageGen: null, videoGen: null,
     })
@@ -40,11 +39,12 @@ export function HeroState({ register }: HeroStateProps) {
     })
 
     const [mounted, setMounted] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
     const [dragging, setDragging] = useState<string | null>(null)
     const [wireUpdate, setWireUpdate] = useState(0)
     const dragStart = useRef({ mx: 0, my: 0, ox: 0, oy: 0 })
 
-    // Initial positions (percentage of canvas inner) - Perfectly matched to screenshot
+    
     const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({
         reference: { x: 2.3, y: 14.8 },
         imageGen: { x: 38.3, y: 2.5 },
@@ -54,17 +54,19 @@ export function HeroState({ register }: HeroStateProps) {
 
     useEffect(() => {
         setMounted(true)
-        if (window.innerWidth < 768) {
+        const mobile = window.innerWidth < 768
+        setIsMobile(mobile)
+        if (mobile) {
             setPositions({
-                reference: { x: -8, y: 30 },
+                reference: { x: 2, y: 22 },
                 imageGen: { x: 38, y: 2 },
-                videoGen: { x: 38, y: 56 },
-                prompt: { x: 58, y: 34 },
+                videoGen: { x: 38, y: 52 },
+                prompt: { x: 56, y: 32 },
             })
         }
     }, [])
 
-    // ---- Drag logic ----
+    
     const handlePointerDown = useCallback((cardId: string, e: React.PointerEvent) => {
         e.preventDefault(); e.stopPropagation()
         const el = cardRefs.current[cardId]
@@ -100,10 +102,10 @@ export function HeroState({ register }: HeroStateProps) {
     const resetCards = useCallback(() => {
         const isMobile = window.innerWidth < 768;
         const targets = isMobile ? {
-            reference: { x: -8, y: 30 },
+            reference: { x: 2, y: 22 },
             imageGen: { x: 38, y: 2 },
-            videoGen: { x: 38, y: 56 },
-            prompt: { x: 58, y: 34 },
+            videoGen: { x: 38, y: 52 },
+            prompt: { x: 56, y: 32 },
         } : {
             reference: { x: 2.3, y: 14.8 },
             imageGen: { x: 38.3, y: 2.5 },
@@ -111,7 +113,7 @@ export function HeroState({ register }: HeroStateProps) {
             prompt: { x: 68.5, y: 37.0 },
         };
 
-        // Animate all cards back to initial positions
+        
         Object.entries(cardRefs.current).forEach(([id, el]) => {
             if (!el) return;
             const target = targets[id as keyof typeof targets];
@@ -124,26 +126,26 @@ export function HeroState({ register }: HeroStateProps) {
                 ease: "elastic.out(1, 0.8)",
                 onUpdate: () => setWireUpdate(v => v + 1),
                 onComplete: () => {
-                    // Update state to formalize the reset
+                    
                     setPositions(targets);
                 }
             });
         });
 
-        // Spin the refresh icon
+        
         const refreshIcon = document.getElementById('hero-refresh-icon');
         if (refreshIcon) {
             gsap.fromTo(refreshIcon, { rotate: 0 }, { rotate: 360, duration: 0.8, ease: "power2.inOut" });
         }
 
-        // Restart video
+        
         if (videoRef.current) {
             videoRef.current.currentTime = 0;
             videoRef.current.play();
         }
     }, []);
 
-    // --- Get card edge lateral centers for perfect wire attachment ---
+    
     const getCardEdge = useCallback((fromId: string, toId: string): { x1: number; y1: number; x2: number; y2: number } | null => {
         const fromParent = cardRefs.current[fromId]
         const toParent = cardRefs.current[toId]
@@ -152,20 +154,20 @@ export function HeroState({ register }: HeroStateProps) {
 
         if (!fromParent || !toParent || !fromInner || !toInner) return null
 
-        // X1: Right edge of 'from' glossy card
+        
         const x1 = fromParent.offsetLeft + fromInner.offsetLeft + fromInner.offsetWidth
-        // Y1: Vertical center of 'from' glossy card
+        
         const y1 = fromParent.offsetTop + fromInner.offsetTop + fromInner.offsetHeight / 2
 
-        // X2: Left edge of 'to' glossy card
+        
         const x2 = toParent.offsetLeft + toInner.offsetLeft
-        // Y2: Vertical center of 'to' glossy card
+        
         const y2 = toParent.offsetTop + toInner.offsetTop + toInner.offsetHeight / 2
 
         return { x1, y1, x2, y2 }
     }, [])
 
-    // ── Radial Proximity Dot Grid (TapNow effect) ──
+    
     useEffect(() => {
         if (!mounted) return
         const dotCanvas = dotCanvasRef.current
@@ -212,7 +214,7 @@ export function HeroState({ register }: HeroStateProps) {
                 for (let y = GAP / 2; y < h; y += GAP) {
                     const dist = Math.hypot(x - mouseX, y - mouseY)
                     const t = Math.max(0, 1 - dist / RADIUS)
-                    const op = BASE + (PEAK - BASE) * t * t // t² ease-in
+                    const op = BASE + (PEAK - BASE) * t * t 
                     ctx2d.fillStyle = `rgba(255,255,255,${op})`
                     ctx2d.beginPath()
                     ctx2d.arc(x, y, DOT_R, 0, Math.PI * 2)
@@ -242,7 +244,7 @@ export function HeroState({ register }: HeroStateProps) {
         resize()
         draw()
 
-        // Listen on the canvas viewport (parent), not just the dotCanvas
+        
         const viewport = canvasRef.current
         viewport?.addEventListener('mousemove', onMouseMove)
         viewport?.addEventListener('mouseleave', onMouseLeave)
@@ -256,7 +258,7 @@ export function HeroState({ register }: HeroStateProps) {
         }
     }, [mounted])
 
-    // Canvas + text entry animations
+    
     useEffect(() => {
         if (!mounted) return
         const ctx = gsap.context(() => {
@@ -268,7 +270,7 @@ export function HeroState({ register }: HeroStateProps) {
         return () => ctx.revert()
     }, [mounted])
 
-    // Text entry
+    
     useLayoutEffect(() => {
         const ctx = gsap.context(() => {
             const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
@@ -280,7 +282,7 @@ export function HeroState({ register }: HeroStateProps) {
     }, [])
 
 
-    // Internal scroll: lets user see full hero content before transition
+    
     useEffect(() => {
         const unregister = register((globalProgress) => {
             if (!contentRef.current) return
@@ -289,22 +291,22 @@ export function HeroState({ register }: HeroStateProps) {
             const heroProgress = Math.min(1, globalProgress / slice)
 
             const SCROLL_PHASE = 0.7
-            const MAX_SCROLL = 400
+            const MAX_SCROLL = 250
 
             if (heroProgress <= SCROLL_PHASE) {
                 const scrollP = heroProgress / SCROLL_PHASE
-                gsap.set(contentRef.current, { 
+                gsap.set(contentRef.current, {
                     y: -(scrollP * MAX_SCROLL),
-                    opacity: 1, 
+                    opacity: 1,
                     scale: 1,
                     force3D: true,
                 })
             } else {
                 const exitP = (heroProgress - SCROLL_PHASE) / (1 - SCROLL_PHASE)
-                const eased = exitP * exitP // quadratic ease for smooth exit
-                gsap.set(contentRef.current, { 
+                const eased = exitP * exitP 
+                gsap.set(contentRef.current, {
                     y: -(MAX_SCROLL + eased * 80),
-                    opacity: 1 - eased, 
+                    opacity: 1 - eased,
                     scale: 1 - 0.02 * eased,
                     force3D: true,
                 })
@@ -313,21 +315,21 @@ export function HeroState({ register }: HeroStateProps) {
         return () => unregister?.()
     }, [register])
 
-    // Wire configs: speed (path-units/ms), phase (0–1 offset)
+    
     const WIRE_CONFIGS = useMemo(() => [
         { speed: 0.00055, phase: 0.00 },
         { speed: 0.00048, phase: 0.40 },
         { speed: 0.00060, phase: 0.70 },
     ], [])
 
-    // Compute wire paths with S-curve bezier
+    
     const wirePaths = useMemo(() => {
         if (!mounted) return []
         return CONNECTIONS.map(([from, to], i) => {
             const edge = getCardEdge(from, to)
             if (!edge) return null
             const { x1, y1, x2, y2 } = edge
-            // S-curve: both control points at horizontal midpoint
+            
             const mx = x1 + (x2 - x1) * 0.5
             const cfg = WIRE_CONFIGS[i % WIRE_CONFIGS.length]
             return {
@@ -336,17 +338,17 @@ export function HeroState({ register }: HeroStateProps) {
                 cp2x: mx, cp2y: y2,
                 speed: cfg.speed,
                 phase: cfg.phase,
-                // Pre-compute bezier control points as {x,y} for canvas math
+                
                 p1: { x: x1, y: y1 },
                 c1: { x: mx, y: y1 },
                 c2: { x: mx, y: y2 },
                 p2: { x: x2, y: y2 },
             }
         }).filter(Boolean) as any[]
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        
     }, [mounted, wireUpdate, getCardEdge, WIRE_CONFIGS])
 
-    // ── Shimmer Canvas Animation (TapNow Gaussian glow) ──
+    
     useEffect(() => {
         if (!mounted || wirePaths.length === 0) return
         const shimmerCanvas = shimmerCanvasRef.current
@@ -356,11 +358,11 @@ export function HeroState({ register }: HeroStateProps) {
         const ctx = shimmerCanvas.getContext('2d')
         if (!ctx) return
 
-        const SIGMA = 0.10  // glow spread — 10% of path on each side
-        const STEPS = 120   // sample density per wire
+        const SIGMA = 0.10  
+        const STEPS = 120   
 
-        // Cubic bezier point at t
-        function bezPt(p1: {x:number,y:number}, c1: {x:number,y:number}, c2: {x:number,y:number}, p2: {x:number,y:number}, t: number) {
+        
+        function bezPt(p1: { x: number, y: number }, c1: { x: number, y: number }, c2: { x: number, y: number }, p2: { x: number, y: number }, t: number) {
             const u = 1 - t
             const uu = u * u, uuu = uu * u
             const tt = t * t, ttt = tt * t
@@ -392,36 +394,36 @@ export function HeroState({ register }: HeroStateProps) {
             ctx.clearRect(0, 0, w, h)
 
             for (const wire of wirePaths) {
-                // center position moves 0→1 continuously, loops seamlessly
+                
                 const center = (timestamp * wire.speed + wire.phase) % 1.0
 
                 for (let i = 0; i <= STEPS; i++) {
                     const s = i / STEPS
 
-                    // Wrapped distance — seamless loop, no pop
+                    
                     let d = s - center
                     if (d > 0.5) d -= 1
                     if (d < -0.5) d += 1
 
-                    // Gaussian: bright at center, tapers to nothing
+                    
                     const alpha = Math.exp(-(d * d) / (2 * SIGMA * SIGMA))
-                    if (alpha < 0.008) continue // skip invisible
+                    if (alpha < 0.008) continue 
 
                     const pt = bezPt(wire.p1, wire.c1, wire.c2, wire.p2, s)
 
-                    // Pass 1: Wide glow (r=5)
+                    
                     ctx.beginPath()
                     ctx.arc(pt.x, pt.y, 5.0, 0, Math.PI * 2)
                     ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.055).toFixed(4)})`
                     ctx.fill()
 
-                    // Pass 2: Halo (r=2.2)
+                    
                     ctx.beginPath()
                     ctx.arc(pt.x, pt.y, 2.2, 0, Math.PI * 2)
                     ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.22).toFixed(4)})`
                     ctx.fill()
 
-                    // Pass 3: Crisp core (r=0.9)
+                    
                     ctx.beginPath()
                     ctx.arc(pt.x, pt.y, 0.9, 0, Math.PI * 2)
                     ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.98).toFixed(4)})`
@@ -445,9 +447,9 @@ export function HeroState({ register }: HeroStateProps) {
                 background: 'linear-gradient(135deg, #2d3a2e 0%, #4a5d3a 18%, #7a8a5a 35%, #c8b88a 55%, #e8c8a0 70%, #f0b8a0 85%, #e8a8a0 100%)',
             }}
         >
-            {/* Gradient ambient orbs for depth */}
+            {}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {/* Deep green orb — top left */}
+                {}
                 <div
                     className="absolute rounded-full pointer-events-none"
                     style={{
@@ -458,7 +460,7 @@ export function HeroState({ register }: HeroStateProps) {
                         animation: 'heroOrbDrift1 12s ease-in-out infinite alternate',
                     }}
                 />
-                {/* Warm peach/salmon orb — right side */}
+                {}
                 <div
                     className="absolute rounded-full pointer-events-none"
                     style={{
@@ -469,7 +471,7 @@ export function HeroState({ register }: HeroStateProps) {
                         animation: 'heroOrbDrift2 15s ease-in-out infinite alternate',
                     }}
                 />
-                {/* Olive/sage accent — center */}
+                {}
                 <div
                     className="absolute rounded-full pointer-events-none"
                     style={{
@@ -480,7 +482,7 @@ export function HeroState({ register }: HeroStateProps) {
                         animation: 'heroOrbDrift1 18s ease-in-out infinite alternate-reverse',
                     }}
                 />
-                {/* Bottom pink/coral glow */}
+                {}
                 <div
                     className="absolute rounded-full pointer-events-none"
                     style={{
@@ -493,10 +495,10 @@ export function HeroState({ register }: HeroStateProps) {
                 />
             </div>
 
-            {/* Content */}
+            {}
             <div ref={contentRef} className="relative z-20 w-full max-w-[1100px] mx-auto px-6 sm:px-8 lg:px-12 will-change-transform" style={{ pointerEvents: 'auto' }}>
 
-                {/* Hero headline + CTA */}
+                {}
                 <div className="mb-10 md:mb-14 flex flex-col items-start text-left">
                     <h1
                         ref={headingRef}
@@ -520,7 +522,7 @@ export function HeroState({ register }: HeroStateProps) {
                     </div>
                 </div>
 
-                {/* ========= TAPNOW-STYLE CANVAS VIEWPORT ========= */}
+                {}
                 <div
                     ref={canvasRef}
                     className="relative rounded-[20px] overflow-hidden pointer-events-auto"
@@ -532,17 +534,17 @@ export function HeroState({ register }: HeroStateProps) {
                     }}
                 >
 
-                    {/* Interactive proximity dot grid (HTML5 Canvas) */}
+                    {}
                     <canvas
                         ref={dotCanvasRef}
                         className="absolute inset-0 pointer-events-none z-[1]"
                     />
 
-                    {/* Left Sidebar Toolbar */}
+                    {}
                     <div
-                        className="absolute left-0 top-0 bottom-0 z-30 flex flex-col items-center py-4 px-1.5 gap-2"
+                        className="absolute left-0 top-0 bottom-0 z-30 flex flex-col items-center py-4 px-1 md:px-1.5 gap-1.5 md:gap-2"
                         style={{
-                            width: '52px',
+                            width: isMobile ? '40px' : '52px',
                             background: 'rgba(12, 12, 12, 0.85)',
                             backdropFilter: 'blur(12px)',
                             borderRight: '1px solid rgba(255,255,255,0.05)',
@@ -554,7 +556,7 @@ export function HeroState({ register }: HeroStateProps) {
                         <SidebarBtn icon={<MessageCircle className="w-3.5 h-3.5" />} label="Messages" href="/community" />
                         <SidebarBtn icon={<History className="w-3.5 h-3.5" />} label="History" href="/creations" />
                         <SidebarBtn icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Studio" href="/studio" />
-                        {/* Avatar at bottom */}
+                        {}
                         <div className="mt-auto group flex items-center justify-center p-1 cursor-pointer">
                             <div
                                 className="w-7 h-7 rounded-full border border-white/10 transition-transform duration-300 group-hover:scale-110 group-active:scale-95 shadow-lg"
@@ -563,32 +565,32 @@ export function HeroState({ register }: HeroStateProps) {
                         </div>
                     </div>
 
-                    {/* Canvas Inner Area */}
+                    {}
                     <div
                         ref={canvasInnerRef}
-                        className="relative min-h-[420px] md:min-h-[540px]"
-                        style={{ marginLeft: '48px', cursor: dragging ? 'grabbing' : 'default' }}
+                        className="relative min-h-[300px] md:min-h-[540px]"
+                        style={{ marginLeft: isMobile ? '36px' : '48px', cursor: dragging ? 'grabbing' : 'default' }}
                     >
 
-                        {/* Subtle warm glow behind cards */}
+                        {}
                         <div className="absolute top-[15%] left-[25%] w-[300px] h-[200px] rounded-full pointer-events-none opacity-[0.06] blur-[60px]"
                             style={{ background: 'radial-gradient(circle, #f97316 0%, transparent 70%)' }} />
                         <div className="absolute bottom-[15%] right-[15%] w-[250px] h-[250px] rounded-full pointer-events-none opacity-[0.04] blur-[50px]"
                             style={{ background: 'radial-gradient(circle, #c084fc 0%, transparent 70%)' }} />
 
-                        {/* Shimmer Canvas Layer — Gaussian glow traveling along wires */}
+                        {}
                         <canvas
                             ref={shimmerCanvasRef}
                             className="absolute inset-0 pointer-events-none z-[9]"
                         />
 
-                        {/* SVG WIRES — Static tracks + port dots */}
+                        {}
                         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
                             {wirePaths.map((w: any, i: number) => {
                                 const d = `M ${w.x1},${w.y1} C ${w.cp1x},${w.cp1y} ${w.cp2x},${w.cp2y} ${w.x2},${w.y2}`
                                 return (
                                     <g key={i}>
-                                        {/* Static wire — 1px, subtle white */}
+                                        {}
                                         <path
                                             d={d}
                                             stroke="rgba(255,255,255,0.22)"
@@ -596,10 +598,10 @@ export function HeroState({ register }: HeroStateProps) {
                                             fill="none"
                                             strokeLinecap="round"
                                         />
-                                        {/* Port: outer ring (r=6) + inner dot (r=2) — start */}
+                                        {}
                                         <circle cx={w.x1} cy={w.y1} r="6" fill="#0d0d0d" stroke="rgba(255,255,255,0.24)" strokeWidth="1" />
                                         <circle cx={w.x1} cy={w.y1} r="2" fill="rgba(255,255,255,0.4)" />
-                                        {/* Port: outer ring (r=6) + inner dot (r=2) — end */}
+                                        {}
                                         <circle cx={w.x2} cy={w.y2} r="6" fill="#0d0d0d" stroke="rgba(255,255,255,0.24)" strokeWidth="1" />
                                         <circle cx={w.x2} cy={w.y2} r="2" fill="rgba(255,255,255,0.4)" />
                                     </g>
@@ -607,9 +609,9 @@ export function HeroState({ register }: HeroStateProps) {
                             })}
                         </svg>
 
-                        {/* === DRAGGABLE CARDS (TapNow node style) === */}
+                        {}
 
-                        {/* Reference Card */}
+                        {}
                         <div
                             ref={el => { cardRefs.current.reference = el }}
                             className="absolute z-20 select-none group touch-none"
@@ -625,7 +627,7 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                             <div
                                 ref={el => { innerCardRefs.current.reference = el }}
-                                className="w-[130px] md:w-[190px] h-[95px] md:h-[138px] rounded-[14px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
+                                className="w-[90px] sm:w-[130px] md:w-[190px] h-[65px] sm:h-[95px] md:h-[138px] rounded-[10px] sm:rounded-[14px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
                                 style={{
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
@@ -636,7 +638,7 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                         </div>
 
-                        {/* Image Generation Card */}
+                        {}
                         <div
                             ref={el => { cardRefs.current.imageGen = el }}
                             className="absolute z-20 select-none group touch-none"
@@ -652,7 +654,7 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                             <div
                                 ref={el => { innerCardRefs.current.imageGen = el }}
-                                className="w-[160px] md:w-[244px] h-[120px] md:h-[190px] rounded-[16px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
+                                className="w-[105px] sm:w-[160px] md:w-[244px] h-[76px] sm:h-[120px] md:h-[190px] rounded-[12px] sm:rounded-[16px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
                                 style={{
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     boxShadow: '0 25px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
@@ -663,7 +665,7 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                         </div>
 
-                        {/* Video Generation Card */}
+                        {}
                         <div
                             ref={el => { cardRefs.current.videoGen = el }}
                             className="absolute z-20 select-none group touch-none"
@@ -679,7 +681,7 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                             <div
                                 ref={el => { innerCardRefs.current.videoGen = el }}
-                                className="w-[160px] md:w-[244px] h-[115px] md:h-[175px] rounded-[16px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
+                                className="w-[105px] sm:w-[160px] md:w-[244px] h-[76px] sm:h-[115px] md:h-[175px] rounded-[12px] sm:rounded-[16px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
                                 style={{
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     boxShadow: '0 25px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
@@ -698,7 +700,7 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                         </div>
 
-                        {/* Prompt / Poem Text Card */}
+                        {}
                         <div
                             ref={el => { cardRefs.current.prompt = el }}
                             className="absolute z-20 select-none group touch-none"
@@ -714,20 +716,20 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                             <div
                                 ref={el => { innerCardRefs.current.prompt = el }}
-                                className="px-3.5 py-4 rounded-[14px] w-[140px] md:w-[168px] transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
+                                className="px-2.5 sm:px-3.5 py-3 sm:py-4 rounded-[10px] sm:rounded-[14px] w-[95px] sm:w-[140px] md:w-[168px] transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
                                 style={{
                                     background: 'rgba(18,18,18,0.95)',
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
                                 }}
                             >
-                                <p className="text-[10px] md:text-[10.5px] leading-[1.45] font-light" style={{ color: 'rgba(240,237,232,0.7)' }}>
+                                <p className="text-[8px] sm:text-[10px] md:text-[10.5px] leading-[1.35] sm:leading-[1.45] font-light" style={{ color: 'rgba(240,237,232,0.7)' }}>
                                     A futuristic black supercar racing through a neon cyberpunk city at night. Cinematic Unreal Engine 5 render.
                                 </p>
                             </div>
                         </div>
 
-                        {/* Floating particles */}
+                        {}
                         {[
                             { left: '15%', top: '20%', dur: '5s', delay: '0s', ty: '-12px', tx: '8px' },
                             { left: '70%', top: '60%', dur: '7s', delay: '1s', ty: '10px', tx: '-6px' },
@@ -748,12 +750,12 @@ export function HeroState({ register }: HeroStateProps) {
                         ))}
                     </div>
 
-                    {/* Bottom bar */}
+                    {}
                     <div
-                        className="relative z-30 flex items-center px-4 gap-3"
+                        className="relative z-30 flex items-center px-3 md:px-4 gap-3"
                         style={{
                             height: '38px',
-                            marginLeft: '48px',
+                            marginLeft: isMobile ? '36px' : '48px',
                             background: 'rgba(14,14,14,0.9)',
                             borderTop: '1px solid rgba(255,255,255,0.08)',
                         }}
@@ -773,18 +775,18 @@ export function HeroState({ register }: HeroStateProps) {
                     </div>
                 </div>
 
-                {/* Brand Scroll */}
+                {}
                 <div className="w-full mt-8">
                     <BrandScroll />
                 </div>
             </div>
 
-            {/* Scroll hint */}
+            {}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-20 animate-bounce z-30 pointer-events-none">
                 <div className="w-[1px] h-12 bg-gradient-to-b from-transparent via-zinc-600 to-transparent rounded-full" />
             </div>
 
-            {/* CSS keyframes via style tag (scoped to component animations) */}
+            {}
             <style jsx>{`
                 @keyframes heroOrbDrift1 {
                     from { transform: translate(0, 0) scale(1); }
@@ -803,17 +805,17 @@ export function HeroState({ register }: HeroStateProps) {
     )
 }
 
-// Sidebar button component
+
 function SidebarBtn({ icon, active, label, href }: { icon: React.ReactNode; active?: boolean; label: string; href: string }) {
     return (
         <Link href={href}>
             <button
-                className="group relative w-10 h-10 flex items-center justify-center cursor-pointer transition-all duration-300 outline-none"
+                className="group relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center cursor-pointer transition-all duration-300 outline-none"
             >
-                {/* Super Classy Info Capsule */}
-                <div 
+                {}
+                <div
                     className="absolute left-[58px] px-4 py-2 rounded-xl bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/[0.08] whitespace-nowrap opacity-0 -translate-x-4 pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:translate-x-0 z-50 flex items-center gap-2.5"
-                    style={{ 
+                    style={{
                         boxShadow: '0 20px 50px -12px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.05)',
                     }}
                 >
@@ -821,22 +823,22 @@ function SidebarBtn({ icon, active, label, href }: { icon: React.ReactNode; acti
                     <span className="text-[11px] font-semibold tracking-[0.08em] text-white/90 font-sans uppercase">{label}</span>
                 </div>
 
-                {/* iOS-style capsule highlight */}
-                <div 
+                {}
+                <div
                     className={`absolute inset-0 rounded-[14px] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
-                        ${active 
-                            ? 'bg-white/10 opacity-100 scale-100' 
+                        ${active
+                            ? 'bg-white/10 opacity-100 scale-100'
                             : 'bg-white/10 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 group-active:scale-90'
                         }`}
                 />
-                
-                {/* Active indicator dot */}
+
+                {}
                 {active && (
                     <div className="absolute left-0 w-0.5 h-3 bg-white rounded-r-full shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                 )}
 
-                {/* Icon */}
-                <div 
+                {}
+                <div
                     className={`relative z-10 transition-all duration-300 ease-out transform group-hover:scale-110 
                         ${active ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-200'}`}
                 >

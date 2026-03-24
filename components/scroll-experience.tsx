@@ -8,17 +8,17 @@ import { HeroState } from "@/components/scroll-states/hero-state"
 import { FeaturesState } from "@/components/scroll-states/features-state"
 import { WorkflowState } from "@/components/scroll-states/workflow-state"
 import { WorkflowStepState } from "@/components/scroll-states/workflow-step-state"
-// ... (imports)
 
-// Constants for tuning
+
+
 const TOTAL_STATES = 4
-const SCROLL_HEIGHT_PER_STATE = 450
+const SCROLL_HEIGHT_PER_STATE = 200
 
 export function ScrollExperience() {
     const containerRef = useRef<HTMLDivElement>(null)
     const progressBarRef = useRef<HTMLDivElement>(null)
 
-    // Registry for components that need to react to scroll
+    
     const listeners = useRef<((progress: number, index: number) => void)[]>([])
 
     const register = useCallback((callback: (progress: number, index: number) => void) => {
@@ -51,7 +51,7 @@ export function ScrollExperience() {
                         start: "top top",
                         end: `+=${TOTAL_STATES * SCROLL_HEIGHT_PER_STATE}%`,
                         pin: true,
-                        scrub: 1.2, 
+                        scrub: 0.6,
                         onUpdate: (self) => {
                             const globalProgress = self.progress
                             const currentIndex = Math.min(TOTAL_STATES - 1, Math.floor(globalProgress * TOTAL_STATES))
@@ -103,41 +103,41 @@ export function ScrollExperience() {
         const slice = 1 / total
         const start = index * slice
         const end = (index + 1) * slice
-        const transition = slice * 0.12 // Tight 12% window for crisp transitions
+        const transition = slice * 0.12 
 
         let opacity = 0
         let translateY = 0
         let scale = 1
 
-        // Early exit for out-of-range sections
+        
         if (globalProgress < start - transition || globalProgress > end + transition) {
             return { opacity: 0, translateY: 20, scale: 0.98, blur: 0, visibility: 'hidden' as const, zIndex: 0, pointerEvents: 'none' as const }
         }
 
         if (globalProgress >= start && globalProgress < end) {
             if (globalProgress < start + transition && index !== 0) {
-                // ENTRY: fade in + slide up
+                
                 const p = (globalProgress - start) / transition
-                const eased = p * p * (3 - 2 * p) // smoothstep for buttery ease
+                const eased = p * p * (3 - 2 * p) 
                 opacity = eased
                 translateY = (1 - eased) * 15
                 scale = 0.99 + (eased * 0.01)
             } else if (globalProgress > end - transition && index !== total - 1) {
-                // EXIT: fade out + slide up
+                
                 const p = (end - globalProgress) / transition
                 const eased = p * p * (3 - 2 * p)
                 opacity = eased
                 translateY = (eased - 1) * 15
                 scale = 1 - ((1 - eased) * 0.01)
             } else {
-                // DWELL: fully visible
+                
                 opacity = 1
                 translateY = 0
                 scale = 1
             }
         }
 
-        // Section 0 always starts visible
+        
         if (index === 0 && globalProgress <= transition) {
             opacity = 1
             translateY = 0
@@ -151,7 +151,7 @@ export function ScrollExperience() {
             opacity: clampedOpacity,
             translateY,
             scale,
-            blur: 0, // No blur — GPU compositing only
+            blur: 0, 
             pointerEvents: (clampedOpacity > 0.5) ? 'auto' as const : 'none' as const,
             visibility: isActive ? 'visible' as const : 'hidden' as const,
             zIndex: isActive ? 100 - Math.round((1 - clampedOpacity) * 50) : 0
@@ -160,12 +160,12 @@ export function ScrollExperience() {
 
     return (
         <div ref={containerRef} className="relative w-full md:h-screen bg-background text-foreground selection:bg-primary/30">
-            {/* Background System - behind everything, never intercepts clicks */}
+            {}
             <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
                 <BackgroundSystem register={register} />
             </div>
 
-            {/* Viewport Content - above background, receives all interactions */}
+            {}
             <div className="relative w-full h-full flex flex-col md:block" style={{ zIndex: 10 }}>
 
                 {Array.from({ length: TOTAL_STATES }).map((_, i) => (
@@ -182,7 +182,7 @@ export function ScrollExperience() {
                         {i === 1 && <FeaturesState register={register} />}
                         {i === 2 && <WorkflowState register={register} />}
 
-                        {/* New Workflow Steps */}
+                        {}
                         {i === 3 && (
                             <WorkflowStepState
                                 register={register}
@@ -190,7 +190,7 @@ export function ScrollExperience() {
                                 totalSteps={TOTAL_STATES}
                                 title="Create"
                                 description="Start with a spark. Our engine interprets your intent and generates the foundation."
-                                semicircleColor="rgba(45, 212, 191, 0.4)" // Teal glow
+                                semicircleColor="rgba(45, 212, 191, 0.4)" 
                             />
                         )}
                     </div>
@@ -198,7 +198,7 @@ export function ScrollExperience() {
 
             </div>
 
-            {/* Global Progress Bar - Hidden on mobile as native scroll is the progress */}
+            {}
             <div className="invisible md:visible fixed bottom-0 left-0 h-1 bg-white/5 w-full z-50">
                 <div
                     ref={progressBarRef}

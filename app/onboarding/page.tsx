@@ -8,7 +8,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { ASSET_BASE } from "@/lib/assets";
 
-// --- Configuration ---
+
 
 const NEON_LIME = "#ccff00";
 
@@ -89,7 +89,7 @@ export default function OnboardingPage() {
     const stepData = onboardingSteps[currentStep];
     const isLastStep = currentStep === onboardingSteps.length - 1;
 
-    // Auto-advance progress bar
+    
     const progress = ((currentStep + 1) / onboardingSteps.length) * 100;
 
     const handleOptionSelect = (optionId: string) => {
@@ -106,7 +106,7 @@ export default function OnboardingPage() {
 
     const handleContinue = () => {
         if (isLastStep) {
-            // Here we would typically save to backend
+            
             console.log("Onboarding complete:", answers);
             router.push("/studio");
         } else {
@@ -149,10 +149,10 @@ export default function OnboardingPage() {
 
     return (
         <div className="flex h-[100dvh] w-full bg-[#050505] text-white overflow-hidden font-sans selection:bg-[#ccff00]/30 selection:text-[#ccff00] flex-col md:flex-row">
-            {/* Left Panel - Interaction */}
+            {}
             <div className="w-full md:w-[50%] h-full flex flex-col relative z-20 bg-black/50 backdrop-blur-sm">
 
-                {/* Fixed Header */}
+                {}
                 <div className="flex-shrink-0 px-6 py-6 md:px-12 md:py-8 lg:px-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         {currentStep > 0 ? (
@@ -164,7 +164,7 @@ export default function OnboardingPage() {
                                 Back
                             </button>
                         ) : (
-                            <div className="w-16" /> // spacer
+                            <div className="w-16" /> 
                         )}
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
@@ -182,7 +182,7 @@ export default function OnboardingPage() {
                     </div>
                 </div>
 
-                {/* Scrollable Question Area */}
+                {}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 md:px-12 lg:px-16 py-4 no-scrollbar flex flex-col justify-center">
                     <AnimatePresence mode="wait" custom={direction}>
                         <motion.div
@@ -259,10 +259,10 @@ export default function OnboardingPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Glass Reflection/Shine */}
+                                            {}
                                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                                            {/* Subtle Gradient Selection BG */}
+                                            {}
                                             {isSelected && (
                                                 <motion.div
                                                     layoutId="selectionGradient"
@@ -277,7 +277,7 @@ export default function OnboardingPage() {
                     </AnimatePresence>
                 </div>
 
-                {/* Floating Footer */}
+                {}
                 <div className="mt-auto px-8 pb-12 md:px-16 md:pb-24">
                     <div className="max-w-xl mx-auto w-full">
                         <motion.button
@@ -306,7 +306,7 @@ export default function OnboardingPage() {
 
             </div>
 
-            {/* Right Panel - Visual Gallery */}
+            {}
             <div className="hidden md:block relative w-full md:w-[50%] h-full p-4 pl-0">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9, rotate: 2 }}
@@ -344,10 +344,10 @@ export default function OnboardingPage() {
                                 </div>
                             )}
 
-                            {/* Cinematic Overlay - Darker at bottom */}
+                            {}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
 
-                            {/* Dynamic Floating Labels - Staggered */}
+                            {}
                             <div className="absolute bottom-16 left-12 flex flex-wrap gap-3 max-w-[80%]">
                                 {stepData.media.overlayPoints?.map((point, idx) => (
                                     <motion.div
@@ -365,7 +365,7 @@ export default function OnboardingPage() {
                         </motion.div>
                     </AnimatePresence>
 
-                    {/* Persistent Noise/Grain Overlay */}
+                    {}
                     <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: `url('${ASSET_BASE}/noise.svg')` }} />
                 </motion.div>
             </div>

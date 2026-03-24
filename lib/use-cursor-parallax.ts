@@ -14,11 +14,11 @@ export function useCursorParallax<T extends HTMLElement>(options: ParallaxOption
   useEffect(() => {
     if (!enabled || !elementRef.current) return
 
-    // Check if user prefers reduced motion
+    
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
     if (mediaQuery.matches) return
 
-    // Check if device is touch-enabled
+    
     const isTouchDevice = window.matchMedia("(pointer: coarse)").matches
     if (isTouchDevice) return
 

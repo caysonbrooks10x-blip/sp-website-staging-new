@@ -23,7 +23,7 @@ export function MarketplaceSection() {
         const mm = gsap.matchMedia()
 
         const ctx = gsap.context(() => {
-            // Desktop Logic
+            
             mm.add("(min-width: 768px)", () => {
                 if (sectionRef.current && contentRef.current) {
                     ScrollTrigger.create({
@@ -31,7 +31,7 @@ export function MarketplaceSection() {
                         start: "bottom bottom",
                         end: "+=100%",
                         pin: true,
-                        pinSpacing: false, // Page flap effect
+                        pinSpacing: false, 
                         scrub: true,
                     })
 
@@ -58,7 +58,7 @@ export function MarketplaceSection() {
                         },
                     })
 
-                    // Desktop Entry
+                    
                     gsap.from(".app-card-wrapper", {
                         scrollTrigger: {
                             trigger: contentRef.current,
@@ -73,9 +73,9 @@ export function MarketplaceSection() {
                 }
             })
 
-            // Mobile Logic
+            
             mm.add("(max-width: 767px)", () => {
-                // Simple fade up for cards
+                
                 gsap.from(".app-card-wrapper", {
                     scrollTrigger: {
                         trigger: contentRef.current,

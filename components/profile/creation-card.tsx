@@ -42,7 +42,7 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
         router.push(remixUrl);
     };
 
-    // Robustly resolve true file extension from URL or type hint
+    
     const getFileExtension = (url: string, type?: string): string => {
         try {
             const pathname = new URL(url).pathname.toLowerCase();
@@ -112,13 +112,13 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                 className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-slate-900 ring-1 ring-white/10 transition-all duration-500 hover:ring-white/20 cursor-pointer hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
                 onClick={() => setShowPreview(true)}
             >
-                {/* Subtle Gradient Overlay */}
+                {}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 transition-opacity duration-500 group-hover:opacity-40 z-10" />
 
-                {/* Hover Gradient for text readability */}
+                {}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 z-10" />
 
-                {/* Media */}
+                {}
                 <div className="h-full w-full overflow-hidden">
                     {(item.type === 'video' || item.previewUrl.includes('.mp4')) ? (
                         <video
@@ -142,7 +142,7 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                     )}
                 </div>
 
-                {/* Top Left Floating Badge */}
+                {}
                 <div className="absolute top-3 left-3 z-20 translate-y-[-10px] opacity-0 transition-all duration-300 delay-75 group-hover:translate-y-0 group-hover:opacity-100">
                     <Badge variant="secondary" className="bg-black/60 backdrop-blur-md border border-white/10 text-white/90 font-medium shadow-lg shadow-black/50 px-2.5 py-1 text-xs">
                         <Sparkles className="w-3 h-3 mr-1.5 text-[#c8ff00]" />
@@ -150,7 +150,7 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                     </Badge>
                 </div>
 
-                {/* Overlay Action Buttons */}
+                {}
                 <div className="absolute inset-x-0 bottom-0 p-5 z-20 transition-all duration-500 opacity-100 lg:opacity-0 lg:translate-y-2 lg:group-hover:translate-y-0 lg:group-hover:opacity-100">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-[11px] font-medium uppercase tracking-wider text-purple-200/90 flex items-center gap-1.5 drop-shadow-md">
@@ -162,7 +162,7 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                         {item.appName || item.prompt || "Untitled"}
                     </h3>
 
-                    {/* Action Grid - 2x2 for better balance */}
+                    {}
                     <div className="grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
                         <Button
                             onClick={handleRemix}

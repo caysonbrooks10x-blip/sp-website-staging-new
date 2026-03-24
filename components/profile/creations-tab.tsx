@@ -25,7 +25,7 @@ interface CreationsTabProps {
 export function CreationsTab({ items, loading, onDelete }: CreationsTabProps) {
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Elegant Header */}
+            {}
             <div className="flex flex-col gap-2 pb-6 border-b border-white/5">
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}

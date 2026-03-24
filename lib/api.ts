@@ -1,17 +1,12 @@
 
-/**
- * Simplified API Fetch Wrapper
- *
- * 1. No user authentication checks required by default in the wrapper.
- * 2. Uses a generic base URL or defaults to standard local API routes.
- */
+
 export async function apiFetch(path: string, options: RequestInit = {}) {
-    // 1. Construct URL
+    
     const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "/api";
     const cleanPath = path.startsWith("/") ? path.substring(1) : path;
     const url = `${baseUrl}/${cleanPath}`;
 
-    // 2. Prepare Headers
+    
     const headers = {
         "Content-Type": "application/json",
         ...(options.headers || {}),
@@ -23,7 +18,7 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
             headers,
         });
 
-        // 3. Handle Response
+        
         if (!res.ok) {
             let errorMessage = `API Error: ${res.status} ${res.statusText}`;
             try {
@@ -36,12 +31,12 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
                     }
                 }
             } catch (e) {
-                // If JSON parsing fails, try reading text
+                
                 try {
                     const text = await res.text();
                     if (text) errorMessage = text;
                 } catch (textError) {
-                    // Ignore text read error
+                    
                 }
             }
             throw new Error(errorMessage);
@@ -54,13 +49,11 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     }
 }
 
-/**
- * API Object Export
- */
+
 export const api = {
-    // -------------------------
-    // Job Creation / Generation
-    // -------------------------
+    
+    
+    
 
     createJob: async (payload: any) => {
         return apiFetch("/create-job", {
@@ -69,9 +62,9 @@ export const api = {
         });
     },
 
-    // -------------------------
-    // OpenAI Generation (Image & Video)
-    // -------------------------
+    
+    
+    
 
     generateOpenAI: async (payload: { type: 'image' | 'video', prompt: string }) => {
         return apiFetch("/generate-openai", {
@@ -80,7 +73,7 @@ export const api = {
         });
     },
 
-    // Legacy Aliases
+    
     openaiImage: async (payload: { prompt: string }) => {
         return api.generateOpenAI({
             type: 'image',
@@ -95,9 +88,9 @@ export const api = {
         });
     },
 
-    // -------------------------
-    // Other Endpoints
-    // -------------------------
+    
+    
+    
 
     generateNanoBanana: async (payload: any) => {
         return apiFetch("/generate-nano-banana", {

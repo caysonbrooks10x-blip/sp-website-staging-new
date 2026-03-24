@@ -28,7 +28,7 @@ export function CommunityGrid() {
         });
     };
 
-    // 1. Fetch live posts from Firestore
+    
     useEffect(() => {
         const q = query(
             collection(db, "posts"),
@@ -56,7 +56,7 @@ export function CommunityGrid() {
                         },
                         assetUrl: data.assetUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2560&auto=format&fit=crop",
                         thumbnailUrl: data.thumbnailUrl || data.assetUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2560&auto=format&fit=crop",
-                        aspectRatio: data.type === "video" ? "landscape" : "portrait", // Simplified fallback
+                        aspectRatio: data.type === "video" ? "landscape" : "portrait", 
                         likes: data.likes || 0,
                         views: data.views || 0,
                         allowRemix: data.allowRemix ?? true,
@@ -80,7 +80,7 @@ export function CommunityGrid() {
     const filteredPosts = useMemo(() => {
         const combined = [...livePosts];
 
-        // Strict deduplication by ID to prevent identical react keys crashing into blank spaces
+        
         const uniquePostsMap = new Map<string, CommunityPost>();
         combined.forEach(post => {
             if (!uniquePostsMap.has(post.id)) {
@@ -96,7 +96,7 @@ export function CommunityGrid() {
             );
         }
 
-        // Apply 2:1 ratio mixing (2 images, 1 video)
+        
         const images = finalArray.filter(p => p.type === 'image');
         const videos = finalArray.filter(p => p.type === 'video');
         
@@ -105,11 +105,11 @@ export function CommunityGrid() {
         let vidIdx = 0;
         
         while (imgIdx < images.length || vidIdx < videos.length) {
-            // Add up to 2 images
+            
             if (imgIdx < images.length) mixed.push(images[imgIdx++]);
             if (imgIdx < images.length) mixed.push(images[imgIdx++]);
             
-            // Add 1 video
+            
             if (vidIdx < videos.length) {
                 mixed.push(videos[vidIdx++]);
             }

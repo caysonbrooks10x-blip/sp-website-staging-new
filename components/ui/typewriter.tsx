@@ -34,7 +34,7 @@ export function Typewriter({
     const [showCursor, setShowCursor] = useState(true)
     const containerRef = useRef<HTMLDivElement>(null)
 
-    // Handle manual start prop
+    
     useEffect(() => {
         if (start === true && !started) {
             const startTimeout = setTimeout(() => {
@@ -71,7 +71,7 @@ export function Typewriter({
     }, [delay, startOnView, start])
 
     useEffect(() => {
-        // If controlled by 'start' prop, adhere to it strictly
+        
         if (start === undefined) return
 
         setStarted(start)
@@ -79,16 +79,16 @@ export function Typewriter({
 
     useEffect(() => {
         if (!started) {
-            // If we are NOT started, we should be deleting everything if there is text
-            // This enables the "scroll up -> delete" behavior
+            
+            
             if (displayedText.length > 0) {
                 setIsDeleting(true)
             }
-            // If empty and not started, do nothing
+            
             return
         }
 
-        // If started, ensure we are typing (if not already done)
+        
         if (displayedText.length === 0 && isDeleting) {
             setIsDeleting(false)
         }
@@ -103,9 +103,9 @@ export function Typewriter({
             const isComplete = currentText === text
             const isEmpty = currentText === ""
 
-            // LOGIC SPLIT: Are we supposed to be showing text?
+            
             if (started) {
-                // TYPE OUT
+                
                 if (!isComplete && !isDeleting) {
                     setDisplayedText(text.substring(0, currentText.length + 1))
                     setShowCursor(true)
@@ -113,7 +113,7 @@ export function Typewriter({
                     return
                 }
 
-                // If we finished typing, just wait (or loop if enabled)
+                
                 if (isComplete) {
                     if (loop) {
                         timeout = setTimeout(() => setIsDeleting(true), 2000)
@@ -123,22 +123,22 @@ export function Typewriter({
                     return
                 }
             } else {
-                // DELETE (Un-Type)
-                // If not started, we force delete until empty
+                
+                
                 if (!isEmpty) {
-                    setIsDeleting(true) // Ensure mode is delete
+                    setIsDeleting(true) 
                     setDisplayedText(text.substring(0, currentText.length - 1))
                     setShowCursor(true)
-                    timeout = setTimeout(tick, deleteSpeed / 2) // Delete faster when scrolling back
+                    timeout = setTimeout(tick, deleteSpeed / 2) 
                     return
                 } else {
                     setIsDeleting(false)
-                    setShowCursor(true) // Keep cursor blinking at empty state? Or hide?
-                    // Let's keep blinking for "ready" state
+                    setShowCursor(true) 
+                    
                 }
             }
 
-            // Normal Loop Handling (Existing Logic fallback if needed)
+            
             if (isDeleting && !isEmpty) {
                 setDisplayedText(text.substring(0, currentText.length - 1))
                 timeout = setTimeout(tick, deleteSpeed)
@@ -159,12 +159,12 @@ export function Typewriter({
             <span
                 className={cn(
                     "ml-1 inline-block h-[1em] w-[2px] align-middle transition-opacity duration-300",
-                    // Custom heavy blink animation for "Antigravity" feel
+                    
                     showCursor ? "opacity-100 animate-pulse" : "opacity-0",
                     cursorClassName
                 )}
             >
-                {/* Visual bar via CSS dimensions in class above */}
+                {}
             </span>
         </div>
     )

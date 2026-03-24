@@ -31,19 +31,19 @@ export function WorkflowStepState({
     const textContainerRef = useRef<HTMLDivElement>(null)
     const bgRef = useRef<HTMLDivElement>(null)
 
-    // Cursor Tracking State (Refs for performance)
+    
     const targetRef = useRef({ x: 0, y: 0 })
     const currentRef = useRef({ x: 0, y: 0 })
     const rafIdRef = useRef<number | null>(null)
 
     const [startTypewriter, setStartTypewriter] = useState(false)
 
-    // Color Theme Mapping (Fallback if semicircleColor isn't specific enough)
-    // We use the passed color for the gradient to ensure consistency
+    
+    
 
-    // --- 1. CURSOR TRACKING SYSTEM (Living Color Field) ---
+    
     useEffect(() => {
-        // Initial center position
+        
         if (typeof window !== 'undefined') {
             targetRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
             currentRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
@@ -51,24 +51,24 @@ export function WorkflowStepState({
 
         const handleMouseMove = (e: MouseEvent) => {
             if (!containerRef.current) return
-            // Get position relative to viewport (fixed/absolute context)
+            
             targetRef.current = { x: e.clientX, y: e.clientY }
         }
 
         window.addEventListener("mousemove", handleMouseMove)
 
         const loop = () => {
-            // Check if we are active or near active before running heavy loop
-            // We can check if the container is in the viewport or rely on localProgress
             
-            // Lerp (0.1 for smooth delay)
+            
+            
+            
             currentRef.current.x += (targetRef.current.x - currentRef.current.x) * 0.1
             currentRef.current.y += (targetRef.current.y - currentRef.current.y) * 0.1
 
             const x = currentRef.current.x
             const y = currentRef.current.y
 
-            // B. Core Aura Parallax (Slow, buttery follow)
+            
             if (semicircleRef.current) {
                 const centerX = window.innerWidth / 2
                 const centerY = window.innerHeight / 2
@@ -90,15 +90,15 @@ export function WorkflowStepState({
     }, [semicircleColor])
 
 
-    // --- 2. GSAP SCROLL & REVEAL SYSTEM ---
+    
     useEffect(() => {
         const mm = gsap.matchMedia()
 
-        // Initial setup
+        
         const ctx = gsap.context(() => {
             const targets = [titleRef.current, descRef.current].filter((el) => el !== null) as HTMLElement[]
 
-            // DESKTOP: Initial Hide & Parent Control
+            
             mm.add("(min-width: 768px)", () => {
                 if (targets.length > 0) {
                     gsap.set(targets, {
@@ -109,7 +109,7 @@ export function WorkflowStepState({
                     })
                 }
 
-                // Semicircle Initial
+                
                 if (semicircleRef.current) {
                     gsap.set(semicircleRef.current, {
                         scale: 0.96,
@@ -118,7 +118,7 @@ export function WorkflowStepState({
                 }
             })
 
-            // MOBILE: Simple In-View Trigger
+            
             mm.add("(max-width: 767px)", () => {
                 if (targets.length > 0) {
                     gsap.from(targets, {
@@ -140,25 +140,25 @@ export function WorkflowStepState({
 
         }, containerRef)
 
-        // Only register listener updates if NOT mobile (handled by parent on desktop)
-        // Actually, we can just register safely. If parent doesn't call it on mobile, no harm.
-        // If parent DID call it, we'd have a conflict. But we know parent disables it on mobile.
+        
+        
+        
         const unregister = register((globalProgress, currentIndex) => {
-            // Local Progress Logic
+            
             const TOTAL = totalSteps
             const start = stepIndex / TOTAL
             const end = (stepIndex + 1) / TOTAL
             const duration = end - start
             const localProgress = (globalProgress - start) / duration
 
-            // Typewriter Trigger (Desktop Fallback)
+            
             if (localProgress > 0.05 && !startTypewriter) {
                 setStartTypewriter(true)
             }
 
-            // Reveal / Parallax Logic
+            
             if (localProgress < -0.1) {
-                // Reset if scrolled back up far
+                
                 const targets = [titleRef.current, descRef.current].filter((el) => el !== null) as HTMLElement[]
                 if (targets.length > 0) {
                     gsap.killTweensOf(targets)
@@ -167,33 +167,33 @@ export function WorkflowStepState({
                 }
 
             } else if (localProgress >= 0) {
-                // ENTRY PHASE (0 - 0.2)
+                
                 const entryP = Math.min(1, localProgress / 0.2)
 
-                // Ease the entry
-                const easedEntry = 1 - Math.pow(1 - entryP, 3) // Cubic ease out
+                
+                const easedEntry = 1 - Math.pow(1 - entryP, 3) 
 
-                // Properties
-                const currentY = 60 * (1 - easedEntry) // 60 -> 0
-                const currentBlur = 12 * (1 - easedEntry) // 12 -> 0
-                const currentScale = 0.94 + (0.06 * easedEntry) // 0.94 -> 1.0
+                
+                const currentY = 60 * (1 - easedEntry) 
+                const currentBlur = 12 * (1 - easedEntry) 
+                const currentScale = 0.94 + (0.06 * easedEntry) 
                 const currentOpacity = easedEntry
 
-                // Parallax PHASE (0.2 - 1.0)
-                // Once entered, we slowly drift up
-                const drift = Math.max(0, localProgress - 0.2) * 60 // 0px to 48px
+                
+                
+                const drift = Math.max(0, localProgress - 0.2) * 60 
 
-                // Apply Text Transforms
+                
                 if (titleRef.current) {
                     gsap.set(titleRef.current, {
                         opacity: currentOpacity,
-                        y: currentY - drift, // Enter (0) then drift up (-drift)
+                        y: currentY - drift, 
                         filter: `blur(${currentBlur}px)`,
                         scale: currentScale
                     })
                 }
                 if (descRef.current) {
-                    // Subtext drifts a bit less for parallax depth
+                    
                     gsap.set(descRef.current, {
                         opacity: currentOpacity,
                         y: currentY - (drift * 0.7),
@@ -202,19 +202,19 @@ export function WorkflowStepState({
                     })
                 }
 
-                // Semicircle/Aura Scroll Params
+                
                 if (semicircleRef.current) {
-                    // Massive scale up as we scroll
-                    const scale = 0.5 + (localProgress * 1.5) // 0.5 -> 2.0
+                    
+                    const scale = 0.5 + (localProgress * 1.5) 
                     const yPerc = 10 - (localProgress * 15) 
                     
-                    // FADE LOGIC: If it's the last step, don't fade out at the end
+                    
                     const isLast = stepIndex === TOTAL - 1
                     let opac
                     if (isLast && localProgress > 0.5) {
-                        opac = 0.8 // Hold opacity for last section
+                        opac = 0.8 
                     } else {
-                        opac = Math.sin(localProgress * Math.PI) * 0.8 // Fade in and out
+                        opac = Math.sin(localProgress * Math.PI) * 0.8 
                     }
 
                     semicircleRef.current.style.setProperty('--scroll-scale', scale.toFixed(3))
@@ -234,7 +234,7 @@ export function WorkflowStepState({
     return (
         <section ref={containerRef} className="md:absolute md:inset-0 relative w-full h-auto min-h-[100svh] flex flex-col items-center justify-center overflow-hidden pointer-events-none bg-transparent">
 
-            {/* 1. MOUSE-TRACKING BACKGROUND WASH */}
+            {}
             <div className="absolute inset-0 pointer-events-none z-0">
                 <div
                     ref={bgRef}
@@ -242,7 +242,7 @@ export function WorkflowStepState({
                 />
             </div>
 
-            {/* 2. THE CORE AURA (Centered, expanding glowing orb) */}
+            {}
             <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
                 <div
                     ref={semicircleRef}
@@ -255,7 +255,7 @@ export function WorkflowStepState({
                 />
             </div>
 
-            {/* 3. PURE TEXT SHOWCASE */}
+            {}
             <div
                 ref={textContainerRef}
                 className="relative z-20 w-full max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center gap-8"
@@ -281,7 +281,7 @@ export function WorkflowStepState({
                     {description}
                 </p>
 
-                {/* Elegant central minimal line */}
+                {}
                 <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30 mt-4" />
             </div>
 

@@ -15,13 +15,13 @@ export function CommunitySection() {
     const contentRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        // Force refresh to handle dynamic layout of grid
+        
         setTimeout(() => ScrollTrigger.refresh(), 100)
 
         const mm = gsap.matchMedia()
 
         const ctx = gsap.context(() => {
-            // Intro Animation - Runs on all devices
+            
             gsap.from(".community-card", {
                 scrollTrigger: {
                     trigger: sectionRef.current,
@@ -36,20 +36,20 @@ export function CommunitySection() {
                 ease: "power3.out"
             })
 
-            // Desktop Specifics - Pinning & Parallax
+            
             mm.add("(min-width: 768px)", () => {
-                // Pinning: Wait until bottom of section hits bottom of viewport (allows full scroll)
+                
                 ScrollTrigger.create({
                     trigger: sectionRef.current,
                     start: "bottom bottom",
-                    end: "+=100%", // Pin for 1 screen height while next section overlaps
+                    end: "+=100%", 
                     pin: true,
-                    pinSpacing: false, // Essential for stacking: next section slides over
+                    pinSpacing: false, 
                     anticipatePin: 1,
                     id: "community-pin"
                 })
 
-                // Parallax exit - Smoother & less aggressive
+                
                 gsap.to(contentRef.current, {
                     y: -50,
                     scale: 0.95,
@@ -57,7 +57,7 @@ export function CommunitySection() {
                     scrollTrigger: {
                         trigger: sectionRef.current,
                         start: "bottom bottom",
-                        end: "+=100%", // Sync with pin duration
+                        end: "+=100%", 
                         scrub: true,
                     }
                 })
@@ -72,7 +72,7 @@ export function CommunitySection() {
 
     return (
         <section ref={sectionRef} className="py-12 md:py-20 bg-background relative z-40 min-h-screen flex flex-col justify-center overflow-hidden border-t border-border/10 will-change-transform">
-            {/* Artistic Background */}
+            {}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent/10 via-background to-background pointer-events-none" />
 
             <div ref={contentRef} className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full mb-10">
@@ -114,7 +114,7 @@ export function CommunitySection() {
                                     <UnifiedCard className="aspect-[4/5] overflow-hidden group relative border-0 bg-secondary/50 backdrop-blur-sm hover:shadow-2xl transition-all duration-500">
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
 
-                                        {/* Artistic Placeholder */}
+                                        {}
                                         <div className="absolute inset-0 flex items-center justify-center text-accent/20 group-hover:scale-110 transition-transform duration-1000">
                                             <div className="w-full h-full bg-cover bg-center transition-all duration-700 grayscale group-hover:grayscale-0"
                                                 style={{

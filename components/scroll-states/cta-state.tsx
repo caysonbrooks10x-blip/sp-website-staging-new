@@ -18,21 +18,21 @@ export function CTAState({ progress, isVisible = true }: CTAStateProps) {
     useEffect(() => {
         if (!isVisible) return
 
-        // Footer Reveal Animation
-        // Text scales down from massive to normal?
-        // Or wipes in?
+        
+        
+        
 
-        // Let's do a "Settling" effect.
-        // Starts huge and slightly blurry, settles into clear view.
+        
+        
 
-        const scale = 2 - progress // 2 -> 1
-        // const blur = (1 - progress) * 10 // 10px -> 0px
+        const scale = 2 - progress 
+        
 
         if (textRef.current) {
             gsap.set(textRef.current, {
                 scale: Math.max(1, scale),
-                opacity: progress, // Fade in
-                y: (1 - progress) * 100 // Slide up
+                opacity: progress, 
+                y: (1 - progress) * 100 
             })
         }
 
@@ -55,7 +55,7 @@ export function CTAState({ progress, isVisible = true }: CTAStateProps) {
     return (
         <section ref={containerRef} className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-black overflow-hidden pointer-events-none">
 
-            {/* Background Gradient */}
+            {}
             <div
                 className="absolute inset-x-0 bottom-0 h-[60vh] bg-gradient-to-t from-zinc-900 to-transparent opacity-50"
                 style={{ opacity: progress * 0.5 }}
@@ -90,7 +90,7 @@ export function CTAState({ progress, isVisible = true }: CTAStateProps) {
                 </div>
             </div>
 
-            {/* Footer Links (Static bottom) */}
+            {}
             <div className="absolute bottom-10 w-full text-center text-zinc-600 text-sm font-mono opacity-50">
                 StudioX © 2026.
             </div>

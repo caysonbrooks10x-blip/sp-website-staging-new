@@ -4,7 +4,7 @@ import { useEffect, useRef, type RefObject } from "react"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
-// Register plugin only once on client
+
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger)
 }
@@ -39,11 +39,11 @@ export function useScrollAnimation<T extends HTMLElement>(
   const mergedConfig = { ...defaultConfig, ...config }
 
   useEffect(() => {
-    // Check for reduced motion preference
+    
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
     if (mediaQuery.matches) return
 
-    // Check if mobile - disable heavy animations
+    
     const isMobile = window.innerWidth < 768
     if (isMobile && mergedConfig.stagger && mergedConfig.stagger > 0.05) {
       mergedConfig.stagger = 0.05
@@ -58,7 +58,7 @@ export function useScrollAnimation<T extends HTMLElement>(
         scrollTrigger: {
           trigger: containerRef.current,
           start: mergedConfig.start,
-          once: true, // Only animate once, no re-trigger on scroll up
+          once: true, 
         },
         y: mergedConfig.y,
         x: mergedConfig.x,

@@ -19,21 +19,21 @@ export default function RegisterPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isVerificationSent, setIsVerificationSent] = useState(false);
 
-    // Password Visibility State
+    
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const redirectPath = useRef("/");
 
     useEffect(() => {
-        // Capture redirect params once on mount
+        
         const params = new URLSearchParams(window.location.search);
         redirectPath.current = params.get('redirect') || "/onboarding";
     }, []);
 
     useEffect(() => {
-        // If we have a user (session), it means they are verified (or confirmation is off).
-        // We should redirect them immediately to onboarding.
+        
+        
         if (!loading && user) {
             router.push(redirectPath.current || "/onboarding");
         }
@@ -108,7 +108,7 @@ export default function RegisterPage() {
     return (
         <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center bg-[#050505] px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
 
-            {/* Background Ambience */}
+            {}
             <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-900/10 rounded-full blur-[120px] pointer-events-none" />
 
@@ -122,7 +122,7 @@ export default function RegisterPage() {
                     <h2 className="text-2xl font-bold text-white tracking-tight">Create Account</h2>
                 </div>
 
-                {/* Card Container with Background Image */}
+                {}
                 <div
                     className="relative bg-black/60 rounded-3xl shadow-2xl overflow-hidden border border-white/10"
                     style={{
@@ -131,7 +131,7 @@ export default function RegisterPage() {
                         backgroundPosition: 'center',
                     }}
                 >
-                    {/* Dark Overlay for Readability */}
+                    {}
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
                     <div className="relative p-10 z-10">

@@ -9,7 +9,7 @@ interface WorkflowStateProps {
     register: (cb: (progress: number, index: number) => void) => () => void
 }
 
-// Configuration
+
 const IMAGE_COUNT = 25
 const IMAGE_SIZES = [
     { width: 80, height: 80, label: 'small' },
@@ -24,28 +24,28 @@ export function WorkflowState({ register }: WorkflowStateProps) {
     const cursorRef = useRef({ x: 0, y: 0 })
     const requestIdRef = useRef<number | null>(null)
 
-    // 1. STATE FOR CLIENT-SIDE MOUNTING & RANDOM DATA
+    
     const [mounted, setMounted] = useState(false)
     const [images, setImages] = useState<ImageConfig[]>([])
 
-    // 2. CLIENT INITIALIZATION (The "Cosmos Pattern")
+    
     useEffect(() => {
         setMounted(true)
 
-        // Generate Random Data ONLY on Client
+        
         const imgs: ImageConfig[] = []
         for (let i = 1; i <= IMAGE_COUNT; i++) {
-            // Random Size
+            
             const size = IMAGE_SIZES[Math.floor(Math.random() * IMAGE_SIZES.length)]
 
-            // Random Position with Exclusion Zone
+            
             let x, y
             let valid = false
             while (!valid) {
-                x = Math.random() * 100 // 0-100%
-                y = Math.random() * 100 // 0-100%
+                x = Math.random() * 100 
+                y = Math.random() * 100 
 
-                // Center Exclusion (Text matches): 30% < X < 70% AND 35% < Y < 65%
+                
                 const inCenterX = x > 30 && x < 70
                 const inCenterY = y > 35 && y < 65
 
@@ -54,7 +54,7 @@ export function WorkflowState({ register }: WorkflowStateProps) {
                 }
             }
 
-            // Depth / Speed factor (0.5 to 1.5)
+            
             const depth = 0.5 + Math.random()
 
             imgs.push({
@@ -75,9 +75,9 @@ export function WorkflowState({ register }: WorkflowStateProps) {
     useEffect(() => {
         if (!mounted || images.length === 0) return
 
-        // Track mouse for cursor parallax
+        
         const handleMouseMove = (e: MouseEvent) => {
-            // Normalized -1 to 1
+            
             cursorRef.current = {
                 x: (e.clientX / window.innerWidth) * 2 - 1,
                 y: (e.clientY / window.innerHeight) * 2 - 1
@@ -85,7 +85,7 @@ export function WorkflowState({ register }: WorkflowStateProps) {
         }
         window.addEventListener("mousemove", handleMouseMove)
 
-        // Animation Loop for Smooth Cursor Parallax + Scroll Parallax
+        
         const update = () => {
             if (!containerRef.current) return
 
@@ -97,21 +97,21 @@ export function WorkflowState({ register }: WorkflowStateProps) {
 
                 const depth = images[i].depth
 
-                // 1. Cursor Target
+                
                 const cursorX = cursorXTarget * 15 * depth
                 const cursorY = cursorYTarget * 15 * depth
 
-                // 2. Scroll Target
+                
                 const scrollY = images[i].scrollY || 0
 
-                // 3. Apply Smooth Lerp
+                
                 const currentX = gsap.getProperty(img, "x") as number || 0
                 const currentY = gsap.getProperty(img, "y") as number || 0
 
-                // Combine Scroll Y + Cursor Y
+                
                 const targetFinalY = scrollY + cursorY
 
-                // Lerp factor
+                
                 const nextX = currentX + (cursorX - currentX) * 0.1
                 const nextY = currentY + (targetFinalY - currentY) * 0.1
 
@@ -132,10 +132,10 @@ export function WorkflowState({ register }: WorkflowStateProps) {
     useEffect(() => {
         if (!mounted || images.length === 0) return
 
-        // --- 1. SETUP GSAP ANIMATIONS ---
+        
         const ctx = gsap.context(() => {
 
-            // A. Initial Appear
+            
             gsap.fromTo(imagesRef.current,
                 { opacity: 0, scale: 0.95, y: 20 },
                 {
@@ -148,7 +148,7 @@ export function WorkflowState({ register }: WorkflowStateProps) {
                 }
             )
 
-            // B. Floating Idle Animation (Infinite)
+            
             imagesRef.current.forEach((img, i) => {
                 if (!img || !images[i]) return
                 const data = images[i]
@@ -169,52 +169,52 @@ export function WorkflowState({ register }: WorkflowStateProps) {
 
         }, containerRef)
 
-        // --- 2. REGISTER SCROLL LISTENER ---
+        
         const unregister = register((globalProgress, index) => {
-            // Logic from scroll-experience.tsx: Index 2.
-            // Assumption: TOTAL_STATES is handled by parent, we calculate based on active index.
-            // But here we hardcoded slice logic in the previous file.
-            // Let's just use the index provided?
-            // "index" is active index. globalProgress is 0-1.
+            
+            
+            
+            
+            
 
-            // To maintain the "Explosion" effect, we need to know the progress relative to THIS section.
-            // The previous logic was: SECTION_INDEX = 2. TOTAL_STATES = 4.
-            // Now TOTAL_STATES will be 6.
-            // We need to dynamically coordinate this or assume standard params.
-            // For now, let's just react to being active or not?
-            // The original code did `images[i].scrollY = dist`.
+            
+            
+            
+            
+            
+            
 
-            // We'll approximate the section progress.
-            // Since we don't have TOTAL_STATES injected, we can guess or pass it.
-            // But wait, the parent calculates opacity.
-            // The PARALLAX effect (images expanding out) relies on scroll.
+            
+            
+            
+            
 
-            // Let's assume standard behavior:
-            // Since we are adding it back, let's keep it simple.
+            
+            
 
-            // If we really want the "depth" effect where images move apart on scroll:
-            // We need relative progress.
+            
+            
 
-            // Re-implementing simplified scroll Y updates based on the fact that globalProgress increases.
-            // We can just use a multiplier on globalProgress.
+            
+            
             const p = globalProgress * 10
 
-            // Update scrollY for each image
+            
             imagesRef.current.forEach((img, i) => {
                 if (!img || !images[i]) return
                 const depth = images[i].depth
 
-                // Simple unidirectional parallax
-                const dist = (p * 50 * depth) // Move down/up based on depth
+                
+                const dist = (p * 50 * depth) 
 
-                // Original was: const dist = (60 + (depth - 0.5) * 80) * -p * 2
-                // We'll stick to a simple parallax drift.
+                
+                
                 images[i].scrollY = -dist
             })
 
-            // Scale effect on exit
-            // We can check if index > 2 to scale down?
-            if (index > 2) { // 2 is this section (0=Hero, 1=Features, 2=Workflow)
+            
+            
+            if (index > 2) { 
                 gsap.to(containerRef.current, { scale: 0.96, duration: 0.5, overwrite: true })
             } else {
                 gsap.to(containerRef.current, { scale: 1, duration: 0.5, overwrite: true })
@@ -230,7 +230,7 @@ export function WorkflowState({ register }: WorkflowStateProps) {
     return (
         <section ref={containerRef} className="md:absolute md:inset-0 relative w-full h-auto min-h-[100svh] overflow-hidden bg-white">
 
-            {/* 1. IMAGE LAYER - ONLY RENDER IF MOUNTED */}
+            {}
             {mounted && (
                 <div className="absolute inset-0 pointer-events-none">
                     {images.map((img, i) => (
@@ -248,14 +248,14 @@ export function WorkflowState({ register }: WorkflowStateProps) {
                                 left: img.left,
                                 top: img.top,
                                 zIndex: Math.floor(img.depth * 10),
-                                opacity: 0 // Start hidden, let GSAP fade in
+                                opacity: 0 
                             }}
                         />
                     ))}
                 </div>
             )}
 
-            {/* 2. TEXT CONTENT (Centered & Static) */}
+            {}
             <div
                 ref={textContentRef}
                 className="absolute inset-0 flex flex-col items-center justify-center z-50 text-center pointer-events-none px-4"

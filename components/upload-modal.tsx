@@ -85,7 +85,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
             let modelOutput = "External";
 
             if (file) {
-                // 1. Upload file to Firebase Storage
+                
                 const fileRef = ref(storage, `community-uploads/${user.uid}/${Date.now()}_${file.name}`);
                 const uploadResult = await uploadBytesResumable(fileRef, file);
                 downloadUrl = await getDownloadURL(uploadResult.ref);
@@ -96,7 +96,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                 modelOutput = "StudioX";
             }
 
-            // 2. Add document to Firestore 'posts' collection using Serverless proxy
+            
             const publishPost = httpsCallable(functions, "publishPost");
             await publishPost({
                 title: title || "StudioX Upload",
@@ -112,7 +112,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                 },
                 tags: isPublic ? ["community", "upload"] : ["private", "upload"],
                 assetUrl: downloadUrl,
-                thumbnailUrl: downloadUrl, // Can be refined later for automatic video thumbnails
+                thumbnailUrl: downloadUrl, 
                 allowRemix,
                 isPublic
             });
@@ -138,7 +138,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Backdrop — z-[200] to sit above ALL page content including studio panels */}
+                    {}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -147,7 +147,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                         className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm"
                     />
 
-                    {/* Modal — z-[201] to sit above backdrop */}
+                    {}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -155,15 +155,15 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                         className="fixed inset-0 z-[201] flex items-end sm:items-center justify-center p-0 sm:p-4"
                     >
                         <div className="relative overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl group w-full sm:max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto bg-[#0a0a0c]">
-                            {/* Background Image with Parallax-like fixity (or just cover) */}
+                            {}
                             <div className="absolute inset-0 z-0">
                                 <img src={`${ASSET_BASE}/community_card.jpeg`} alt="bg" className="w-full h-full object-cover opacity-60" />
-                                <div className="absolute inset-0 bg-black/80 backdrop-blur-md" /> {/* Heavy darken for contrast */}
+                                <div className="absolute inset-0 bg-black/80 backdrop-blur-md" /> {}
                                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
                             </div>
 
                             <div className="relative z-10 flex flex-col md:flex-row min-h-0 md:h-[600px]">
-                                {/* Left: Preview / Upload Area - Glassy & Featured */}
+                                {}
                                 <div
                                     className={cn(
                                         "relative w-full md:w-[55%] flex flex-col items-center justify-center p-6 sm:p-8 transition-all border-b md:border-b-0 md:border-r border-white/10 bg-white/[0.02]",
@@ -224,9 +224,9 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                     )}
                                 </div>
 
-                                {/* Right: Metadata Form - Clean & Minimal */}
+                                {}
                                 <div className="flex-1 flex flex-col p-6 sm:p-8 md:p-10 relative">
-                                    {/* Close Button Absolute */}
+                                    {}
                                     <Button
                                         variant="ghost"
                                         size="icon"
@@ -242,7 +242,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                     </div>
 
                                     <div className="flex-1 space-y-5 sm:space-y-8">
-                                        {/* Seamless Title Input */}
+                                        {}
                                         <div className="group/input">
                                             <input
                                                 placeholder="Give it a title..."
@@ -252,7 +252,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                             />
                                         </div>
 
-                                        {/* Seamless Description Input */}
+                                        {}
                                         <div className="group/input">
                                             <textarea
                                                 placeholder="What's the story behind this?"
@@ -262,7 +262,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                             />
                                         </div>
 
-                                        {/* Toggles - Elegant Row */}
+                                        {}
                                         <div className="space-y-4 sm:space-y-5">
                                             <div className="flex items-center justify-between group/toggle cursor-pointer" onClick={() => setIsPublic(!isPublic)}>
                                                 <div className="flex items-center gap-3 sm:gap-4">
@@ -292,7 +292,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                                         </div>
                                     </div>
 
-                                    {/* Footer Actions */}
+                                    {}
                                     <div className="mt-6 sm:mt-8 flex items-center justify-end gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-white/5">
                                         <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-white hover:bg-white/5 h-10 sm:h-auto">
                                             Cancel

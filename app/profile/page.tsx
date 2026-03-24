@@ -61,10 +61,10 @@ function ProfileBalanceComponent() {
   );
 }
 
-// --- Mock Data Removed ---
 
 
-// --- Components ---
+
+
 
 import { CreationsTab } from "@/components/profile/creations-tab"
 
@@ -77,7 +77,7 @@ function ProfileContent() {
   const [creations, setCreations] = useState<any[]>([])
   const [loadingCreations, setLoadingCreations] = useState(false)
 
-  // Fetch true creations from backend
+  
   useEffect(() => {
     if (!user || activeTab !== "creations") return
 
@@ -126,7 +126,7 @@ function ProfileContent() {
     { id: "creations", label: "Creations", icon: Sparkles },
   ]
 
-  // Fallback for display name if not set
+  
   const displayName = user?.displayName || user?.email?.split('@')[0] || "StudioX User"
   const initials = displayName.substring(0, 2).toUpperCase()
 
@@ -134,18 +134,18 @@ function ProfileContent() {
     <main className="min-h-screen bg-[#050505] text-slate-200 selection:bg-purple-500/30 overflow-x-hidden font-sans">
       <div ref={containerRef} className="pb-20">
 
-        {/* Cinematic Ambient Background */}
+        {}
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-purple-900/10 rounded-full blur-[150px] animate-pulse-slow" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-900/10 rounded-full blur-[150px] animate-pulse-slow delay-1000" />
           <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: `url('${ASSET_BASE}/noise.png')` }} />
         </div>
 
-        {/* Hero Banner Area */}
+        {}
         <div className="h-[380px] w-full relative group z-0">
-          {/* Dark Gradient Overlay */}
+          {}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/60 to-[#050505] z-10" />
-          {/* Background Image */}
+          {}
           <div className="absolute inset-0 w-full h-full overflow-hidden">
             <Image
               src={`${ASSET_BASE}/studiox.jpg`}
@@ -157,10 +157,10 @@ function ProfileContent() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 -mt-40">
-          {/* Profile Header */}
+          {}
           <div className="flex flex-col md:flex-row items-end gap-10 mb-14 header-element">
 
-            {/* Avatar Section */}
+            {}
             <div className="relative group perspective-1000 mx-auto md:mx-0">
               <div className="h-40 w-40 md:h-48 md:w-48 rounded-full p-1.5 bg-[#050505]/50 backdrop-blur-xl ring-1 ring-white/10 relative z-20 overflow-hidden shadow-2xl shadow-black/50">
                 <Avatar className="h-full w-full rounded-full bg-black">
@@ -172,11 +172,11 @@ function ProfileContent() {
                 </Avatar>
               </div>
 
-              {/* Glow effect behind avatar */}
+              {}
               <div className="absolute inset-0 rounded-full bg-purple-500/20 blur-[60px] scale-90 -z-10 group-hover:scale-110 transition-transform duration-500" />
             </div>
 
-            {/* User Info */}
+            {}
             <div className="flex-1 space-y-4 mb-2 text-center md:text-left w-full">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
                 <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter drop-shadow-2xl">{displayName}</h1>
@@ -188,7 +188,7 @@ function ProfileContent() {
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {}
             <div className="flex items-center gap-3 mb-2 w-full md:w-auto justify-center md:justify-end">
               <Button
                 variant="outline"
@@ -202,7 +202,7 @@ function ProfileContent() {
 
           <ProfileBalanceComponent />
 
-          {/* Cinematic Floating Tabs */}
+          {}
           <div className="flex justify-center mb-16 header-element relative z-20">
             <div className="flex p-2 bg-black/40 backdrop-blur-2xl rounded-full border border-white/10 shadow-2xl shadow-black/50">
               {tabs.map((tab) => (
@@ -230,7 +230,7 @@ function ProfileContent() {
             </div>
           </div>
 
-          {/* Content Area with smooth transitions */}
+          {}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
