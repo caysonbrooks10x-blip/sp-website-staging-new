@@ -11,19 +11,12 @@ export function StudioTopNav({ mode, setMode }: StudioTopNavProps) {
     return (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-[1400px] px-6">
             <div className="h-16 w-full bg-white/[0.04] backdrop-blur-[20px] border border-white/[0.08] rounded-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex items-center justify-between px-5">
-                {}
-                <div className="flex items-center gap-2.5 group">
+                <div className="flex items-center gap-3 group">
                     <img 
-                        src="/studio_logo.svg" 
-                        alt="Logo" 
-                        draggable="false"
-                        className="h-15 w-15 object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-500 group-hover:scale-105 select-none"
-                    />
-                    <img 
-                        src="/studio_brandname.svg" 
+                        src="/comb_logo.svg" 
                         alt="StudioX" 
                         draggable="false"
-                        className="h-9 object-contain brightness-0 invert opacity-100 transition-all duration-500 select-none"
+                        className="h-14 object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.35)] transition-all duration-500 group-hover:scale-105 select-none"
                     />
                 </div>
 
