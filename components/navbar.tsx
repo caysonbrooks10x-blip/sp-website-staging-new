@@ -121,21 +121,13 @@ export function Navbar() {
             }}
             className="flex items-center gap-3 group relative z-[110]"
           >
-            <div className="relative w-13 h-13 flex items-center justify-center transition-all duration-500 group-hover:scale-105">
-              <img 
-                src="/studio_logo.svg" 
-                alt="StudioX Logo" 
-                draggable="false"
-                className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)] select-none"
-              />
-            </div>
             <img 
-              src="/studio_brandname.svg" 
+              src="/comb_logo.svg" 
               alt="StudioX" 
               draggable="false"
               className={cn(
-                "h-8 sm:h-9 object-contain transition-all duration-300 brightness-0 invert opacity-90 group-hover:opacity-100 select-none",
-                scrolled ? "h-7 sm:h-8" : "h-8 sm:h-9"
+                "h-11 sm:h-13 object-contain transition-all duration-300 brightness-0 invert opacity-90 group-hover:opacity-100 select-none filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)]",
+                scrolled ? "h-10 sm:h-12" : "h-11 sm:h-13"
               )}
             />
           </Link>
