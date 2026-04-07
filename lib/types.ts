@@ -46,6 +46,8 @@ export interface PricingTier {
   credits: number
   price: number
   yearlyPrice: number
+  stripeMonthlyLink?: string
+  stripeYearlyLink?: string
 }
 
 export interface PricingPlan {
@@ -62,6 +64,8 @@ export interface PricingPlan {
   support: string
   bestFor: string
   tiers?: PricingTier[]
+  stripeMonthlyLink?: string
+  stripeYearlyLink?: string
 }
 
 export interface Creation {
@@ -89,8 +93,8 @@ export interface CommunityPost {
   views: number
   allowRemix: boolean
   createdAt: Date
-  remixSourceId?: string 
-  parentAssetId?: string 
+  remixSourceId?: string
+  parentAssetId?: string
   type: "image" | "video"
   prompt: string
   tags: string[]

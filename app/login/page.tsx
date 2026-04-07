@@ -41,11 +41,11 @@ export default function LoginPage() {
 
     const [view, setView] = useState<"selection" | "email" | "phone">("selection");
 
-    
+
     const [emailCreds, setEmailCreds] = useState({ email: "", password: "" });
     const [showPassword, setShowPassword] = useState(false);
 
-    
+
     const [phoneNumber, setPhoneNumber] = useState("");
     const [verificationCode, setVerificationCode] = useState("");
     const [phoneStep, setPhoneStep] = useState<"phone" | "code">("phone");
@@ -56,7 +56,7 @@ export default function LoginPage() {
     const redirectPath = useRef("/");
 
     useEffect(() => {
-        
+
         const params = new URLSearchParams(window.location.search);
         redirectPath.current = params.get('redirect') || "/onboarding";
     }, []);
@@ -78,7 +78,7 @@ export default function LoginPage() {
         setIsSubmitting(true);
         try {
             await signInWithEmail(emailCreds.email, emailCreds.password);
-            
+
         } catch (err: any) {
             setError(err.message || "Failed to login");
             setIsSubmitting(false);
@@ -109,7 +109,7 @@ export default function LoginPage() {
         setIsSubmitting(true);
         try {
             await verifyOtp(verificationCode);
-            
+
         } catch (err: any) {
             setError("Invalid verification code");
             setIsSubmitting(false);
@@ -125,9 +125,9 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center bg-[#050505] px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+        <div className="flex min-h-screen flex-col items-center justify-start pt-48 pb-12 md:pt-56 md:pb-24 bg-[#050505] px-4 sm:px-6 lg:px-8 relative overflow-x-hidden">
 
-            {}
+            { }
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none" />
 
@@ -138,17 +138,23 @@ export default function LoginPage() {
                 className="w-full max-w-[500px] relative z-10"
             >
                 <div className="text-center mb-8">
-                    <div className="inline-flex h-24 items-center justify-center transition-all duration-500 hover:scale-110">
-                        <img 
-                            src="/comb_logo.svg" 
-                            alt="StudioX" 
+                    <div className="flex flex-col items-center transition-all duration-500 hover:scale-105">
+                        <img
+                            src="/studio_logo.svg"
+                            alt="StudioX Icon"
                             draggable="false"
-                            className="h-full object-contain filter drop-shadow-[0_0_40px_rgba(168,85,247,0.55)] select-none"
+                            className="h-20 md:h-32 w-auto object-contain filter drop-shadow-[0_0_40px_rgba(168,85,247,0.55)] select-none z-10"
+                        />
+                        <img
+                            src="/studio_brandname.svg"
+                            alt="StudioX"
+                            draggable="false"
+                            className="h-10 md:h-16 w-auto object-contain filter drop-shadow-[0_0_30px_rgba(168,85,247,0.4)] select-none -mt-8 md:-mt-20"
                         />
                     </div>
                 </div>
 
-                {}
+                { }
                 <div
                     className="relative bg-black/60 rounded-3xl shadow-2xl overflow-hidden border border-white/10"
                     style={{
@@ -157,7 +163,7 @@ export default function LoginPage() {
                         backgroundPosition: 'center',
                     }}
                 >
-                    {}
+                    { }
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
                     <div className="relative p-10 z-10">
