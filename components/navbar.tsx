@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
 import { doc, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebaseClient"
@@ -54,23 +54,23 @@ export function Navbar() {
     }
   }, [pathname])
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      if (currentScrollY > 50 && currentScrollY > lastScrollYRef.current) {
-        setIsNavVisible(false)
-      } else {
-        setIsNavVisible(true)
-      }
-      setScrolled(currentScrollY > 20)
-      lastScrollYRef.current = currentScrollY
+  const { scrollY } = useScroll()
+
+  useMotionValueEvent(scrollY, "change", (latest: number) => {
+    if (latest > 10 && latest > lastScrollYRef.current + 5) {
+      setIsNavVisible(false)
+      lastScrollYRef.current = latest
+    } else if (latest < lastScrollYRef.current - 15) {
+      setIsNavVisible(true)
+      lastScrollYRef.current = latest
+    } else if (latest <= 10) {
+      setIsNavVisible(true)
+      lastScrollYRef.current = latest
     }
+    setScrolled(latest > 20)
+  })
 
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
 
-  
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = "hidden"
@@ -94,7 +94,7 @@ export function Navbar() {
     { href: "/pricing", label: "Pricing" },
   ]
 
-  
+
   const isCommunityPostDetail = /^\/community\/.+/.test(pathname)
   if (isCommunityPostDetail) return null
 
@@ -104,8 +104,8 @@ export function Navbar() {
         className={cn(
           "fixed top-0 left-0 right-0 z-[100] px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-[0.32,0.72,0,1]",
           isNavVisible ? "translate-y-0" : "-translate-y-32",
-          scrolled 
-            ? "bg-black/60 backdrop-blur-2xl py-3 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]" 
+          scrolled
+            ? "bg-black/60 backdrop-blur-2xl py-3 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]"
             : "bg-black/20 backdrop-blur-lg py-5 border-b border-white/5"
         )}
       >
@@ -121,13 +121,24 @@ export function Navbar() {
             }}
             className="flex items-center gap-3 group relative z-[110]"
           >
-            <img 
-              src="/comb_logo.svg" 
-              alt="StudioX" 
+            {/* SX icon on mobile */}
+            <img
+              src="/studio_logo.svg"
+              alt="StudioX"
               draggable="false"
               className={cn(
-                "h-11 sm:h-13 object-contain transition-all duration-300 brightness-0 invert opacity-90 group-hover:opacity-100 select-none filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)]",
-                scrolled ? "h-10 sm:h-12" : "h-11 sm:h-13"
+                "md:hidden object-contain w-auto transition-all duration-300 brightness-0 invert opacity-90 group-hover:opacity-100 select-none filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)] origin-left",
+                scrolled ? "h-10 scale-110" : "h-12 scale-125 md:scale-150"
+              )}
+            />
+            {/* Full combined logo on desktop */}
+            <img
+              src="/comb_logo.svg"
+              alt="StudioX"
+              draggable="false"
+              className={cn(
+                "hidden md:block object-contain w-auto transition-all duration-300 brightness-0 invert opacity-90 group-hover:opacity-100 select-none filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)] origin-left",
+                scrolled ? "h-10 lg:h-12 scale-110 lg:scale-125" : "h-12 lg:h-16 scale-[1.35] lg:scale-[1.75]"
               )}
             />
           </Link>
@@ -157,8 +168,8 @@ export function Navbar() {
                   data-active={isActive}
                   className={cn(
                     "relative px-6 py-2.5 text-[13px] font-black uppercase tracking-widest transition-all duration-300 rounded-full z-10",
-                    isActive 
-                      ? "text-black drop-shadow-sm" 
+                    isActive
+                      ? "text-black drop-shadow-sm"
                       : "text-zinc-400 hover:text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.3)]"
                   )}
                 >
@@ -168,9 +179,9 @@ export function Navbar() {
             })}
           </nav>
 
-          {}
+          { }
           <div className="flex items-center gap-4 relative z-[110]">
-            {}
+            { }
             <div className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-zinc-900/80 border border-white/10 shadow-lg backdrop-blur-md">
               <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center">
                 <Sparkles className="w-3 h-3 text-white fill-white" />
@@ -178,7 +189,7 @@ export function Navbar() {
               <span className="text-xs font-semibold text-zinc-100 tabular-nums tracking-wide">{balance}</span>
             </div>
 
-            {}
+            { }
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -241,7 +252,7 @@ export function Navbar() {
               </div>
             )}
 
-            {}
+            { }
             <button
               className={cn(
                 "md:hidden relative z-[110] w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300",
@@ -279,7 +290,7 @@ export function Navbar() {
         </div>
       </header>
 
-      {}
+      { }
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -289,7 +300,7 @@ export function Navbar() {
             transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
             className="fixed inset-0 z-[90] bg-black flex flex-col pt-24 pb-8 px-6"
           >
-            {}
+            { }
             <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/20 to-black pointer-events-none" />
 
             <div className="flex-1 flex flex-col relative z-10">
@@ -372,7 +383,7 @@ export function Navbar() {
                   )}
                 </div>
 
-                {}
+                { }
                 <div className="flex items-center justify-between px-2 pt-2">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner backdrop-blur-md">
@@ -383,7 +394,7 @@ export function Navbar() {
                       <span className="text-lg font-bold text-white tabular-nums leading-none mt-0.5">{balance}</span>
                     </div>
                   </div>
-                  {}
+                  { }
                 </div>
               </motion.div>
             </div>

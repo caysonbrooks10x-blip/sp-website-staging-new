@@ -11,16 +11,22 @@ export function StudioTopNav({ mode, setMode }: StudioTopNavProps) {
     return (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-[1400px] px-6">
             <div className="h-16 w-full bg-white/[0.04] backdrop-blur-[20px] border border-white/[0.08] rounded-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex items-center justify-between px-5">
-                <div className="flex items-center gap-3 group">
-                    <img 
-                        src="/comb_logo.svg" 
-                        alt="StudioX" 
+                <div className="flex items-center group">
+                    <img
+                        src="/studio_logo.svg"
+                        alt="StudioX"
                         draggable="false"
-                        className="h-14 object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.35)] transition-all duration-500 group-hover:scale-105 select-none"
+                        className="h-16 md:h-20 w-auto object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.35)] transition-all duration-500 group-hover:scale-105 select-none z-10"
+                    />
+                    <img
+                        src="/studio_brandname.svg"
+                        alt="StudioX"
+                        draggable="false"
+                        className="h-8 md:h-10 w-auto object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.35)] transition-all duration-500 group-hover:scale-105 select-none hidden lg:block -ml-4 md:-ml-6"
                     />
                 </div>
 
-                {}
+                { }
                 <div className="flex items-center bg-black/40 rounded-full p-1 border border-white/[0.05] relative">
                     <div
                         className={cn(
@@ -32,7 +38,7 @@ export function StudioTopNav({ mode, setMode }: StudioTopNavProps) {
                     <button
                         onClick={() => setMode('image')}
                         className={cn(
-                            "w-[100px] py-1.5 flex items-center justify-center gap-2 relative z-10 transition-all duration-300", 
+                            "w-[100px] py-1.5 flex items-center justify-center gap-2 relative z-10 transition-all duration-300",
                             mode === 'image' ? "text-black" : "text-zinc-400 hover:text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]"
                         )}
                     >
@@ -43,7 +49,7 @@ export function StudioTopNav({ mode, setMode }: StudioTopNavProps) {
                     <button
                         onClick={() => setMode('video')}
                         className={cn(
-                            "w-[100px] py-1.5 flex items-center justify-center gap-2 relative z-10 transition-all duration-300", 
+                            "w-[100px] py-1.5 flex items-center justify-center gap-2 relative z-10 transition-all duration-300",
                             mode === 'video' ? "text-black" : "text-zinc-400 hover:text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]"
                         )}
                     >
@@ -54,7 +60,7 @@ export function StudioTopNav({ mode, setMode }: StudioTopNavProps) {
                     <button
                         onClick={() => setMode('templates')}
                         className={cn(
-                            "w-[100px] py-1.5 flex items-center justify-center gap-2 relative z-10 transition-all duration-300", 
+                            "w-[100px] py-1.5 flex items-center justify-center gap-2 relative z-10 transition-all duration-300",
                             mode === 'templates' ? "text-black" : "text-zinc-400 hover:text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]"
                         )}
                     >
@@ -63,7 +69,7 @@ export function StudioTopNav({ mode, setMode }: StudioTopNavProps) {
                     </button>
                 </div>
 
-                {}
+                { }
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] px-3 py-1.5 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer group">
                         <Sparkles className="w-4 h-4 text-violet-400 group-hover:text-cyan-400 transition-colors" />

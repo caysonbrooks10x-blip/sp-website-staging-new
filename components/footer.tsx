@@ -8,7 +8,7 @@ export function Footer() {
     <footer
       className="relative bg-background border-t border-white/5 py-8 overflow-hidden z-40"
     >
-      {}
+      { }
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${ASSET_BASE}/footer.jpg)` }}
@@ -16,17 +16,23 @@ export function Footer() {
       <div className="absolute inset-0 bg-background/85" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_var(--tw-gradient-stops))] from-accent/4 via-background to-background pointer-events-none" />
 
-      {}
+      { }
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-4">
-          {}
+          { }
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 group">
-              <img 
-                src="/comb_logo.svg" 
-                alt="StudioX" 
+            <Link href="/" className="flex items-center group">
+              <img
+                src="/studio_logo.svg"
+                alt="StudioX Icon"
                 draggable="false"
-                className="h-15 object-contain brightness-0 invert opacity-80 group-hover:opacity-100 transition-all select-none"
+                className="h-16 md:h-20 w-auto object-contain brightness-0 invert opacity-80 group-hover:opacity-100 transition-all select-none z-10"
+              />
+              <img
+                src="/studio_brandname.svg"
+                alt="StudioX"
+                draggable="false"
+                className="h-10 md:h-12 w-auto object-contain brightness-0 invert opacity-80 group-hover:opacity-100 transition-all select-none hidden sm:block -ml-4 md:-ml-6"
               />
             </Link>
 
@@ -35,7 +41,7 @@ export function Footer() {
             </p>
           </div>
 
-          {}
+          { }
           <nav>
             <ul className="flex items-center gap-6">
               {[
@@ -56,7 +62,7 @@ export function Footer() {
           </nav>
         </div>
 
-        {}
+        { }
         <div className="pt-4 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] text-muted-foreground/60">
           <p>© {new Date().getFullYear()} StudioX Inc.</p>
           <div className="flex gap-6">
