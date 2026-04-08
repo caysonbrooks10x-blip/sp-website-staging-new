@@ -4,6 +4,7 @@
 import { Suspense, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+<<<<<<< HEAD
 import { Search, ArrowUpRight, Filter, Play, Plus } from "lucide-react"
 import { gsap } from "gsap"
 import { CommunityGrid } from "@/components/community-grid"
@@ -11,12 +12,58 @@ import { UploadModal } from "@/components/upload-modal"
 
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
+=======
+import { Search, ArrowUpRight, Filter, Plus } from "lucide-react"
+import { gsap } from "gsap"
+import { CommunityGrid } from "@/components/community-grid"
+import { UploadModal } from "@/components/upload-modal"
+import { cn } from "@/lib/utils"
+
+import { useAuth } from "@/context/auth-context"
+import { useRouter, useSearchParams } from "next/navigation"
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 
 function CommunityContent() {
   const headerRef = useRef<HTMLDivElement>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+<<<<<<< HEAD
   const { user } = useAuth()
   const router = useRouter()
+=======
+  const [searchValue, setSearchValue] = useState("")
+  const [isFiltersVisible, setIsFiltersVisible] = useState(true)
+  const { user } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeFilter = (searchParams.get("filter") || "").toLowerCase()
+  const currentFilter = activeFilter || "all"
+
+  const filterItems = [
+    { id: "all", label: "All" },
+    { id: "works", label: "Works" },
+    { id: "templates", label: "Templates" },
+    { id: "video", label: "Video" },
+    { id: "image", label: "Image" },
+    { id: "remixable", label: "Open to Remix" },
+    { id: "branching", label: "Popular Branches" },
+    { id: "directed", label: "Directed" },
+    { id: "telegram", label: "Telegram" },
+  ]
+
+  const updateQuery = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value) params.delete(key)
+      else params.set(key, value)
+    })
+    const query = params.toString()
+    router.replace(query ? `/community?${query}` : "/community")
+  }
+
+  const applySearch = () => {
+    updateQuery({ q: searchValue.trim() || null })
+  }
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -42,6 +89,13 @@ function CommunityContent() {
     return () => ctx.revert()
   }, [])
 
+<<<<<<< HEAD
+=======
+  useEffect(() => {
+    setSearchValue(searchParams.get("q") || "")
+  }, [searchParams])
+
+>>>>>>> 6369408 (feat: initial frontend + fixes)
   return (
     <main ref={headerRef} className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30 overflow-x-hidden">
 
@@ -59,8 +113,13 @@ function CommunityContent() {
       </div>
 
       {}
+<<<<<<< HEAD
       <section className="relative z-10 pt-40 md:pt-48 pb-12 md:pb-24 px-6 md:px-16 max-w-[2000px] mx-auto">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 md:gap-10 mb-12 md:mb-20">
+=======
+      <section className="relative z-10 pt-48 md:pt-56 pb-12 md:pb-24 px-6 md:px-16 max-w-[2000px] mx-auto">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 md:gap-10 mb-12 md:mb-16">
+>>>>>>> 6369408 (feat: initial frontend + fixes)
           <div className="space-y-4 md:space-y-6 max-w-3xl">
             <div className="flex items-center gap-3 hero-text transform-gpu">
               <div className="h-[1px] w-8 bg-purple-500/50"></div>
@@ -75,6 +134,7 @@ function CommunityContent() {
             </p>
           </div>
 
+<<<<<<< HEAD
           <div className="hero-controls w-full lg:w-auto flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
             <Button
               className="h-14 rounded-full px-8 bg-white text-black hover:bg-neutral-200 transition-all duration-300 font-medium"
@@ -99,6 +159,86 @@ function CommunityContent() {
             <Button variant="outline" size="icon" className="h-14 w-14 rounded-full border-white/5 bg-white/[0.03] hover:bg-white/[0.08] hover:text-white hover:border-white/10 transition-all duration-300">
               <Filter className="h-4 w-4" />
             </Button>
+=======
+          <div className="hero-controls flex w-full flex-col gap-4 lg:w-[min(640px,100%)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <Button
+                className="inline-flex h-14 min-w-[168px] items-center justify-center gap-3 rounded-full bg-white px-8 text-base font-medium leading-none text-black transition-all duration-300 hover:bg-neutral-200"
+                onClick={() => {
+                  if (!user) {
+                    router.push(`/login?redirect=${encodeURIComponent("/community")}`)
+                    return
+                  }
+                  setIsUploadOpen(true)
+                }}
+              >
+                <Plus className="h-4 w-4 shrink-0" />
+                <span className="leading-none">Upload</span>
+              </Button>
+              <div className="relative group w-full sm:flex-1 sm:min-w-[260px]">
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500 group-hover:text-white transition-colors duration-300" />
+                <Input
+                  placeholder="Search the gallery..."
+                  value={searchValue}
+                  onChange={(event) => setSearchValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault()
+                      applySearch()
+                    }
+                  }}
+                  className="pl-12 h-14 bg-white/[0.03] border-white/5 rounded-full text-base text-white placeholder:text-neutral-600 focus:bg-white/[0.08] focus:border-white/10 transition-all duration-300 shadow-xl"
+                />
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setIsFiltersVisible((current) => !current)}
+                aria-pressed={isFiltersVisible}
+                className={cn(
+                  "inline-flex h-14 items-center justify-center gap-2 rounded-full border-white/5 bg-white/[0.03] px-5 text-sm font-medium text-white transition-all duration-300 lg:hidden",
+                  isFiltersVisible || currentFilter !== "all"
+                    ? "border-white/15 bg-white/[0.08]"
+                    : "hover:bg-white/[0.08] hover:border-white/10"
+                )}
+              >
+                <Filter className="h-4 w-4 shrink-0" />
+                <span>{isFiltersVisible ? "Hide Filters" : "Filters"}</span>
+              </Button>
+            </div>
+
+            <div
+              className={cn(
+                "overflow-hidden rounded-[28px] border border-white/8 bg-white/[0.02] p-4 transition-all duration-300 ease-out",
+                isFiltersVisible ? "max-h-64 opacity-100" : "max-h-0 border-transparent p-0 opacity-0 lg:max-h-64 lg:border-white/8 lg:p-4 lg:opacity-100"
+              )}
+            >
+              <div className="mb-3 flex items-center gap-3">
+                <div className="h-px w-8 bg-white/10" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
+                  Browse Categories
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {filterItems.map((item) => {
+                  const isActive = currentFilter === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => updateQuery({ filter: item.id === "all" ? null : item.id })}
+                      className={cn(
+                        "rounded-full border px-4 py-2 text-xs font-semibold tracking-wide transition-colors",
+                        isActive
+                          ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
+                          : "border-white/10 bg-white/[0.03] text-zinc-400 hover:border-white/20 hover:text-white"
+                      )}
+                    >
+                      {item.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+>>>>>>> 6369408 (feat: initial frontend + fixes)
           </div>
         </div>
 

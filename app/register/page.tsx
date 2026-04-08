@@ -34,10 +34,17 @@ export default function RegisterPage() {
     useEffect(() => {
         
         
+<<<<<<< HEAD
         if (!loading && user) {
             router.push(redirectPath.current || "/onboarding");
         }
     }, [user, loading, router]);
+=======
+        if (!isSubmitting && !isVerificationSent && !loading && user) {
+            router.push(redirectPath.current || "/onboarding");
+        }
+    }, [user, loading, router, isVerificationSent, isSubmitting]);
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

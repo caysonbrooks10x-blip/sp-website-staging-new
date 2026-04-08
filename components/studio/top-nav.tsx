@@ -11,18 +11,30 @@ export function StudioTopNav({ mode, setMode }: StudioTopNavProps) {
     return (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-[1400px] px-6">
             <div className="h-16 w-full bg-white/[0.04] backdrop-blur-[20px] border border-white/[0.08] rounded-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex items-center justify-between px-5">
+<<<<<<< HEAD
                 <div className="flex items-center group">
+=======
+                <div className="flex items-center gap-3 group">
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                     <img
                         src="/studio_logo.svg"
                         alt="StudioX"
                         draggable="false"
+<<<<<<< HEAD
                         className="h-16 md:h-20 w-auto object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.35)] transition-all duration-500 group-hover:scale-105 select-none z-10"
+=======
+                        className="h-16 md:h-20 w-auto object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.35)] transition-all duration-500 group-hover:scale-105 select-none"
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                     />
                     <img
                         src="/studio_brandname.svg"
                         alt="StudioX"
                         draggable="false"
+<<<<<<< HEAD
                         className="h-8 md:h-10 w-auto object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.35)] transition-all duration-500 group-hover:scale-105 select-none hidden lg:block -ml-4 md:-ml-6"
+=======
+                        className="h-8 md:h-10 w-auto object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.35)] transition-all duration-500 group-hover:scale-105 select-none hidden lg:block"
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                     />
                 </div>
 

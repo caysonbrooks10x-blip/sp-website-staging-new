@@ -3,7 +3,11 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+<<<<<<< HEAD
 import { Menu, X, LogOut, ChevronRight, Sparkles, CreditCard, User } from "lucide-react"
+=======
+import { Menu, X, LogOut, ChevronRight, Sparkles, CreditCard, User, Bot } from "lucide-react"
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -14,10 +18,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+<<<<<<< HEAD
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
 import { doc, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebaseClient"
+=======
+import { motion, AnimatePresence } from "framer-motion"
+import { useAuth } from "@/context/auth-context"
+import { doc, onSnapshot } from "firebase/firestore"
+import { db } from "@/lib/firebaseClient"
+import { useClawLink } from "@/hooks/use-claw-link"
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -25,6 +37,10 @@ export function Navbar() {
   const lastScrollYRef = useRef(0)
   const [scrolled, setScrolled] = useState(false)
   const { user, logout } = useAuth()
+<<<<<<< HEAD
+=======
+  const { isLinked: isClawLinked } = useClawLink()
+>>>>>>> 6369408 (feat: initial frontend + fixes)
   const pathname = usePathname()
   const router = useRouter()
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 })
@@ -43,15 +59,29 @@ export function Navbar() {
   }, [user])
 
   useEffect(() => {
+<<<<<<< HEAD
     if (!navRef.current) return
     const activeEl = navRef.current.querySelector('[data-active="true"]') as HTMLElement
     if (activeEl) {
+=======
+    const syncPill = () => {
+      if (!navRef.current) {
+        setPillStyle({ left: 0, width: 0, opacity: 0 })
+        return
+      }
+      const activeEl = navRef.current.querySelector('[data-active="true"]') as HTMLElement | null
+      if (!activeEl) {
+        setPillStyle({ left: 0, width: 0, opacity: 0 })
+        return
+      }
+>>>>>>> 6369408 (feat: initial frontend + fixes)
       setPillStyle({
         left: activeEl.offsetLeft,
         width: activeEl.offsetWidth,
         opacity: 1
       })
     }
+<<<<<<< HEAD
   }, [pathname])
 
   const { scrollY } = useScroll()
@@ -71,6 +101,31 @@ export function Navbar() {
   })
 
 
+=======
+
+    syncPill()
+    window.addEventListener("resize", syncPill)
+    return () => window.removeEventListener("resize", syncPill)
+  }, [pathname])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > 50 && currentScrollY > lastScrollYRef.current) {
+        setIsNavVisible(false)
+      } else {
+        setIsNavVisible(true)
+      }
+      setScrolled(currentScrollY > 20)
+      lastScrollYRef.current = currentScrollY
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  
+>>>>>>> 6369408 (feat: initial frontend + fixes)
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = "hidden"
@@ -90,11 +145,19 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: "Explore" },
     { href: "/studio", label: "Studio" },
+<<<<<<< HEAD
+=======
+    { href: "/claw/hub", label: "Claw" },
+>>>>>>> 6369408 (feat: initial frontend + fixes)
     { href: "/community", label: "Community" },
     { href: "/pricing", label: "Pricing" },
   ]
 
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 6369408 (feat: initial frontend + fixes)
   const isCommunityPostDetail = /^\/community\/.+/.test(pathname)
   if (isCommunityPostDetail) return null
 
@@ -104,12 +167,21 @@ export function Navbar() {
         className={cn(
           "fixed top-0 left-0 right-0 z-[100] px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-[0.32,0.72,0,1]",
           isNavVisible ? "translate-y-0" : "-translate-y-32",
+<<<<<<< HEAD
           scrolled
             ? "bg-black/60 backdrop-blur-2xl py-3 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]"
             : "bg-black/20 backdrop-blur-lg py-5 border-b border-white/5"
         )}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between relative">
+=======
+          scrolled 
+            ? "bg-black/60 backdrop-blur-2xl py-3 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]" 
+            : "bg-black/20 backdrop-blur-lg py-5 border-b border-white/5"
+        )}
+      >
+        <div className="max-w-7xl mx-auto flex items-center gap-2 sm:gap-4 relative">
+>>>>>>> 6369408 (feat: initial frontend + fixes)
           {/* Logo */}
           <Link
             href="/"
@@ -119,9 +191,14 @@ export function Navbar() {
                   ; (window as any).lenis?.scrollTo(0, { duration: 1.5, easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) })
               }
             }}
+<<<<<<< HEAD
             className="flex items-center gap-3 group relative z-[110]"
           >
             {/* SX icon on mobile */}
+=======
+            className="flex shrink-0 items-center gap-3 group relative z-[110]"
+          >
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             <img
               src="/studio_logo.svg"
               alt="StudioX"
@@ -131,7 +208,10 @@ export function Navbar() {
                 scrolled ? "h-10 scale-110" : "h-12 scale-125 md:scale-150"
               )}
             />
+<<<<<<< HEAD
             {/* Full combined logo on desktop */}
+=======
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             <img
               src="/comb_logo.svg"
               alt="StudioX"
@@ -144,6 +224,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
+<<<<<<< HEAD
           <nav ref={navRef} className="hidden md:flex items-center gap-1 p-1.5 rounded-full bg-black/20 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[110]">
 
             {/* Sliding Pill */}
@@ -184,16 +265,80 @@ export function Navbar() {
             { }
             <div className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-zinc-900/80 border border-white/10 shadow-lg backdrop-blur-md">
               <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center">
+=======
+          <div className="hidden xl:flex flex-1 min-w-0 justify-center px-1 2xl:px-4">
+            <nav ref={navRef} className="relative flex items-center gap-1 p-1.5 rounded-full bg-black/20 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] max-w-full z-[110]">
+
+              {/* Sliding Pill */}
+              <div
+                className="absolute top-1.5 bottom-1.5 rounded-full bg-gradient-to-tr from-white to-zinc-200 shadow-[0_2px_10px_rgba(255,255,255,0.3)] pointer-events-none transition-all duration-500 ease-[0.32,0.72,0,1]"
+                style={{
+                  left: pillStyle.left,
+                  width: pillStyle.width,
+                  opacity: pillStyle.opacity
+                }}
+              />
+
+              {navLinks.map((link) => {
+                const isActive = link.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(link.href)
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    data-active={isActive}
+                    className={cn(
+                      "relative px-4 2xl:px-6 py-2.5 text-[12px] 2xl:text-[13px] font-black uppercase tracking-[0.22em] transition-all duration-300 rounded-full z-10 whitespace-nowrap",
+                      isActive
+                        ? "text-black drop-shadow-sm"
+                        : "text-zinc-400 hover:text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.3)]"
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
+
+          {}
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3 relative z-[110]">
+            <Link
+              href="/claw/hub"
+              className={cn(
+                "hidden 2xl:flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors whitespace-nowrap",
+                isClawLinked
+                  ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20"
+                  : "border-white/10 bg-white/[0.03] text-zinc-400 hover:text-white hover:bg-white/[0.08]"
+              )}
+            >
+              <Bot className="w-3.5 h-3.5" />
+              {isClawLinked ? "Claw Linked" : "Link Claw"}
+            </Link>
+            {}
+            <div className="flex items-center gap-2 pl-1 pr-2 sm:pr-3 py-1 rounded-full bg-zinc-900/80 border border-white/10 shadow-lg backdrop-blur-md min-w-0">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shrink-0">
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                 <Sparkles className="w-3 h-3 text-white fill-white" />
               </div>
               <span className="text-xs font-semibold text-zinc-100 tabular-nums tracking-wide">{balance}</span>
             </div>
 
+<<<<<<< HEAD
             { }
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="hidden md:flex rounded-full w-10 h-10 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all">
+=======
+            {}
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="hidden xl:flex rounded-full w-10 h-10 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all">
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                     <div className="h-full w-full rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center">
                       {user.photoURL ? (
                         <img
@@ -245,17 +390,28 @@ export function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
+<<<<<<< HEAD
               <div className="hidden md:block">
+=======
+              <div className="hidden xl:block">
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                 <Button asChild className="rounded-full px-6 bg-white text-black hover:bg-zinc-200 hover:scale-105 transition-all duration-300 font-semibold text-sm h-10">
                   <Link href="/login">Get Started</Link>
                 </Button>
               </div>
             )}
 
+<<<<<<< HEAD
             { }
             <button
               className={cn(
                 "md:hidden relative z-[110] w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300",
+=======
+            {}
+            <button
+              className={cn(
+                "xl:hidden relative z-[110] w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300",
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                 mobileMenuOpen
                   ? "bg-zinc-900 border border-white/20 text-white shadow-xl"
                   : "bg-white border border-zinc-200 text-black shadow-[0_4px_14px_rgba(0,0,0,0.15)] hover:bg-zinc-100"
@@ -290,7 +446,11 @@ export function Navbar() {
         </div>
       </header>
 
+<<<<<<< HEAD
       { }
+=======
+      {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -300,7 +460,11 @@ export function Navbar() {
             transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
             className="fixed inset-0 z-[90] bg-black flex flex-col pt-24 pb-8 px-6"
           >
+<<<<<<< HEAD
             { }
+=======
+            {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/20 to-black pointer-events-none" />
 
             <div className="flex-1 flex flex-col relative z-10">
@@ -383,7 +547,11 @@ export function Navbar() {
                   )}
                 </div>
 
+<<<<<<< HEAD
                 { }
+=======
+                {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                 <div className="flex items-center justify-between px-2 pt-2">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner backdrop-blur-md">
@@ -394,7 +562,11 @@ export function Navbar() {
                       <span className="text-lg font-bold text-white tabular-nums leading-none mt-0.5">{balance}</span>
                     </div>
                   </div>
+<<<<<<< HEAD
                   { }
+=======
+                  {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                 </div>
               </motion.div>
             </div>

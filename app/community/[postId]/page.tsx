@@ -7,7 +7,11 @@ import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
+<<<<<<< HEAD
 import { useState, useCallback, useEffect } from "react"
+=======
+import { useState, useCallback, useEffect, useMemo } from "react"
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,19 +19,45 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
+<<<<<<< HEAD
 import { doc, getDoc } from "firebase/firestore"
+=======
+import { collection, doc, getDoc, getDocs, limit, query, where } from "firebase/firestore"
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 import { db, functions } from "@/lib/firebaseClient"
 import type { CommunityPost } from "@/lib/types"
 import { usePostLike } from "@/hooks/use-post-like"
 import { cn } from "@/lib/utils"
 import { httpsCallable } from "firebase/functions"
 import { ASSET_BASE } from "@/lib/assets"
+<<<<<<< HEAD
+=======
+import { mapCommunityPost } from "@/lib/community-post"
+import { buildExportPackHref } from "@/lib/export-pack"
+import {
+    buildCommunityCreatorStats,
+    buildCommunityGraphStats,
+    buildCommunityRemixTimeline,
+    buildLineageChain,
+    dedupeCommunityPosts,
+} from "@/lib/community-graph"
+
+export const runtime = "edge"
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 
 export default function PostDetailPage() {
     const params = useParams()
     const postId = params.postId as string
 
     const [post, setPost] = useState<CommunityPost | null>(null)
+<<<<<<< HEAD
+=======
+    const [parentPost, setParentPost] = useState<CommunityPost | null>(null)
+    const [rootPost, setRootPost] = useState<CommunityPost | null>(null)
+    const [childPosts, setChildPosts] = useState<CommunityPost[]>([])
+    const [siblingPosts, setSiblingPosts] = useState<CommunityPost[]>([])
+    const [graphPosts, setGraphPosts] = useState<CommunityPost[]>([])
+>>>>>>> 6369408 (feat: initial frontend + fixes)
     const [isLoading, setIsLoading] = useState(true)
     const { isLiked, likesCount, toggleLike, isLoading: isLikeLoading } = usePostLike(postId, post?.likes || 0)
     const [showInfo, setShowInfo] = useState(true)
@@ -80,6 +110,7 @@ export default function PostDetailPage() {
                         return
                     }
 
+<<<<<<< HEAD
                     setPost({
                         id: docSnap.id,
                         type: data.type || "image",
@@ -107,10 +138,117 @@ export default function PostDetailPage() {
                     } as CommunityPost)
                 } else {
                     setPost(null)
+=======
+                    const mappedPost = mapCommunityPost(docSnap.id, data as Record<string, any>)
+                    setPost(mappedPost)
+
+                    const relatedReads: Promise<void>[] = []
+
+                    if (mappedPost.parentCreationId) {
+                        relatedReads.push(
+                            getDocs(
+                                query(collection(db, "posts"), where("creationId", "==", mappedPost.parentCreationId), limit(1))
+                            ).then((snapshot) => {
+                                const parentDoc = snapshot.docs[0]
+                                setParentPost(parentDoc ? mapCommunityPost(parentDoc.id, parentDoc.data() as Record<string, any>) : null)
+                            })
+                        )
+                    } else {
+                        setParentPost(null)
+                    }
+
+                    if (
+                        mappedPost.rootCreationId &&
+                        mappedPost.rootCreationId !== mappedPost.creationId &&
+                        mappedPost.rootCreationId !== mappedPost.parentCreationId
+                    ) {
+                        relatedReads.push(
+                            getDocs(
+                                query(collection(db, "posts"), where("creationId", "==", mappedPost.rootCreationId), limit(1))
+                            ).then((snapshot) => {
+                                const rootDoc = snapshot.docs[0]
+                                setRootPost(rootDoc ? mapCommunityPost(rootDoc.id, rootDoc.data() as Record<string, any>) : null)
+                            })
+                        )
+                    } else {
+                        setRootPost(null)
+                    }
+
+                    if (mappedPost.creationId) {
+                        relatedReads.push(
+                            getDocs(
+                                query(collection(db, "posts"), where("parentCreationId", "==", mappedPost.creationId))
+                            ).then((snapshot) => {
+                                const children = snapshot.docs
+                                    .map((childDoc) => mapCommunityPost(childDoc.id, childDoc.data() as Record<string, any>))
+                                    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                                setChildPosts(children)
+                            })
+                        )
+                    } else {
+                        setChildPosts([])
+                    }
+
+                    if (mappedPost.parentCreationId) {
+                        relatedReads.push(
+                            getDocs(
+                                query(collection(db, "posts"), where("parentCreationId", "==", mappedPost.parentCreationId))
+                            ).then((snapshot) => {
+                                const siblings = snapshot.docs
+                                    .map((siblingDoc) => mapCommunityPost(siblingDoc.id, siblingDoc.data() as Record<string, any>))
+                                    .filter((sibling) => sibling.id !== mappedPost.id)
+                                    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                                setSiblingPosts(siblings)
+                            })
+                        )
+                    } else {
+                        setSiblingPosts([])
+                    }
+
+                    const graphKey = mappedPost.rootCreationId || mappedPost.creationId
+                    if (graphKey) {
+                        relatedReads.push(
+                            getDocs(
+                                query(collection(db, "posts"), where("rootCreationId", "==", graphKey))
+                            ).then((snapshot) => {
+                                const related = snapshot.docs.map((relatedDoc) =>
+                                    mapCommunityPost(relatedDoc.id, relatedDoc.data() as Record<string, any>)
+                                )
+                                const unique = dedupeCommunityPosts([mappedPost, ...related])
+                                    .filter((relatedPost) => relatedPost.id !== mappedPost.id)
+                                    .sort(
+                                        (a, b) =>
+                                            (a.remixDepth || 0) - (b.remixDepth || 0) ||
+                                            b.createdAt.getTime() - a.createdAt.getTime()
+                                    )
+                                setGraphPosts(unique)
+                            })
+                        )
+                    } else {
+                        setGraphPosts([])
+                    }
+
+                    await Promise.all(relatedReads)
+                } else {
+                    setPost(null)
+                    setParentPost(null)
+                    setRootPost(null)
+                    setChildPosts([])
+                    setSiblingPosts([])
+                    setGraphPosts([])
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                 }
             } catch (err) {
                 console.error("Error fetching post details:", err)
                 setPost(null)
+<<<<<<< HEAD
+=======
+                setParentPost(null)
+                setRootPost(null)
+                setChildPosts([])
+                setSiblingPosts([])
+                setGraphPosts([])
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             } finally {
                 setIsLoading(false)
             }
@@ -146,6 +284,50 @@ export default function PostDetailPage() {
         }
     }, [post?.title])
 
+<<<<<<< HEAD
+=======
+    const lineageChain = useMemo(
+        () => post ? buildLineageChain(post, parentPost, rootPost) : [],
+        [parentPost, post, rootPost]
+    )
+
+    const graphStats = useMemo(
+        () => post ?
+            buildCommunityGraphStats({
+                current: post,
+                graphPosts: dedupeCommunityPosts([...graphPosts, ...lineageChain, ...childPosts]),
+                siblingPosts,
+                childPosts,
+            }) : { totalNodes: 0, siblingCount: 0, directChildCount: 0, maxDepth: 0, depthBreakdown: [], platformBreakdown: [] },
+        [childPosts, graphPosts, lineageChain, post, siblingPosts]
+    )
+
+    const allGraphNodes = useMemo(
+        () => post ? dedupeCommunityPosts([post, ...graphPosts, ...lineageChain, ...childPosts, ...siblingPosts]) : [],
+        [childPosts, graphPosts, lineageChain, post, siblingPosts]
+    )
+
+    const topCreators = useMemo(() => buildCommunityCreatorStats(allGraphNodes, 6), [allGraphNodes])
+
+    const remixTimeline = useMemo(
+        () => buildCommunityRemixTimeline(allGraphNodes).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+        [allGraphNodes]
+    )
+
+    const branchPreview = useMemo(
+        () =>
+            (post ? dedupeCommunityPosts([...graphPosts, ...siblingPosts, ...childPosts])
+                .filter((relatedPost) => relatedPost.id !== post.id)
+                .sort(
+                    (a, b) =>
+                        (a.remixDepth || 0) - (b.remixDepth || 0) ||
+                        b.createdAt.getTime() - a.createdAt.getTime()
+                )
+                .slice(0, 6) : []),
+        [childPosts, graphPosts, post?.id, siblingPosts]
+    )
+
+>>>>>>> 6369408 (feat: initial frontend + fixes)
     
     if (isLoading) {
         return (
@@ -169,6 +351,47 @@ export default function PostDetailPage() {
         )
     }
 
+<<<<<<< HEAD
+=======
+    const exportPackHref = buildExportPackHref({
+        assetUrl: post.assetUrl,
+        type: post.type,
+        prompt: post.prompt,
+        title: post.title,
+        model: post.model,
+        aspect: post.size,
+        creationId: post.creationId,
+        generationPlatform: post.generationPlatform,
+        campaign: post.campaign,
+        autoDownload: Boolean(post.campaign?.directed),
+    })
+
+    const directorRemixTarget = (() => {
+        const params = new URLSearchParams({
+            mode: "remix",
+            prompt: post.prompt || "",
+            previewUrl: post.assetUrl,
+            creationId: post.creationId || "",
+            rootCreationId: post.rootCreationId || post.creationId || "",
+            remixDepth: String((post.remixDepth || 0) + 1),
+            sourcePostId: post.id,
+            taskId: post.taskId || post.creationId || "",
+            generationPlatform: post.generationPlatform || "",
+            remixType: post.type,
+            campaignDirected: post.campaign?.directed ? "1" : "",
+            campaignGoal: post.campaign?.goal || "",
+            campaignPlatform: post.campaign?.platform || "",
+            campaignStyle: post.campaign?.style || "",
+            campaignVariationCount: post.campaign?.variationCount ? String(post.campaign.variationCount) : "",
+            campaignBrief: post.campaign?.brief || post.prompt || "",
+            campaignPresetIds: post.campaign?.presetIds?.join(",") || "",
+            autoExportPack: post.campaign?.directed ? "1" : "",
+        })
+        return `/studio?${params.toString()}`
+    })()
+
+
+>>>>>>> 6369408 (feat: initial frontend + fixes)
     return (
         <main className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30">
 
@@ -352,6 +575,15 @@ export default function PostDetailPage() {
                                         <span className="text-sm font-medium text-white">{post.model}</span>
                                     </div>
                                 )}
+<<<<<<< HEAD
+=======
+                                {post.generationPlatform && (
+                                    <div className="flex items-center justify-between px-5 py-3.5">
+                                        <span className="text-sm text-zinc-500">Generation Platform</span>
+                                        <span className="text-sm font-medium uppercase text-white">{post.generationPlatform}</span>
+                                    </div>
+                                )}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                                 {post.preset && (
                                     <div className="flex items-center justify-between px-5 py-3.5">
                                         <span className="text-sm text-zinc-500">Preset</span>
@@ -394,12 +626,267 @@ export default function PostDetailPage() {
                         </button>
                     </div>
 
+<<<<<<< HEAD
+=======
+                    {(parentPost || rootPost || childPosts.length > 0 || siblingPosts.length > 0 || branchPreview.length > 0) && (
+                        <div className="mb-8 rounded-2xl bg-[#111113] border border-white/5 p-5 space-y-4">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Remix Graph</p>
+                                <h3 className="mt-2 text-lg font-medium text-white">How this creation connects</h3>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Graph Size</p>
+                                    <p className="mt-2 text-2xl font-medium text-white">{graphStats.totalNodes}</p>
+                                </div>
+                                <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Max Depth</p>
+                                    <p className="mt-2 text-2xl font-medium text-white">{graphStats.maxDepth}</p>
+                                </div>
+                                <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Sibling Remixes</p>
+                                    <p className="mt-2 text-2xl font-medium text-white">{graphStats.siblingCount}</p>
+                                </div>
+                                <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Direct Children</p>
+                                    <p className="mt-2 text-2xl font-medium text-white">{graphStats.directChildCount}</p>
+                                </div>
+                            </div>
+
+                            {lineageChain.length > 0 && (
+                                <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                                    <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Lineage Path</p>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {lineageChain.map((node, index) => (
+                                            <Link
+                                                key={node.id}
+                                                href={`/community/${node.id}`}
+                                                className={cn(
+                                                    "rounded-full border px-3 py-2 text-xs transition-colors",
+                                                    node.id === post.id
+                                                        ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
+                                                        : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20"
+                                                )}
+                                            >
+                                                {index === 0 ? "Root" : index === lineageChain.length - 1 ? "Current" : "Branch"}: {node.title}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                {rootPost && (
+                                    <Link
+                                        href={`/community/${rootPost.id}`}
+                                        className="block rounded-2xl border border-white/8 bg-black/20 p-4 hover:border-white/20 transition-colors"
+                                    >
+                                        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Original Root</p>
+                                        <p className="mt-1 font-medium text-white">{rootPost.title}</p>
+                                        <p className="mt-1 text-sm text-zinc-400">Creation {rootPost.creationId?.slice(0, 8)}</p>
+                                    </Link>
+                                )}
+                                {parentPost && (
+                                    <Link
+                                        href={`/community/${parentPost.id}`}
+                                        className="block rounded-2xl border border-white/8 bg-black/20 p-4 hover:border-white/20 transition-colors"
+                                    >
+                                        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Parent Remix</p>
+                                        <p className="mt-1 font-medium text-white">{parentPost.title}</p>
+                                        <p className="mt-1 text-sm text-zinc-400">Direct source for this remix</p>
+                                    </Link>
+                                )}
+                                {childPosts.length > 0 && (
+                                    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                                        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Remix Children</p>
+                                        <div className="mt-3 space-y-2">
+                                            {childPosts.slice(0, 4).map((child) => (
+                                                <Link
+                                                    key={child.id}
+                                                    href={`/community/${child.id}`}
+                                                    className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 hover:border-white/15 transition-colors"
+                                                >
+                                                    <div>
+                                                        <p className="text-sm font-medium text-white">{child.title}</p>
+                                                        <p className="text-xs text-zinc-500">Depth {child.remixDepth || 1}</p>
+                                                    </div>
+                                                    <span className="text-xs uppercase tracking-[0.15em] text-zinc-500">Open</span>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {siblingPosts.length > 0 && (
+                                    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                                        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Sibling Remixes</p>
+                                        <div className="mt-3 space-y-2">
+                                            {siblingPosts.slice(0, 4).map((sibling) => (
+                                                <Link
+                                                    key={sibling.id}
+                                                    href={`/community/${sibling.id}`}
+                                                    className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 hover:border-white/15 transition-colors"
+                                                >
+                                                    <div>
+                                                        <p className="text-sm font-medium text-white">{sibling.title}</p>
+                                                        <p className="text-xs text-zinc-500">
+                                                            Depth {sibling.remixDepth || 0} • {(sibling.generationPlatform || "unknown").toUpperCase()}
+                                                        </p>
+                                                    </div>
+                                                    <span className="text-xs uppercase tracking-[0.15em] text-zinc-500">Open</span>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {branchPreview.length > 0 && (
+                                    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                                        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Branch Snapshot</p>
+                                        <div className="mt-3 grid gap-2">
+                                            {branchPreview.map((relatedPost) => (
+                                                <Link
+                                                    key={relatedPost.id}
+                                                    href={`/community/${relatedPost.id}`}
+                                                    className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-3 hover:border-white/15 transition-colors"
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div>
+                                                            <p className="text-sm font-medium text-white">{relatedPost.title}</p>
+                                                            <p className="mt-1 text-xs text-zinc-500">
+                                                                Depth {relatedPost.remixDepth || 0}
+                                                                {" • "}
+                                                                {(relatedPost.generationPlatform || "unknown").toUpperCase()}
+                                                                {relatedPost.model ? ` • ${relatedPost.model}` : ""}
+                                                            </p>
+                                                        </div>
+                                                        <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Open</span>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {graphStats.platformBreakdown.length > 0 && (
+                                    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                                        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Platform Mix</p>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {graphStats.platformBreakdown.map((entry) => (
+                                                <span
+                                                    key={entry.platform}
+                                                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-zinc-300"
+                                                >
+                                                    {entry.platform} · {entry.count}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {topCreators.length > 0 && (
+                                    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                                        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Top Remix Creators</p>
+                                        <div className="mt-3 space-y-2">
+                                            {topCreators.map((creator) => (
+                                                <div
+                                                    key={creator.authorId}
+                                                    className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium text-white truncate">{creator.authorName}</p>
+                                                        <p className="text-xs text-zinc-500">
+                                                            Max depth {creator.maxDepth} • Last remix{" "}
+                                                            {creator.latestAt.toLocaleDateString("en-US", {
+                                                                month: "short",
+                                                                day: "numeric",
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-xs text-zinc-300">
+                                                        {creator.count}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {graphStats.depthBreakdown.length > 0 && (
+                                    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                                        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Depth Spread</p>
+                                        <div className="mt-3 space-y-2.5">
+                                            {graphStats.depthBreakdown.map((entry) => {
+                                                const maxBucketCount = Math.max(...graphStats.depthBreakdown.map((item) => item.count), 1)
+                                                const widthPercent = Math.max(10, Math.round((entry.count / maxBucketCount) * 100))
+                                                return (
+                                                    <div key={`depth-${entry.depth}`} className="space-y-1">
+                                                        <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                                                            <span>Depth {entry.depth}</span>
+                                                            <span>{entry.count} node{entry.count > 1 ? "s" : ""}</span>
+                                                        </div>
+                                                        <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                                                            <div
+                                                                className="h-full rounded-full bg-gradient-to-r from-indigo-400/90 via-lime-300/80 to-cyan-300/90"
+                                                                style={{ width: `${widthPercent}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                                {remixTimeline.length > 0 && (
+                                    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                                        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Recent Remix Timeline</p>
+                                        <div className="mt-3 space-y-2">
+                                            {remixTimeline.slice(0, 8).map((event) => (
+                                                <Link
+                                                    key={event.postId}
+                                                    href={`/community/${event.postId}`}
+                                                    className={cn(
+                                                        "block rounded-xl border px-3 py-2 transition-colors",
+                                                        event.postId === post.id
+                                                            ? "border-lime-300/30 bg-lime-300/10"
+                                                            : "border-white/5 bg-white/[0.02] hover:border-white/15"
+                                                    )}
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium text-white truncate">{event.title}</p>
+                                                            <p className="text-xs text-zinc-500">
+                                                                {event.authorName} • Depth {event.depth} • {event.platform}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                                                                Node {event.cumulative}
+                                                            </p>
+                                                            <p className="text-[11px] text-zinc-400">
+                                                                {event.createdAt.toLocaleDateString("en-US", {
+                                                                    month: "short",
+                                                                    day: "numeric",
+                                                                })}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                     {}
                     <div className="mb-8 space-y-3">
                         <Button
                             className="w-full h-12 rounded-xl bg-[#c8ff00] hover:bg-[#b8ef00] text-black font-semibold text-sm transition-all duration-200"
                             onClick={() => {
+<<<<<<< HEAD
                                 const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&remixType=${post.type}`
+=======
+                                const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&rootCreationId=${post.rootCreationId || post.creationId || ''}&remixDepth=${(post.remixDepth || 0) + 1}&sourcePostId=${post.id}&taskId=${encodeURIComponent(post.taskId || post.creationId || '')}&generationPlatform=${encodeURIComponent(post.generationPlatform || '')}&remixType=${post.type}`
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                                 if (!user) {
                                     router.push(`/login?redirect=${encodeURIComponent(target)}`)
                                 } else {
@@ -410,6 +897,33 @@ export default function PostDetailPage() {
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Remix Creation
                         </Button>
+<<<<<<< HEAD
+=======
+                        <Button
+                            variant="outline"
+                            className="w-full h-12 rounded-xl border-lime-300/30 bg-lime-300/10 hover:bg-lime-300/20 text-lime-100 text-sm"
+                            onClick={() => {
+                                if (!user) {
+                                    router.push(`/login?redirect=${encodeURIComponent(directorRemixTarget)}`)
+                                } else {
+                                    router.push(directorRemixTarget)
+                                }
+                            }}
+                        >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Open In Director Mode
+                        </Button>
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="w-full h-12 rounded-xl border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 text-sm"
+                        >
+                            <Link href={exportPackHref}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Export Campaign Pack
+                            </Link>
+                        </Button>
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                         <div className="grid grid-cols-2 gap-3">
                             <Button
                                 variant="outline"
@@ -504,7 +1018,11 @@ export default function PostDetailPage() {
                                 <Button
                                     className="w-full bg-white text-black hover:bg-zinc-200 rounded-xl h-12 text-base font-medium font-sans"
                                     onClick={() => {
+<<<<<<< HEAD
                                         const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&remixType=${post.type}`
+=======
+                                        const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&rootCreationId=${post.rootCreationId || post.creationId || ''}&remixDepth=${(post.remixDepth || 0) + 1}&sourcePostId=${post.id}&taskId=${encodeURIComponent(post.taskId || post.creationId || '')}&generationPlatform=${encodeURIComponent(post.generationPlatform || '')}&remixType=${post.type}`
+>>>>>>> 6369408 (feat: initial frontend + fixes)
                                         if (!user) {
                                             router.push(`/login?redirect=${encodeURIComponent(target)}`)
                                         } else {

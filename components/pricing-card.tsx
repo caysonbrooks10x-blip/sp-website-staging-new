@@ -36,6 +36,7 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
   }
 
   const handlePurchase = () => {
+<<<<<<< HEAD
     // Determine the correct Stripe link based on billing cycle and tier
     let stripeLink: string | undefined
 
@@ -48,6 +49,22 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
     if (stripeLink) {
       window.open(stripeLink, "_blank")
     }
+=======
+    const stripeLink = currentTier
+      ? billingCycle === "yearly"
+        ? currentTier.stripeYearlyLink
+        : currentTier.stripeMonthlyLink
+      : billingCycle === "yearly"
+        ? plan.stripeYearlyLink
+        : plan.stripeMonthlyLink
+
+    if (!stripeLink) {
+      alert("Checkout is not configured for this plan yet.")
+      return
+    }
+
+    window.open(stripeLink, "_blank", "noopener,noreferrer")
+>>>>>>> 6369408 (feat: initial frontend + fixes)
   }
 
   return (
@@ -64,7 +81,11 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
       )}
       onMouseMove={handleMouseMove}
     >
+<<<<<<< HEAD
       { }
+=======
+      {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
       <motion.div
         className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100"
         style={{
@@ -78,9 +99,15 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
         }}
       />
 
+<<<<<<< HEAD
       { }
       <div className="relative p-8 h-full flex flex-col">
         { }
+=======
+      {}
+      <div className="relative p-8 h-full flex flex-col">
+        {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
         {plan.popular && (
           <div className="absolute top-0 right-0 p-4">
             <div className="bg-cyan-500/10 backdrop-blur-md border border-cyan-400/20 text-cyan-400 text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-wider">
@@ -90,15 +117,26 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
           </div>
         )}
 
+<<<<<<< HEAD
         { }
+=======
+        {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
         <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-[0.2em] mb-1">
           {plan.name}
         </h3>
 
+<<<<<<< HEAD
         { }
         <p className="text-xs text-zinc-500 mb-6">{plan.bestFor}</p>
 
         { }
+=======
+        {}
+        <p className="text-xs text-zinc-500 mb-6">{plan.bestFor}</p>
+
+        {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
         {plan.tiers && plan.tiers.length > 0 && (
           <div className="mb-6 space-y-4">
             <div className="flex justify-between text-xs font-semibold text-zinc-400">
@@ -137,7 +175,11 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
           </div>
         )}
 
+<<<<<<< HEAD
         { }
+=======
+        {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
         <div className="mb-2 h-14">
           <div className="flex items-baseline gap-2 h-full">
             <div className="relative inline-flex items-baseline h-full overflow-hidden">
@@ -182,7 +224,11 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
             </AnimatePresence>
             <span className="text-zinc-500 text-sm font-medium">/Month</span>
 
+<<<<<<< HEAD
             { }
+=======
+            {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             {activeCredits >= 48000 && activeCredits < 60000 && (
               <span className="ml-2 text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">+7% Bonus</span>
             )}
@@ -192,7 +238,11 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
           </div>
         </div>
 
+<<<<<<< HEAD
         { }
+=======
+        {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
         <div className="mb-6 flex flex-col gap-4">
           <AnimatePresence mode="sync">
             {billingCycle === "yearly" && (
@@ -216,18 +266,30 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
             )}
           </AnimatePresence>
 
+<<<<<<< HEAD
           { }
           <div className="relative mt-2">
             { }
+=======
+          {}
+          <div className="relative mt-2">
+            {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             <div className="absolute -top-3 left-4 z-10 flex items-center gap-2">
               <span className="text-[11px] text-cyan-400 bg-[#042021] border border-cyan-500/20 px-2.5 py-1 rounded-md font-medium">
                 Spend top-ups first
               </span>
             </div>
 
+<<<<<<< HEAD
             { }
             <div className="pt-6 pb-4 px-4 rounded-xl bg-[#1a1f26] border border-white/[0.08] flex flex-col gap-4 transition-colors hover:bg-[#1a1f26]/80">
               { }
+=======
+            {}
+            <div className="pt-6 pb-4 px-4 rounded-xl bg-[#1a1f26] border border-white/[0.08] flex flex-col gap-4 transition-colors hover:bg-[#1a1f26]/80">
+              {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
               <div className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-300">Monthly Credit <span className="text-[11px] font-normal text-zinc-500 ml-1">(No rollover)</span></span>
                 <div className="flex items-baseline gap-1.5 mt-1">
@@ -251,7 +313,11 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
 
               <div className="h-px w-full bg-white/[0.06]" />
 
+<<<<<<< HEAD
               { }
+=======
+              {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-zinc-400">Next top-up</span>
                 <div className="flex items-baseline gap-1.5 mt-0.5">
@@ -263,14 +329,22 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
           </div>
         </div>
 
+<<<<<<< HEAD
         { }
+=======
+        {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
         <div className="mb-6 rounded-xl bg-cyan-950/20 border border-cyan-500/10 p-3">
           <p className="text-[11px] text-cyan-200/70 leading-relaxed text-center font-medium">
             Up to <strong className="text-cyan-300">~{Math.floor(activeCredits / 12).toLocaleString()}</strong> GPT-4o | <strong className="text-cyan-300">~{Math.floor(activeCredits / 27).toLocaleString()}</strong> Seedance 1.5 | <strong className="text-cyan-300">~{Math.floor(activeCredits / 60).toLocaleString()}</strong> AI Music | <strong className="text-cyan-300">~{Math.floor(activeCredits / 300).toLocaleString()}</strong> Sora 2 Pro | <strong className="text-cyan-300">~{Math.floor(activeCredits / 4).toLocaleString()}</strong> Lyrics
           </p>
         </div>
 
+<<<<<<< HEAD
         { }
+=======
+        {}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
         <Button
           onClick={handlePurchase}
           className={cn(
@@ -286,6 +360,7 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
           </span>
         </Button>
 
+<<<<<<< HEAD
         { }
         <div className="border-t border-white/[0.06] mb-6" />
 
@@ -294,6 +369,16 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
           {plan.features.map((feature, i) => {
             let displayText = feature
 
+=======
+        {}
+        <div className="border-t border-white/[0.06] mb-6" />
+
+        {}
+        <div className="space-y-3.5 flex-grow">
+          {plan.features.map((feature, i) => {
+            let displayText = feature
+            
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             if (i === 0 && feature.includes("credits/month")) {
               displayText = `${activeCredits.toLocaleString()} credits/month`
             }

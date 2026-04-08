@@ -5,18 +5,33 @@ import {
     User,
     onAuthStateChanged,
     signInWithPopup,
+<<<<<<< HEAD
+=======
+    signInWithRedirect,
+>>>>>>> 6369408 (feat: initial frontend + fixes)
     GoogleAuthProvider,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
     updateProfile,
+<<<<<<< HEAD
+=======
+    sendEmailVerification,
+>>>>>>> 6369408 (feat: initial frontend + fixes)
     RecaptchaVerifier,
     signInWithPhoneNumber,
     ConfirmationResult
 } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
+<<<<<<< HEAD
 import { createUserDoc } from "@/lib/db";
 import { useRouter } from "next/navigation";
+=======
+import { createUserDoc, INITIAL_TOKEN_BALANCE } from "@/lib/db";
+import { useRouter } from "next/navigation";
+import { db } from "@/lib/firebaseClient";
+import { doc, getDoc } from "firebase/firestore";
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 
 interface AuthContextType {
     user: User | null;
@@ -59,7 +74,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     
     const fetchCredits = async (userId: string) => {
+<<<<<<< HEAD
         setCredits(100); 
+=======
+        try {
+            const userRef = doc(db, "users", userId);
+            const userSnap = await getDoc(userRef);
+            if (!userSnap.exists()) {
+                setCredits(INITIAL_TOKEN_BALANCE);
+                return;
+            }
+            setCredits(userSnap.data()?.tokenBalance ?? INITIAL_TOKEN_BALANCE);
+        } catch (error) {
+            console.warn("Failed to fetch credits from Firestore, using fallback balance.", error);
+            setCredits(INITIAL_TOKEN_BALANCE);
+        }
+>>>>>>> 6369408 (feat: initial frontend + fixes)
     };
 
     useEffect(() => {
@@ -78,10 +108,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const signInWithGoogle = async () => {
+<<<<<<< HEAD
         try {
             const provider = new GoogleAuthProvider();
             await signInWithPopup(auth, provider);
         } catch (error) {
+=======
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error: any) {
+            const popupFallbackCodes = new Set([
+                "auth/popup-blocked",
+                "auth/popup-closed-by-user",
+                "auth/cancelled-popup-request"
+            ]);
+
+            if (popupFallbackCodes.has(error?.code)) {
+                await signInWithRedirect(auth, provider);
+                return;
+            }
+
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             console.error("Error signing in with Google", error);
             throw error;
         }
@@ -101,6 +150,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
             const user = userCredential.user;
             await updateProfile(user, { displayName: name });
+<<<<<<< HEAD
+=======
+            await createUserDoc(user);
+            await sendEmailVerification(user);
+            await signOut(auth);
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             return user;
         } catch (error) {
             console.error("Error signing up:", error);

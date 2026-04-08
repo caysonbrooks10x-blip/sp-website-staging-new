@@ -6,12 +6,66 @@ import { useSearchParams } from "next/navigation"
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebaseClient"
 import type { CommunityPost } from "@/lib/types"
+<<<<<<< HEAD
+=======
+import { mapCommunityPost } from "@/lib/community-post"
+
+const LEGACY_TEMPLATE_SLUG_FRAGMENTS = [
+    "fire-lava",
+    "air-bending",
+    "earth-zoom",
+    "shadow-smoke",
+    "animalization",
+    "raven-transform",
+    "train-rush",
+    "mouth-in",
+]
+
+function slugify(value: string) {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+}
+
+function getPostTags(post: CommunityPost) {
+    return (post.tags || []).map((tag) => tag.toLowerCase())
+}
+
+function isLegacyTemplatePost(post: CommunityPost) {
+    const tags = getPostTags(post)
+    const slug = slugify(post.title || "")
+    return (
+        tags.includes("legacy-template") ||
+        tags.includes("legacy-community") ||
+        tags.includes("legacy-migration") ||
+        LEGACY_TEMPLATE_SLUG_FRAGMENTS.some((fragment) => slug.includes(fragment))
+    )
+}
+
+function isTemplatePost(post: CommunityPost) {
+    if (isLegacyTemplatePost(post)) return false
+    const tags = getPostTags(post)
+    const platform = (post.generationPlatform || "").toLowerCase()
+    return (
+        tags.includes("template") ||
+        tags.includes("workflow") ||
+        platform.includes("template") ||
+        (post.type === "video" && post.allowRemix)
+    )
+}
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 
 export function CommunityGrid() {
     const gridRef = useRef<HTMLDivElement>(null)
     const searchParams = useSearchParams()
 
     const tagFilter = searchParams.get("tag")
+<<<<<<< HEAD
+=======
+    const textFilter = (searchParams.get("q") || "").trim().toLowerCase()
+    const quickFilter = (searchParams.get("filter") || "").trim().toLowerCase()
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 
     const [livePosts, setLivePosts] = useState<CommunityPost[]>([])
     const [removedPosts, setRemovedPosts] = useState<Set<string>>(new Set())
@@ -41,6 +95,7 @@ export function CommunityGrid() {
                     const data = doc.data();
                     return data.isDeleted !== true && data.status !== "deleted";
                 })
+<<<<<<< HEAD
                 .map(doc => {
                     const data = doc.data();
                     return {
@@ -69,6 +124,9 @@ export function CommunityGrid() {
                         size: data.size || "1024x1024",
                     } as CommunityPost;
                 });
+=======
+                .map(doc => mapCommunityPost(doc.id, doc.data() as Record<string, any>));
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             setLivePosts(fetchedPosts);
         }, (error) => {
             console.error("Error fetching live posts:", error);
@@ -96,6 +154,50 @@ export function CommunityGrid() {
             );
         }
 
+<<<<<<< HEAD
+=======
+        if (textFilter) {
+            finalArray = finalArray.filter((post) => {
+                const haystack = [
+                    post.title,
+                    post.description,
+                    post.prompt,
+                    post.author?.name,
+                    ...(post.tags || []),
+                    post.model,
+                    post.generationPlatform,
+                ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .toLowerCase();
+                return haystack.includes(textFilter);
+            });
+        }
+
+        if (quickFilter === "works") {
+            finalArray = finalArray.filter((post) => !isLegacyTemplatePost(post) && !isTemplatePost(post));
+        } else if (quickFilter === "templates") {
+            finalArray = finalArray.filter((post) => isTemplatePost(post));
+        } else if (quickFilter === "video") {
+            finalArray = finalArray.filter((post) => post.type === "video");
+        } else if (quickFilter === "image") {
+            finalArray = finalArray.filter((post) => post.type === "image");
+        } else if (quickFilter === "directed") {
+            finalArray = finalArray.filter((post) => Boolean(post.campaign?.directed));
+        } else if (quickFilter === "remixable") {
+            finalArray = finalArray.filter((post) => post.allowRemix);
+        } else if (quickFilter === "branching") {
+            finalArray = finalArray.filter((post) =>
+                Boolean(post.parentCreationId || post.rootCreationId || post.sourcePostId || (post.remixDepth || 0) > 0)
+            );
+        } else if (quickFilter === "telegram") {
+            finalArray = finalArray.filter((post) => {
+                const tags = (post.tags || []).map((tag) => tag.toLowerCase());
+                return tags.includes("telegram") || tags.includes("claw") || (post.generationPlatform || "").toLowerCase().includes("telegram");
+            });
+        }
+
+>>>>>>> 6369408 (feat: initial frontend + fixes)
         
         const images = finalArray.filter(p => p.type === 'image');
         const videos = finalArray.filter(p => p.type === 'video');
@@ -116,6 +218,7 @@ export function CommunityGrid() {
         }
 
         return mixed;
+<<<<<<< HEAD
     }, [tagFilter, livePosts, removedPosts]);
 
 
@@ -124,6 +227,23 @@ export function CommunityGrid() {
             <div className="flex flex-col items-center justify-center py-20 text-center">
                 <p className="text-xl font-medium text-white mb-2">No generations found</p>
                 <p className="text-zinc-500">There are no posts with the tag &quot;#{tagFilter}&quot;.</p>
+=======
+    }, [quickFilter, tagFilter, textFilter, livePosts, removedPosts]);
+
+
+    if (filteredPosts.length === 0) {
+        const reason = textFilter
+            ? `No posts match "${textFilter}".`
+            : tagFilter
+                ? `There are no posts with the tag "#${tagFilter}".`
+                : quickFilter
+                    ? `No posts match the "${quickFilter}" filter.`
+                    : "No community generations are available yet.";
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+                <p className="text-xl font-medium text-white mb-2">No generations found</p>
+                <p className="text-zinc-500">{reason}</p>
+>>>>>>> 6369408 (feat: initial frontend + fixes)
             </div>
         )
     }

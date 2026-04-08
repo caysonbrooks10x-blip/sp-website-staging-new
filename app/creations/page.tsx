@@ -9,6 +9,10 @@ import { CreationCard } from "@/components/profile/creation-card"
 import { useAuth } from "@/context/auth-context"
 import { httpsCallable } from "firebase/functions"
 import { functions } from "@/lib/firebaseClient"
+<<<<<<< HEAD
+=======
+import { listPersistedStudioGenerations } from "@/lib/studio-generations"
+>>>>>>> 6369408 (feat: initial frontend + fixes)
 
 function CreationsContent() {
   const { user } = useAuth()
@@ -19,6 +23,7 @@ function CreationsContent() {
   useEffect(() => {
     if (!user) return
     let isMounted = true;
+<<<<<<< HEAD
     async function loadCreations() {
       setLoading(true)
       try {
@@ -32,6 +37,56 @@ function CreationsContent() {
             setCreations(data.creations || [])
           }
         }
+=======
+    const uid = user.uid
+    const createdAt = user.metadata.creationTime ? new Date(user.metadata.creationTime).getTime() : null
+    const isFreshAccount = createdAt ? Date.now() - createdAt < 10 * 60 * 1000 : false
+    const hasLocalHistory =
+      typeof window !== "undefined" && Boolean(window.localStorage.getItem("studio_generations_history"))
+
+    async function loadCreations() {
+      setLoading(true)
+      if (isFreshAccount && !hasLocalHistory) {
+        setCreations([])
+        setLoading(false)
+        return
+      }
+
+      try {
+        const getUserCreations = httpsCallable(functions, "getUserCreations")
+        const [remoteResult, persistedResult] = await Promise.allSettled([
+          getUserCreations(),
+          listPersistedStudioGenerations(uid),
+        ])
+
+        if (!isMounted) return
+
+        const merged = new Map<string, any>()
+
+        if (remoteResult.status === "fulfilled") {
+          const data = remoteResult.value.data as any
+          const creationsList = Array.isArray(data) ? data : data.creations || []
+          for (const creation of creationsList) {
+            merged.set(creation.id, creation)
+          }
+        } else {
+          console.warn("Callable getUserCreations failed, showing persisted generations only.", remoteResult.reason)
+        }
+
+        if (persistedResult.status === "fulfilled") {
+          for (const creation of persistedResult.value) {
+            merged.set(String(creation.id), {
+              ...creation,
+              id: creation.id,
+              _localPersisted: true,
+            })
+          }
+        } else {
+          console.warn("Persisted generations query failed.", persistedResult.reason)
+        }
+
+        setCreations(Array.from(merged.values()))
+>>>>>>> 6369408 (feat: initial frontend + fixes)
       } catch (err) {
         console.error("Failed to fetch user creations:", err)
       } finally {
@@ -107,6 +162,15 @@ function CreationsContent() {
             className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-8 space-y-8"
           >
             {creations.map((c, i) => {
+<<<<<<< HEAD
+=======
+              const createdAtValue =
+                c.createdAtMs ||
+                (typeof c.createdAt?.toDate === "function" ? c.createdAt.toDate().getTime() : undefined) ||
+                (c.createdAt?._seconds ? c.createdAt._seconds * 1000 : undefined) ||
+                c.createdAt ||
+                Date.now()
+>>>>>>> 6369408 (feat: initial frontend + fixes)
               const mappedItem = {
                 id: c.id,
                 appName: c.title || c.prompt || "Untitled Creation",
@@ -114,9 +178,21 @@ function CreationsContent() {
                 type: c.type || (c.outputUrl?.includes('.mp4') ? 'video' : 'image'),
                 remixCount: 0,
                 likes: 0,
+<<<<<<< HEAD
                 date: new Date(c.createdAt?._seconds ? c.createdAt._seconds * 1000 : c.createdAt).toLocaleDateString(),
                 model: c.model,
                 prompt: c.prompt
+=======
+                date: new Date(createdAtValue).toLocaleDateString(),
+                model: c.model,
+                prompt: c.prompt,
+                taskId: c.taskId,
+                generationPlatform: c.generationPlatform,
+                rootCreationId: c.rootCreationId,
+                remixDepth: c.remixDepth,
+                sourcePostId: c.sourcePostId,
+                persistedSource: Boolean(c._localPersisted),
+>>>>>>> 6369408 (feat: initial frontend + fixes)
               };
               return (
                 <div key={c.id} className="creation-card-anim break-inside-avoid mb-8">
@@ -166,4 +242,7 @@ export default function CreationsPage() {
     </ProtectedRoute>
   )
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6369408 (feat: initial frontend + fixes)

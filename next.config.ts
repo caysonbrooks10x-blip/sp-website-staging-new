@@ -66,8 +66,27 @@ const nextConfig: NextConfig = {
         hostname: "pub-68982972900648a6b75dcc11da69a242.r2.dev",
         pathname: "/**",
       },
+<<<<<<< HEAD
+=======
+
+      {
+        protocol: "https",
+        hostname: "upload.apimart.ai",
+        pathname: "/**",
+      },
+
+      {
+        protocol: "https",
+        hostname: "cdn.apimart.ai",
+        pathname: "/**",
+      },
+>>>>>>> 6369408 (feat: initial frontend + fixes)
     ],
   },
 };
 
+<<<<<<< HEAD
 export default nextConfig;
+=======
+export default nextConfig;
+>>>>>>> 6369408 (feat: initial frontend + fixes)
