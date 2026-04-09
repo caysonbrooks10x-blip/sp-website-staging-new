@@ -91,6 +91,29 @@ export async function GET(request: Request): Promise<NextResponse> {
     }),
   ]);
 
+  // Fetch credit balance and generation count in parallel
+  const [userDocRes, memoryDocRes] = await Promise.all([
+    fetch(`${FIRESTORE_DOCS_BASE}/users/${firebaseUID}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }).catch(() => null),
+    fetch(`${FIRESTORE_DOCS_BASE}/claw_memory/${firebaseUID}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }).catch(() => null),
+  ]);
+
+  let creditBalance = 0;
+  let generationCount = 0;
+
+  if (userDocRes?.ok) {
+    const userDoc = (await userDocRes.json()) as { fields?: Record<string, FirestoreValue> };
+    creditBalance = readNumber(userDoc.fields?.tokenBalance);
+  }
+
+  if (memoryDocRes?.ok) {
+    const memoryDoc = (await memoryDocRes.json()) as { fields?: Record<string, FirestoreValue> };
+    generationCount = readNumber(memoryDoc.fields?.generationCount);
+  }
+
   const linkRow = linkRows[0];
   const linkFields = linkRow?.document?.fields ?? null;
 
@@ -158,6 +181,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     link,
     scheduledJobs,
     recentJobs,
+    creditBalance,
+    generationCount,
   });
 }
 

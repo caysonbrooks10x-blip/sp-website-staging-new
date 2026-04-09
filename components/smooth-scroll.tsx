@@ -16,11 +16,14 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
         gsap.registerPlugin(ScrollTrigger)
 
         const lenis = new Lenis({
-            duration: 1.5,
+            /** Slightly higher lerp = scroll position follows input faster (less “lag”). */
+            lerp: 0.14,
+            duration: 0.95,
             easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             smoothWheel: true,
-            wheelMultiplier: 0.8,
-            
+            wheelMultiplier: 1,
+            touchMultiplier: 1,
+            syncTouch: true,
         })
 
         lenisRef.current = lenis

@@ -5,10 +5,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useClawLink } from "@/hooks/use-claw-link";
 import { ProtectedRoute } from "@/components/protected-route";
-import { Loader2, CheckCircle2, XCircle, Bot, Link2, ArrowRight, ShieldCheck, Fingerprint } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Bot, Link2, ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import {
+  ClawBackdropFocus,
+  clawCardClass,
+  clawCardInteractiveClass,
+  clawInsetClass,
+  clawPageBgClass,
+} from "@/components/claw/claw-primitives";
+import { ClawSubNav } from "@/components/claw/claw-subnav";
 
 export default function ClawPairPage() {
   return (
@@ -30,7 +38,7 @@ function PairContent() {
   const [errorMsg, setErrorMsg] = useState("");
   const [channelInfo, setChannelInfo] = useState<{ channelType: string; channelUserId: string } | null>(null);
   const telegramBotUrl = useMemo(() => "https://t.me/StudioXCbot?start=pair", []);
-  
+
   useEffect(() => {
     if (!linkLoading && isLinked && step === "enter" && !code) {
       setStep("relink");
@@ -77,55 +85,63 @@ function PairContent() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#050607] px-4 pt-36 pb-12 md:pt-44 md:pb-16">
-      {/* background */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-[-140px] h-[360px] w-[620px] -translate-x-1/2 rounded-full bg-cyan-500/12 blur-[140px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.018)_1px,transparent_1px)] [background-size:84px_84px] opacity-30" />
-      </div>
+    <div className={cn(clawPageBgClass, "px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28")}>
+      <ClawBackdropFocus />
 
       <div className="relative mx-auto max-w-lg">
-        {/* header */}
+        <ClawSubNav className="mb-8" />
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-cyan-100">
-            <Link2 className="h-3.5 w-3.5" />
-            Account Pairing
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-950/30 px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.26em] text-teal-200/90 ring-1 ring-inset ring-white/[0.04]">
+            <Link2 className="h-3 w-3 opacity-80" />
+            Account pairing
           </div>
-          <h1 className="mt-4 text-2xl font-semibold text-white md:text-3xl">Link your Telegram bot</h1>
-          <p className="mt-2 text-sm text-zinc-400">Pair once to route creations between web and chat.</p>
+          <h1 className="mt-5 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+            Link your Telegram bot
+          </h1>
+          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-zinc-400">
+            Pair once to route creations between the web studio and chat.
+          </p>
         </div>
 
-        {/* card */}
-        <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
-          {/* steps */}
+        <div className={cn(clawCardClass, clawCardInteractiveClass, "relative mt-10 overflow-hidden p-6 md:p-8")}>
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-400/30 to-transparent"
+            aria-hidden
+          />
           {step === "enter" && (
-            <div className="space-y-5">
-              {/* how it works */}
-              <div className="space-y-2">
+            <div className="space-y-6">
+              <div className="relative space-y-0">
                 {[
                   { num: "1", text: "Open @StudioXCbot in Telegram" },
                   { num: "2", text: "Send /pair to get a 6-digit code" },
                   { num: "3", text: "Enter the code below" },
-                ].map((item) => (
-                  <div key={item.num} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-3.5 py-2.5">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-300/10 text-xs font-semibold text-cyan-100">
+                ].map((item, i) => (
+                  <div key={item.num} className="relative flex gap-4 pb-6 last:pb-0">
+                    {i < 2 && (
+                      <span
+                        className="absolute left-[15px] top-9 bottom-0 w-px bg-gradient-to-b from-teal-500/25 to-transparent"
+                        aria-hidden
+                      />
+                    )}
+                    <span className="relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-teal-400/25 bg-teal-950/50 text-xs font-semibold text-teal-200 ring-1 ring-inset ring-white/[0.05]">
                       {item.num}
                     </span>
-                    <p className="text-sm text-zinc-200">{item.text}</p>
+                    <p className="pt-1 text-sm leading-snug text-zinc-300">{item.text}</p>
                   </div>
                 ))}
               </div>
 
-              {/* form */}
-              <form onSubmit={handleSubmit} className="space-y-3">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="mb-1.5 block text-xs uppercase tracking-[0.14em] text-zinc-500">Pairing Code</label>
+                  <label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+                    Pairing code
+                  </label>
                   <Input
                     value={code}
                     onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
-                    placeholder="ABC123"
+                    placeholder="••••••"
                     maxLength={6}
-                    className="h-14 rounded-xl border-white/12 bg-white/[0.03] text-center text-2xl tracking-[0.3em] font-mono text-white placeholder:text-zinc-600"
+                    className="h-16 rounded-2xl border-white/[0.08] bg-black/35 text-center font-mono text-2xl tracking-[0.45em] text-white placeholder:text-zinc-700 ring-1 ring-inset ring-white/[0.04]"
                     autoFocus
                   />
                 </div>
@@ -134,102 +150,152 @@ function PairContent() {
                   type="button"
                   variant="outline"
                   asChild
-                  className="h-10 w-full rounded-xl border-white/12 bg-white/[0.03] text-zinc-200 hover:bg-white/[0.08]"
+                  className="h-11 w-full rounded-xl border-white/[0.1] bg-black/30 text-sm font-semibold text-zinc-200 hover:bg-white/[0.06]"
                 >
                   <a href={telegramBotUrl} target="_blank" rel="noreferrer">
-                    <Bot className="mr-2 h-4 w-4" />
-                    Open Telegram Bot
+                    <Bot className="mr-2 h-4 w-4 opacity-80" />
+                    Open Telegram bot
                   </a>
                 </Button>
 
                 <Button
                   type="submit"
                   disabled={code.length < 6}
-                  className="h-11 w-full rounded-xl bg-cyan-300 text-black hover:bg-cyan-200"
+                  className="h-12 w-full rounded-xl border border-teal-400/25 bg-gradient-to-b from-teal-400 to-teal-600 text-sm font-semibold text-teal-950 shadow-md hover:brightness-110 disabled:opacity-40"
                 >
-                  Link Account
+                  Link account
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
 
-              <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-xs text-zinc-400">
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
+              <div
+                className={cn(
+                  clawInsetClass,
+                  "flex items-start gap-3 rounded-2xl border-white/[0.05] px-4 py-3 text-xs leading-relaxed text-zinc-500"
+                )}
+              >
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400/80" />
                 Code expires in 10 minutes and is tied to your account.
               </div>
             </div>
           )}
 
           {step === "loading" && (
-            <div className="flex flex-col items-center gap-3 py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-cyan-200" />
-              <p className="text-sm text-zinc-300">Verifying pairing…</p>
+            <div className="flex flex-col items-center gap-4 py-16">
+              <Loader2 className="h-9 w-9 animate-spin text-teal-300/80" />
+              <p className="text-sm text-zinc-400">Verifying pairing…</p>
             </div>
           )}
 
           {step === "success" && (
-            <div className="flex flex-col items-center gap-4 py-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/30 bg-emerald-300/10">
-                <CheckCircle2 className="h-8 w-8 text-emerald-300" />
+            <div className="flex flex-col items-center gap-5 py-4">
+              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl border border-emerald-400/20 bg-emerald-950/40 ring-1 ring-inset ring-emerald-400/10">
+                <CheckCircle2 className="h-9 w-9 text-emerald-300/90" />
               </div>
               <div className="text-center">
-                <p className="text-lg font-semibold text-white">Account linked</p>
-                <p className="mt-1 text-sm text-zinc-400">
-                  Connected to <span className="capitalize text-cyan-200">{channelInfo?.channelType ?? "Telegram"}</span>
+                <p className="text-xl font-semibold text-white">Account linked</p>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Connected to{" "}
+                  <span className="font-medium text-teal-200/90 capitalize">{channelInfo?.channelType ?? "Telegram"}</span>
                 </p>
               </div>
-              <div className="flex w-full gap-2">
-                <Button asChild variant="outline" className="h-10 flex-1 rounded-xl border-white/12 bg-white/[0.03] text-zinc-200 hover:bg-white/[0.08]">
-                  <a href={telegramBotUrl} target="_blank" rel="noreferrer">Return to Bot</a>
+              <div className="flex w-full gap-2.5">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-11 flex-1 rounded-xl border-white/[0.1] bg-black/30 text-sm font-semibold text-zinc-200 hover:bg-white/[0.06]"
+                >
+                  <a href={telegramBotUrl} target="_blank" rel="noreferrer">
+                    Return to bot
+                  </a>
                 </Button>
-                <Button onClick={() => router.push("/studio")} className="h-10 flex-1 rounded-xl bg-cyan-300 text-black hover:bg-cyan-200">
+                <Button
+                  onClick={() => router.push("/studio")}
+                  className="h-11 flex-1 rounded-xl border border-teal-400/25 bg-gradient-to-b from-teal-400 to-teal-600 text-sm font-semibold text-teal-950 shadow-md hover:brightness-110"
+                >
                   Open Studio
                 </Button>
               </div>
-              <button onClick={() => { setCode(""); setStep("enter"); }} className="text-xs text-zinc-500 underline-offset-4 hover:text-zinc-300 hover:underline">
+              <button
+                type="button"
+                onClick={() => {
+                  setCode("");
+                  setStep("enter");
+                }}
+                className="text-xs text-zinc-500 underline-offset-4 hover:text-zinc-300 hover:underline"
+              >
                 Link another channel
               </button>
             </div>
           )}
 
           {step === "relink" && (
-            <div className="flex flex-col items-center gap-4 py-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/30 bg-emerald-300/10">
-                <ShieldCheck className="h-8 w-8 text-emerald-300" />
+            <div className="flex flex-col items-center gap-5 py-4">
+              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl border border-emerald-400/20 bg-emerald-950/40 ring-1 ring-inset ring-emerald-400/10">
+                <ShieldCheck className="h-9 w-9 text-emerald-300/90" />
               </div>
               <div className="text-center">
-                <p className="text-lg font-semibold text-white">Already linked</p>
-                <p className="mt-1 text-sm text-zinc-400">
-                  Connected to <span className="capitalize text-cyan-200">{channelInfo?.channelType ?? "Telegram"}</span>
+                <p className="text-xl font-semibold text-white">Already linked</p>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Connected to{" "}
+                  <span className="font-medium text-teal-200/90 capitalize">{channelInfo?.channelType ?? "Telegram"}</span>
                   {channelInfo?.channelUserId ? ` (${channelInfo.channelUserId})` : ""}
                 </p>
               </div>
-              <div className="flex w-full gap-2">
-                <Button asChild variant="outline" className="h-10 flex-1 rounded-xl border-white/12 bg-white/[0.03] text-zinc-200 hover:bg-white/[0.08]">
-                  <a href={telegramBotUrl} target="_blank" rel="noreferrer">Open Telegram</a>
+              <div className="flex w-full gap-2.5">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-11 flex-1 rounded-xl border-white/[0.1] bg-black/30 text-sm font-semibold text-zinc-200 hover:bg-white/[0.06]"
+                >
+                  <a href={telegramBotUrl} target="_blank" rel="noreferrer">
+                    Open Telegram
+                  </a>
                 </Button>
-                <Button onClick={() => router.push("/studio")} className="h-10 flex-1 rounded-xl bg-cyan-300 text-black hover:bg-cyan-200">
+                <Button
+                  onClick={() => router.push("/studio")}
+                  className="h-11 flex-1 rounded-xl border border-teal-400/25 bg-gradient-to-b from-teal-400 to-teal-600 text-sm font-semibold text-teal-950 shadow-md hover:brightness-110"
+                >
                   Open Studio
                 </Button>
               </div>
-              <button onClick={() => { setCode(""); setStep("enter"); }} className="text-xs text-zinc-500 underline-offset-4 hover:text-zinc-300 hover:underline">
+              <button
+                type="button"
+                onClick={() => {
+                  setCode("");
+                  setStep("enter");
+                }}
+                className="text-xs text-zinc-500 underline-offset-4 hover:text-zinc-300 hover:underline"
+              >
                 Link another channel
               </button>
             </div>
           )}
 
           {step === "error" && (
-            <div className="flex flex-col items-center gap-4 py-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-rose-300/30 bg-rose-300/10">
-                <XCircle className="h-8 w-8 text-rose-300" />
+            <div className="flex flex-col items-center gap-5 py-4">
+              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl border border-rose-400/25 bg-rose-950/40 ring-1 ring-inset ring-rose-400/10">
+                <XCircle className="h-9 w-9 text-rose-300/90" />
               </div>
               <div className="text-center">
-                <p className="text-lg font-semibold text-white">Pairing failed</p>
-                <p className="mt-1 text-sm text-zinc-400">{errorMsg}</p>
+                <p className="text-xl font-semibold text-white">Pairing failed</p>
+                <p className="mt-2 text-sm text-zinc-400">{errorMsg}</p>
               </div>
-              <div className="rounded-xl border border-rose-300/20 bg-rose-300/[0.06] px-3.5 py-2.5 text-center text-xs text-rose-200">
+              <div
+                className={cn(
+                  clawInsetClass,
+                  "w-full rounded-2xl border-rose-500/15 bg-rose-950/25 px-4 py-3 text-center text-xs leading-relaxed text-rose-200/90"
+                )}
+              >
                 Generate a new /pair code in Telegram and submit within 10 minutes.
               </div>
-              <Button onClick={() => { setStep("enter"); setErrorMsg(""); }} className="h-10 w-full rounded-xl bg-cyan-300 text-black hover:bg-cyan-200">
+              <Button
+                onClick={() => {
+                  setStep("enter");
+                  setErrorMsg("");
+                }}
+                className="h-11 w-full rounded-xl border border-teal-400/25 bg-gradient-to-b from-teal-400 to-teal-600 text-sm font-semibold text-teal-950 shadow-md hover:brightness-110"
+              >
                 Try again
               </Button>
             </div>

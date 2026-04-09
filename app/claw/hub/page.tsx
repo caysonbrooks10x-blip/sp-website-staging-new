@@ -1,26 +1,25 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   ArrowUpRight,
   Bot,
   Clock3,
+  Coins,
   Compass,
+  LayoutGrid,
+  Layers,
   Link2,
   Package2,
   Rocket,
   Search,
   ShieldCheck,
-  Send,
-  Sparkles,
   TimerReset,
   Video,
   Workflow,
 } from "lucide-react";
-import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestore";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,37 +27,51 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 import { useClawLink } from "@/hooks/use-claw-link";
 import { ASSET_BASE } from "@/lib/assets";
-import { db } from "@/lib/firebaseClient";
 import { fetchClawState, type ClawRecentJob, type ClawScheduledJob } from "@/lib/claw-state";
 import { listPersistedStudioGenerations, type PersistedStudioGeneration } from "@/lib/studio-generations";
 import {
   buildClawWorkflowStudioHref,
-  buildClawWorkflowTelegramCommand,
   buildClawWorkflowTelegramHref,
   CLAW_WORKFLOWS,
   CLAW_WORKFLOW_SECTIONS,
   type ClawWorkflowDefinition,
   type ClawWorkflowSection,
 } from "@/lib/claw-workflows";
+import {
+  ClawBackdropHub,
+  clawCardClass,
+  clawCardInteractiveClass,
+  clawHeroPanelClass,
+  clawInsetClass,
+  clawPageBgClass,
+  clawWorkflowCardClass,
+  clawWorkflowEnterClass,
+} from "@/components/claw/claw-primitives";
+import { ClawSubNav } from "@/components/claw/claw-subnav";
 
 /* ─── constants ─── */
 
 interface ScheduledJob extends ClawScheduledJob {}
 
 type Category = "all" | "image" | "video";
-
-const LEGACY_TEMPLATE_SLUG_FRAGMENTS = [
-  "fire-lava", "firelava", "air-bending", "earth-zoom", "shadow-smoke",
-  "animalization", "raven-transform", "train-rush", "mouth-in",
-];
+type LibraryView = "sections" | "flat";
 
 const WORKFLOW_SECTION_META: Record<
   ClawWorkflowSection,
-  { icon: typeof Compass; badge: string; accent: string }
+  { badge: string; badgeGlass: string }
 > = {
-  core: { icon: Compass, badge: "Core", accent: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100" },
-  commerce: { icon: Package2, badge: "Commerce", accent: "border-lime-300/30 bg-lime-300/10 text-lime-100" },
-  motion: { icon: Video, badge: "Motion", accent: "border-amber-300/30 bg-amber-300/10 text-amber-100" },
+  core: {
+    badge: "Core",
+    badgeGlass: "border-teal-400/30 bg-teal-950/85 text-teal-100",
+  },
+  commerce: {
+    badge: "Commerce",
+    badgeGlass: "border-emerald-400/30 bg-emerald-950/85 text-emerald-100",
+  },
+  motion: {
+    badge: "Motion",
+    badgeGlass: "border-amber-400/30 bg-amber-950/85 text-amber-100",
+  },
 };
 
 const WORKFLOW_BACKDROP_MAP: Record<string, string> = {
@@ -75,13 +88,6 @@ const WORKFLOW_BACKDROP_MAP: Record<string, string> = {
   "before-after-reveal-reel": `${ASSET_BASE}/capabilities/capabilities13.png`,
 };
 
-const isVideoUrl = (value?: string) => Boolean(value && /(\\.mp4|\\.mov|\\.webm|\\.m3u8)(\\?|$)/i.test(value));
-
-const slugify = (value: string) =>
-  value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
-
-const cleanText = (value: unknown) => String(value || "").replace(/\s+/g, " ").trim();
-
 const formatRelativeTime = (value?: string) => {
   if (!value) return "No timestamp";
   const time = new Date(value).getTime();
@@ -97,55 +103,76 @@ const formatRelativeTime = (value?: string) => {
 };
 
 const statusTone = (status: string) => {
-  if (status === "completed" || status === "active") return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
-  if (status === "failed" || status === "cancelled" || status === "permanently_failed") return "border-rose-300/30 bg-rose-300/10 text-rose-100";
-  if (status === "paused") return "border-amber-300/30 bg-amber-300/10 text-amber-100";
-  return "border-cyan-300/30 bg-cyan-300/10 text-cyan-100";
+  if (status === "completed" || status === "active")
+    return "border-emerald-400/25 bg-emerald-950/50 text-emerald-100/95 ring-1 ring-inset ring-emerald-400/10";
+  if (status === "failed" || status === "cancelled" || status === "permanently_failed")
+    return "border-rose-400/25 bg-rose-950/45 text-rose-100/95 ring-1 ring-inset ring-rose-400/10";
+  if (status === "paused")
+    return "border-amber-400/25 bg-amber-950/45 text-amber-100/95 ring-1 ring-inset ring-amber-400/10";
+  return "border-teal-400/20 bg-teal-950/40 text-teal-100/90 ring-1 ring-inset ring-teal-400/10";
 };
 
 /* ─── page ─── */
 
 export default function ClawHubPage() {
-  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { link, isLinked, loading: linkLoading } = useClawLink();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<Category>("all");
+  const [libraryView, setLibraryView] = useState<LibraryView>("sections");
   const [recentJobs, setRecentJobs] = useState<ClawRecentJob[]>([]);
   const [studioGenerations, setStudioGenerations] = useState<PersistedStudioGeneration[]>([]);
   const [scheduledJobs, setScheduledJobs] = useState<ScheduledJob[]>([]);
-
-  /* ─── data fetching ─── */
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [generationCount, setGenerationCount] = useState<number>(0);
 
   useEffect(() => {
     let cancelled = false;
-    if (!user) { setRecentJobs([]); setScheduledJobs([]); return; }
+    if (!user) {
+      setRecentJobs([]);
+      setScheduledJobs([]);
+      return;
+    }
     const loadData = () => {
-      user.getIdToken()
+      user
+        .getIdToken()
         .then((idToken) => fetchClawState(idToken))
-        .then((state) => { if (cancelled) return; setRecentJobs(state.recentJobs); setScheduledJobs(state.scheduledJobs); })
+        .then((state) => {
+          if (cancelled) return;
+          setRecentJobs(state.recentJobs);
+          setScheduledJobs(state.scheduledJobs);
+          setCreditBalance(state.creditBalance ?? 0);
+          setGenerationCount(state.generationCount ?? 0);
+        })
         .catch(() => {});
     };
     loadData();
     const intervalId = setInterval(loadData, 4000);
-    return () => { cancelled = true; clearInterval(intervalId); };
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
   }, [user]);
 
   useEffect(() => {
-    if (!user?.uid) { setStudioGenerations([]); return; }
+    if (!user?.uid) {
+      setStudioGenerations([]);
+      return;
+    }
     let cancelled = false;
     listPersistedStudioGenerationSafe(user.uid).then((items) => {
       if (!cancelled) setStudioGenerations(items.slice(0, 4));
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.uid]);
-
-  /* ─── memos ─── */
 
   const filteredWorkflows = useMemo(() => {
     const text = search.toLowerCase().trim();
     return CLAW_WORKFLOWS.filter((workflow) => {
-      const matchesSearch = !text ||
+      const matchesSearch =
+        !text ||
         workflow.title.toLowerCase().includes(text) ||
         workflow.summary.toLowerCase().includes(text) ||
         workflow.tags.some((tag) => tag.toLowerCase().includes(text));
@@ -154,11 +181,17 @@ export default function ClawHubPage() {
     });
   }, [activeCategory, search]);
 
+  const flatWorkflowsSorted = useMemo(
+    () => [...filteredWorkflows].sort((a, b) => a.title.localeCompare(b.title)),
+    [filteredWorkflows]
+  );
+
   const workflowsBySection = useMemo(
-    () => CLAW_WORKFLOW_SECTIONS.map((section) => ({
-      ...section,
-      workflows: filteredWorkflows.filter((workflow) => workflow.section === section.id),
-    })),
+    () =>
+      CLAW_WORKFLOW_SECTIONS.map((section) => ({
+        ...section,
+        workflows: filteredWorkflows.filter((workflow) => workflow.section === section.id),
+      })),
     [filteredWorkflows]
   );
 
@@ -184,43 +217,50 @@ export default function ClawHubPage() {
   const coreWorkflows = workflowsBySection.find((s) => s.id === "core")?.workflows ?? [];
   const motionWorkflows = workflowsBySection.find((s) => s.id === "motion")?.workflows ?? [];
 
-  /* ─── render ─── */
-
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#050607] text-white">
-      {/* background effects */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[10%] top-[4%] h-[360px] w-[360px] rounded-full bg-cyan-400/14 blur-[130px]" />
-        <div className="absolute right-[6%] top-[10%] h-[300px] w-[300px] rounded-full bg-amber-300/10 blur-[120px]" />
-        <div className="absolute left-[40%] top-[52%] h-[320px] w-[320px] rounded-full bg-lime-300/8 blur-[130px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.018)_1px,transparent_1px)] [background-size:84px_84px] opacity-30" />
-      </div>
+    <div className={clawPageBgClass}>
+      <ClawBackdropHub />
 
-      <div className="relative mx-auto max-w-[1280px] px-4 pb-24 pt-32 md:px-6 md:pb-32 md:pt-40">
+      <div className="relative mx-auto max-w-[1280px] px-4 pb-28 pt-24 md:px-8 md:pb-36 md:pt-28">
+        <ClawSubNav className="mb-8" />
 
-        {/* ═══════════ HERO ═══════════ */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl md:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <section className={cn(clawHeroPanelClass, "p-6 md:p-10 lg:p-11")}>
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-400/35 to-transparent"
+            aria-hidden
+          />
+          <div className="pointer-events-none absolute -right-24 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-teal-500/[0.04] blur-3xl" aria-hidden />
+
+          <div className="relative flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100">
-                <Workflow className="h-3.5 w-3.5" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/30 px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-300 ring-1 ring-inset ring-white/[0.05]">
+                <Workflow className="h-3 w-3 text-teal-400/90" />
                 Claw Hub
               </div>
-              <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white md:text-5xl md:leading-[1.08]">
-                Workflow control, automated.
+              <h1 className="mt-5 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-white md:text-5xl md:leading-[1.08]">
+                Workflow control,{" "}
+                <span className="bg-gradient-to-r from-teal-200 via-white to-amber-200/90 bg-clip-text text-transparent">
+                  one place.
+                </span>
               </h1>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-400 md:text-[15px]">
-                Route creations between Studio and Telegram. Schedule recurring jobs. Launch guided workflows.
+              <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-400 md:text-base">
+                Route creations between Studio and Telegram, schedule recurring jobs, and launch guided workflows from a single command center.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2.5">
-              <Button asChild className="h-11 rounded-xl bg-white px-5 text-black hover:bg-zinc-200">
+            <div className="flex shrink-0 flex-wrap gap-3">
+              <Button
+                asChild
+                className="h-11 rounded-xl border border-white/12 bg-white px-6 text-sm font-semibold text-zinc-950 shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset] transition duration-300 hover:bg-zinc-100"
+              >
                 <Link href="/studio">
                   Open Studio
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-4 w-4 opacity-70" />
                 </Link>
               </Button>
-              <Button asChild className="h-11 rounded-xl bg-cyan-300 px-5 text-black hover:bg-cyan-200">
+              <Button
+                asChild
+                className="h-11 rounded-xl border border-teal-400/30 bg-gradient-to-b from-teal-400 to-teal-600 px-6 text-sm font-semibold text-teal-950 shadow-lg shadow-teal-950/20 transition duration-300 hover:brightness-110"
+              >
                 <a href="https://t.me/StudioXCbot" target="_blank" rel="noreferrer">
                   <Bot className="mr-2 h-4 w-4" />
                   Telegram Bot
@@ -229,103 +269,153 @@ export default function ClawHubPage() {
             </div>
           </div>
 
-          {/* status row */}
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatusChip
-              icon={isLinked ? ShieldCheck : Link2}
-              label={linkLoading ? "Checking…" : isLinked ? "Paired" : "Not paired"}
-              detail={isLinked ? `Linked via ${link?.channelType || "telegram"}` : "Run /pair in Telegram"}
-              tone={isLinked ? "emerald" : "zinc"}
-              href="/claw/pair"
-            />
-            <StatusChip
-              icon={Send}
-              label={studioGenerations.length > 0 ? `${studioGenerations.length} generations` : "No outputs yet"}
-              detail="Studio handoff"
-              tone={studioGenerations.length > 0 ? "cyan" : "zinc"}
-              href="/studio"
-            />
-            <StatusChip
-              icon={TimerReset}
-              label={scheduleStats.active > 0 ? `${scheduleStats.active} active` : "No automations"}
-              detail={nextScheduledRun ? `Next ${formatRelativeTime(nextScheduledRun)}` : "Schedule from Telegram"}
-              tone={scheduleStats.active > 0 ? "amber" : "zinc"}
-              href="/claw/schedule"
-            />
-            <StatusChip
-              icon={Rocket}
-              label={`${jobStats.total} jobs logged`}
-              detail={jobStats.running > 0 ? `${jobStats.running} running now` : "All quiet"}
-              tone={jobStats.running > 0 ? "cyan" : "zinc"}
-            />
+          <div className="relative mt-10 h-px w-full bg-gradient-to-r from-transparent via-white/[0.1] to-transparent" />
+
+          <div className="relative mt-8 rounded-2xl border border-white/[0.06] bg-black/30 p-3 ring-1 ring-inset ring-white/[0.04] md:p-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <StatusChip
+                icon={isLinked ? ShieldCheck : Link2}
+                label={linkLoading ? "Checking…" : isLinked ? "Paired" : "Not paired"}
+                detail={isLinked ? `Linked via ${link?.channelType || "telegram"}` : "Run /pair in Telegram"}
+                tone={isLinked ? "emerald" : "zinc"}
+                href="/claw/pair"
+              />
+              <StatusChip
+                icon={Coins}
+                label={creditBalance > 0 ? `${creditBalance} credits` : "No credits"}
+                detail={generationCount > 0 ? `${generationCount} generations made` : "Top up at /pricing"}
+                tone={creditBalance > 100 ? "teal" : creditBalance > 0 ? "amber" : "zinc"}
+                href="/pricing"
+              />
+              <StatusChip
+                icon={TimerReset}
+                label={scheduleStats.active > 0 ? `${scheduleStats.active} active` : "No automations"}
+                detail={nextScheduledRun ? `Next ${formatRelativeTime(nextScheduledRun)}` : "Schedule from Telegram"}
+                tone={scheduleStats.active > 0 ? "amber" : "zinc"}
+                href="/claw/schedule"
+              />
+              <StatusChip
+                icon={Rocket}
+                label={`${jobStats.total} jobs logged`}
+                detail={jobStats.running > 0 ? `${jobStats.running} running now` : "All quiet"}
+                tone={jobStats.running > 0 ? "teal" : "zinc"}
+              />
+            </div>
           </div>
         </section>
 
-        {/* ═══════════ DASHBOARD GRID ═══════════ */}
-        <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_340px]">
-          {/* recent activity */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium uppercase tracking-[0.16em] text-zinc-400">Recent Activity</h2>
-              <Badge className="border-white/10 bg-white/[0.04] text-zinc-400">{recentJobs.length} jobs</Badge>
-            </div>
-            <div className="mt-4 space-y-2">
-              {recentJobs.length > 0 ? (
-                recentJobs.slice(0, 5).map((job) => (
-                  <div key={job.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-3.5 py-3 transition-colors hover:border-white/15">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm text-white">{job.prompt}</p>
-                      <p className="mt-0.5 text-xs text-zinc-500">{job.model || "Model pending"} · {formatRelativeTime(job.createdAt)}</p>
-                    </div>
-                    <Badge className={cn("shrink-0 capitalize", statusTone(job.status))}>{job.status}</Badge>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-center text-sm text-zinc-500">
-                  No activity yet. Create something from Telegram or Studio.
-                </div>
+        {/* ── Quick Actions → Telegram Bot ── */}
+        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { icon: "🖼️", label: "Image Gen", desc: "Generate any image from text", href: "https://t.me/StudioXCbot?start=image", action: "/image [prompt]" },
+            { icon: "🎬", label: "Video Gen", desc: "Create cinematic AI videos", href: "https://t.me/StudioXCbot?start=video", action: "/video [prompt]" },
+            { icon: "⏱️", label: "Schedule", desc: "Automate recurring jobs", href: "https://t.me/StudioXCbot?start=schedule", action: "/schedule every 1h ..." },
+            { icon: "💰", label: "Credits", desc: `${creditBalance > 0 ? creditBalance + " available" : "Check balance"}`, href: "https://t.me/StudioXCbot?start=credits", action: "/credits" },
+          ].map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              target="_blank"
+              rel="noreferrer"
+              className={cn(
+                clawCardClass,
+                "group relative flex flex-col gap-3 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-500/25 hover:shadow-[0_20px_56px_-22px_rgba(0,0,0,0.55),0_0_0_1px_rgba(45,212,191,0.12)]"
               )}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-2xl">{item.icon}</span>
+                <ArrowUpRight className="h-3.5 w-3.5 text-zinc-600 transition-all duration-300 group-hover:text-teal-300" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">{item.label}</p>
+                <p className="mt-1 text-xs leading-snug text-zinc-500">{item.desc}</p>
+              </div>
+              <code className="mt-auto rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 text-[10px] font-medium text-zinc-500 ring-1 ring-inset ring-white/[0.03]">
+                {item.action}
+              </code>
+            </a>
+          ))}
+        </section>
+
+        <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_min(100%,380px)]">
+          <div className={cn(clawCardClass, clawCardInteractiveClass, "flex flex-col overflow-hidden p-0 md:p-0")}>
+            <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] px-6 pb-5 pt-6 md:px-8 md:pt-8">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight text-white md:text-xl">Recent activity</h2>
+                <p className="mt-1 text-xs text-zinc-500">Latest jobs from your linked channels</p>
+              </div>
+              <Badge className="shrink-0 border-white/[0.08] bg-black/40 px-2.5 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-white/[0.06]">
+                {recentJobs.length} jobs
+              </Badge>
+            </div>
+            <div className="px-4 pb-6 pt-5 md:px-8 md:pb-8">
+              <ActivityFeed jobs={recentJobs} />
             </div>
           </div>
 
-          {/* sidebar: automation + bot */}
-          <div className="space-y-4">
-            {/* automation summary */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl">
-              <h2 className="text-sm font-medium uppercase tracking-[0.16em] text-zinc-400">Automation</h2>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-6">
+            <div className={cn(clawCardClass, clawCardInteractiveClass, "p-6 md:p-8")}>
+              <div className="border-b border-white/[0.06] pb-5">
+                <h2 className="text-lg font-semibold tracking-tight text-white">Automation</h2>
+                <p className="mt-1 text-xs text-zinc-500">Live scheduler snapshot</p>
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-3">
                 <MiniStat label="Active" value={scheduleStats.active} tone="emerald" />
                 <MiniStat label="Paused" value={scheduleStats.paused} tone="amber" />
-                <MiniStat label="Completed" value={jobStats.completed} tone="cyan" />
+                <MiniStat label="Completed" value={jobStats.completed} tone="teal" />
                 <MiniStat label="Failed" value={jobStats.failed} tone="rose" />
               </div>
-              <Button asChild variant="outline" className="mt-3 h-9 w-full rounded-xl border-white/12 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.08]">
+              <Button
+                asChild
+                variant="outline"
+                className="mt-6 h-10 w-full rounded-xl border-white/[0.1] bg-black/30 text-sm font-semibold text-zinc-200 transition duration-300 hover:border-white/[0.14] hover:bg-white/[0.05]"
+              >
                 <Link href="/claw/schedule">
-                  <Clock3 className="mr-2 h-3.5 w-3.5" />
-                  View Scheduler
+                  <Clock3 className="mr-2 h-3.5 w-3.5 opacity-70" />
+                  View scheduler
                 </Link>
               </Button>
             </div>
 
-            {/* bot link */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-100">
-                  <Bot className="h-4 w-4" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white">@StudioXCbot</p>
-                  <p className="text-xs text-zinc-500">{isLinked ? "Linked" : "Not linked"} · Telegram</p>
+            <div className={cn(clawCardClass, clawCardInteractiveClass, "p-6 md:p-8")}>
+              <div className="border-b border-white/[0.06] pb-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Telegram</p>
+                <div className="mt-3 flex items-center gap-3.5">
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-teal-400/20 bg-teal-950/45 text-teal-200 ring-1 ring-inset ring-white/[0.05]">
+                    <Bot className="h-[18px] w-[18px]" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-white">@StudioXCbot</p>
+                    <p className="text-xs text-zinc-500">
+                      {isLinked ? "Linked" : "Not linked"} · Telegram
+                    </p>
+                  </div>
+                  <Badge
+                    className={cn(
+                      "shrink-0 border-0 text-[11px] font-medium capitalize",
+                      isLinked
+                        ? "bg-emerald-950/55 text-emerald-100 ring-1 ring-inset ring-emerald-400/15"
+                        : "bg-zinc-900/90 text-zinc-400 ring-1 ring-inset ring-white/[0.08]"
+                    )}
+                  >
+                    {isLinked ? "Live" : "Pending"}
+                  </Badge>
                 </div>
-                <Badge className={cn("ml-auto shrink-0 capitalize", isLinked ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-100" : "border-zinc-500/30 bg-zinc-500/10 text-zinc-400")}>
-                  {isLinked ? "Live" : "Pending"}
-                </Badge>
               </div>
-              <div className="mt-3 flex gap-2">
-                <Button asChild className="h-9 flex-1 rounded-xl bg-cyan-300 text-xs text-black hover:bg-cyan-200">
-                  <a href="https://t.me/StudioXCbot" target="_blank" rel="noreferrer">Open Bot</a>
+              <div className="mt-5 flex gap-2.5">
+                <Button
+                  asChild
+                  className="h-10 flex-1 rounded-xl border border-teal-400/25 bg-gradient-to-b from-teal-400 to-teal-600 text-xs font-semibold text-teal-950 shadow-md transition duration-300 hover:brightness-110"
+                >
+                  <a href="https://t.me/StudioXCbot" target="_blank" rel="noreferrer">
+                    Open bot
+                  </a>
                 </Button>
-                <Button asChild variant="outline" className="h-9 flex-1 rounded-xl border-white/12 bg-white/[0.03] text-xs text-zinc-300 hover:bg-white/[0.08]">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-10 flex-1 rounded-xl border-white/[0.1] bg-black/35 text-xs font-semibold text-zinc-200 transition duration-300 hover:bg-white/[0.06]"
+                >
                   <Link href="/claw/pair">{isLinked ? "Re-link" : "Pair"}</Link>
                 </Button>
               </div>
@@ -333,34 +423,69 @@ export default function ClawHubPage() {
           </div>
         </section>
 
-        {/* ═══════════ WORKFLOW LIBRARY ═══════════ */}
-        <section className="mt-10">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <section className="relative mt-16 md:mt-24">
+          <div className="relative rounded-[1.65rem] border border-white/[0.08] bg-gradient-to-b from-zinc-900/55 via-zinc-950/35 to-zinc-950/20 p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/[0.05] md:p-9">
+          <div className="flex flex-col gap-8 border-b border-white/[0.06] pb-10 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-2xl font-semibold tracking-[-0.04em] text-white md:text-3xl">Workflows</h2>
-              <p className="mt-1 text-sm text-zinc-400">Launch guided generation flows in Studio or Telegram.</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-teal-400/70">Library</p>
+              <h2 className="mt-2 bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-3xl font-semibold tracking-tight text-transparent md:text-4xl">
+                Workflows
+              </h2>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
+                Search, filter, and open any flow in Studio or Telegram.
+              </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search workflows…"
-                  className="h-10 w-[240px] rounded-xl border-white/12 bg-white/[0.03] pl-10 text-sm text-white placeholder:text-zinc-500"
-                />
+            <div className="flex flex-col gap-3 lg:items-end">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex gap-1 rounded-xl border border-white/[0.07] bg-black/35 p-1 ring-1 ring-inset ring-white/[0.04]">
+                  <button
+                    type="button"
+                    onClick={() => setLibraryView("sections")}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all duration-300",
+                      libraryView === "sections"
+                        ? "bg-white/[0.14] text-white shadow-sm ring-1 ring-white/10"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    <Layers className="h-3.5 w-3.5 opacity-80" />
+                    By section
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLibraryView("flat")}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all duration-300",
+                      libraryView === "flat"
+                        ? "bg-white/[0.14] text-white shadow-sm ring-1 ring-white/10"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5 opacity-80" />
+                    All workflows
+                  </button>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                  <Input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search workflows…"
+                    className="h-11 w-full min-w-[200px] rounded-xl border-white/[0.08] bg-black/40 pl-10 text-sm text-zinc-100 placeholder:text-zinc-600 ring-1 ring-inset ring-white/[0.05] transition focus-visible:ring-teal-500/30 sm:w-[260px]"
+                  />
+                </div>
               </div>
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1 rounded-xl border border-white/[0.07] bg-black/35 p-1 ring-1 ring-inset ring-white/[0.04]">
                 {(["all", "image", "video"] as const).map((cat) => (
                   <button
                     key={cat}
                     type="button"
                     onClick={() => setActiveCategory(cat)}
                     className={cn(
-                      "rounded-lg border px-3 py-1.5 text-xs capitalize transition-all",
+                      "rounded-lg px-3.5 py-2 text-xs font-semibold capitalize transition-all duration-300",
                       activeCategory === cat
-                        ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-100"
-                        : "border-white/10 bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-zinc-200"
+                        ? "bg-white/[0.14] text-white shadow-sm ring-1 ring-white/10"
+                        : "text-zinc-500 hover:text-zinc-300"
                     )}
                   >
                     {cat}
@@ -370,54 +495,167 @@ export default function ClawHubPage() {
             </div>
           </div>
 
-          {/* Commerce Section */}
-          {commerceWorkflows.length > 0 && (
-            <div className="mt-6">
-              <SectionHeader icon={Package2} label="Commerce" count={commerceWorkflows.length} tone="lime" />
-              <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {commerceWorkflows.map((w) => <WorkflowCard key={w.id} workflow={w} />)}
-              </div>
+          {libraryView === "flat" && (
+            <div className="mt-10">
+              <p className="mb-6 text-sm text-zinc-500">
+                Showing{" "}
+                <span className="font-medium text-zinc-300">{flatWorkflowsSorted.length}</span>{" "}
+                {flatWorkflowsSorted.length === 1 ? "workflow" : "workflows"} (A–Z)
+              </p>
+              {flatWorkflowsSorted.length > 0 ? (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {flatWorkflowsSorted.map((w, i) => (
+                    <WorkflowCard key={w.id} workflow={w} staggerIndex={i} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyWorkflows search={search} />
+              )}
             </div>
           )}
 
-          {/* Core Section */}
-          {coreWorkflows.length > 0 && (
-            <div className="mt-8">
-              <SectionHeader icon={Compass} label="Core" count={coreWorkflows.length} tone="cyan" />
-              <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {coreWorkflows.map((w) => <WorkflowCard key={w.id} workflow={w} />)}
-              </div>
-            </div>
-          )}
+          {libraryView === "sections" && (
+            <>
+              {commerceWorkflows.length > 0 && (
+                <div className="mt-12">
+                  <WorkflowSectionIntro sectionId="commerce" icon={Package2} count={commerceWorkflows.length} tone="emerald" />
+                  <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {commerceWorkflows.map((w, i) => (
+                      <WorkflowCard key={w.id} workflow={w} staggerIndex={i} />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* Motion Section */}
-          {motionWorkflows.length > 0 && (
-            <div className="mt-8">
-              <SectionHeader icon={Video} label="Motion" count={motionWorkflows.length} tone="amber" />
-              <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {motionWorkflows.map((w) => <WorkflowCard key={w.id} workflow={w} />)}
-              </div>
-            </div>
-          )}
+              {coreWorkflows.length > 0 && (
+                <div className="mt-16 md:mt-20">
+                  <WorkflowSectionIntro sectionId="core" icon={Compass} count={coreWorkflows.length} tone="teal" />
+                  <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {coreWorkflows.map((w, i) => (
+                      <WorkflowCard key={w.id} workflow={w} staggerIndex={i} />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {filteredWorkflows.length === 0 && (
-            <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center text-sm text-zinc-500">
-              No workflows match &ldquo;{search}&rdquo;. Try a different keyword.
-            </div>
+              {motionWorkflows.length > 0 && (
+                <div className="mt-16 md:mt-20">
+                  <WorkflowSectionIntro sectionId="motion" icon={Video} count={motionWorkflows.length} tone="amber" />
+                  <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {motionWorkflows.map((w, i) => (
+                      <WorkflowCard key={w.id} workflow={w} staggerIndex={i} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {filteredWorkflows.length === 0 && <EmptyWorkflows search={search} />}
+            </>
           )}
+          </div>
         </section>
       </div>
     </div>
   );
 }
 
-/* ─── helper: safe list ─── */
-async function listPersistedStudioGenerationSafe(uid: string) {
-  try { return await listPersistedStudioGenerations(uid); }
-  catch { return []; }
+function EmptyWorkflows({ search }: { search: string }) {
+  return (
+    <div
+      className={cn(
+        clawInsetClass,
+        "mt-6 border-dashed border-white/[0.1] px-8 py-16 text-center text-sm text-zinc-500"
+      )}
+    >
+      No workflows match &ldquo;{search}&rdquo;. Try a different keyword or filter.
+    </div>
+  );
 }
 
-/* ═══════════ COMPONENTS ═══════════ */
+function ActivityFeed({ jobs }: { jobs: ClawRecentJob[] }) {
+  if (jobs.length === 0) {
+    return (
+      <div
+        className={cn(
+          clawInsetClass,
+          "border-dashed border-white/[0.08] px-6 py-14 text-center text-sm text-zinc-500"
+        )}
+      >
+        No activity yet. Create something from Telegram or Studio.
+      </div>
+    );
+  }
+
+  const slice = jobs.slice(0, 5);
+
+  return (
+    <>
+      <div className="hidden md:block">
+        <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-black/20 ring-1 ring-inset ring-white/[0.04]">
+          <table className="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-white/[0.06] bg-black/30 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                <th className="px-4 py-3 font-medium">Prompt</th>
+                <th className="hidden w-[120px] px-3 py-3 font-medium xl:table-cell">Model</th>
+                <th className="hidden w-[100px] px-3 py-3 font-medium lg:table-cell">Time</th>
+                <th className="w-[100px] px-4 py-3 text-right font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slice.map((job) => (
+                <tr
+                  key={job.id}
+                  className="border-b border-white/[0.04] transition-colors duration-300 last:border-0 hover:bg-white/[0.03]"
+                >
+                  <td className="max-w-0 px-4 py-3">
+                    <p className="truncate font-medium text-zinc-100" title={job.prompt}>
+                      {job.prompt}
+                    </p>
+                  </td>
+                  <td className="hidden px-3 py-3 text-xs text-zinc-500 xl:table-cell">{job.model || "—"}</td>
+                  <td className="hidden px-3 py-3 text-xs tabular-nums text-zinc-500 lg:table-cell">
+                    {formatRelativeTime(job.createdAt)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Badge className={cn("border-0 capitalize shadow-none", statusTone(job.status))}>{job.status}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="space-y-2.5 md:hidden">
+        {slice.map((job) => (
+          <div
+            key={job.id}
+            className={cn(
+              clawInsetClass,
+              "flex flex-col gap-2 px-4 py-3.5 transition-[border-color,background-color] duration-300 hover:border-white/[0.1] hover:bg-white/[0.03]"
+            )}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 text-sm font-medium leading-snug text-zinc-100">{job.prompt}</p>
+              <Badge className={cn("shrink-0 border-0 capitalize shadow-none", statusTone(job.status))}>{job.status}</Badge>
+            </div>
+            <p className="text-xs text-zinc-500">
+              {job.model || "Model pending"} · {formatRelativeTime(job.createdAt)}
+            </p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+async function listPersistedStudioGenerationSafe(uid: string) {
+  try {
+    return await listPersistedStudioGenerations(uid);
+  } catch {
+    return [];
+  }
+}
 
 function StatusChip({
   icon: Icon,
@@ -429,126 +667,229 @@ function StatusChip({
   icon: typeof ShieldCheck;
   label: string;
   detail: string;
-  tone: "emerald" | "cyan" | "amber" | "zinc";
+  tone: "emerald" | "teal" | "amber" | "zinc";
   href?: string;
 }) {
   const toneClass = {
-    emerald: "border-emerald-300/20 bg-emerald-300/[0.06]",
-    cyan: "border-cyan-300/20 bg-cyan-300/[0.06]",
-    amber: "border-amber-300/20 bg-amber-300/[0.06]",
-    zinc: "border-white/10 bg-white/[0.03]",
+    emerald: "border-emerald-500/15 bg-emerald-950/30",
+    teal: "border-teal-500/15 bg-teal-950/30",
+    amber: "border-amber-500/15 bg-amber-950/30",
+    zinc: "border-white/[0.07] bg-zinc-950/40",
   }[tone];
   const iconTone = {
-    emerald: "text-emerald-300",
-    cyan: "text-cyan-300",
-    amber: "text-amber-300",
-    zinc: "text-zinc-400",
+    emerald: "text-emerald-300/90",
+    teal: "text-teal-300/90",
+    amber: "text-amber-300/90",
+    zinc: "text-zinc-500",
+  }[tone];
+  const accentBar = {
+    emerald: "bg-emerald-400/60",
+    teal: "bg-teal-400/60",
+    amber: "bg-amber-400/60",
+    zinc: "bg-zinc-500/50",
   }[tone];
 
   const inner = (
-    <div className={cn("flex items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors hover:border-white/20", toneClass)}>
-      <Icon className={cn("h-4 w-4 shrink-0", iconTone)} />
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-white">{label}</p>
-        <p className="text-xs text-zinc-500">{detail}</p>
+    <div
+      className={cn(
+        "group relative flex items-center gap-3 overflow-hidden rounded-xl border px-3.5 py-3 ring-1 ring-inset ring-white/[0.04] transition-[transform,border-color,background-color] duration-300 hover:border-white/[0.12] hover:bg-white/[0.03] md:px-4 md:py-3.5",
+        toneClass
+      )}
+    >
+      <span className={cn("absolute left-0 top-2 bottom-2 w-0.5 rounded-full opacity-90", accentBar)} aria-hidden />
+      <Icon className={cn("relative ml-1 h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-105", iconTone)} />
+      <div className="min-w-0 flex-1 pl-1">
+        <p className="text-sm font-semibold text-zinc-100">{label}</p>
+        <p className="mt-0.5 text-xs leading-snug text-zinc-500">{detail}</p>
       </div>
     </div>
   );
 
-  return href ? <Link href={href}>{inner}</Link> : inner;
+  return href ? (
+    <Link
+      href={href}
+      className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#060708]"
+    >
+      {inner}
+    </Link>
+  ) : (
+    inner
+  );
 }
 
-function MiniStat({ label, value, tone }: { label: string; value: number; tone: "emerald" | "amber" | "cyan" | "rose" }) {
+function MiniStat({ label, value, tone }: { label: string; value: number; tone: "emerald" | "amber" | "teal" | "rose" }) {
   const toneClass = {
-    emerald: "border-emerald-300/20 bg-emerald-300/[0.06] text-emerald-200",
-    amber: "border-amber-300/20 bg-amber-300/[0.06] text-amber-200",
-    cyan: "border-cyan-300/20 bg-cyan-300/[0.06] text-cyan-200",
-    rose: "border-rose-300/20 bg-rose-300/[0.06] text-rose-200",
+    emerald: "border-emerald-500/12 bg-emerald-950/35 text-emerald-100/90",
+    amber: "border-amber-500/12 bg-amber-950/35 text-amber-100/90",
+    teal: "border-teal-500/12 bg-teal-950/35 text-teal-100/90",
+    rose: "border-rose-500/12 bg-rose-950/35 text-rose-100/90",
   }[tone];
 
   return (
-    <div className={cn("rounded-xl border px-3 py-2.5", toneClass)}>
-      <p className="text-[10px] uppercase tracking-[0.14em] opacity-70">{label}</p>
-      <p className="mt-0.5 text-lg font-semibold text-white">{value}</p>
+    <div className={cn("rounded-2xl border px-3.5 py-3.5 ring-1 ring-inset ring-white/[0.04]", toneClass)}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-white">{value}</p>
     </div>
   );
 }
 
-function SectionHeader({
+const SECTION_THEME: Record<
+  "teal" | "emerald" | "amber",
+  { bar: string; icon: string; badge: string; wash: string }
+> = {
+  teal: {
+    bar: "from-teal-400/90 via-teal-500/40 to-transparent",
+    icon: "border-teal-400/30 bg-teal-950/50 text-teal-100 shadow-[0_0_20px_-6px_rgba(45,212,191,0.35)]",
+    badge: "border-teal-400/20 bg-teal-950/55 text-teal-100 ring-teal-400/15",
+    wash: "from-teal-500/[0.07] to-transparent",
+  },
+  emerald: {
+    bar: "from-emerald-400/90 via-emerald-500/40 to-transparent",
+    icon: "border-emerald-400/30 bg-emerald-950/50 text-emerald-100 shadow-[0_0_20px_-6px_rgba(52,211,153,0.3)]",
+    badge: "border-emerald-400/20 bg-emerald-950/55 text-emerald-100 ring-emerald-400/15",
+    wash: "from-emerald-500/[0.07] to-transparent",
+  },
+  amber: {
+    bar: "from-amber-400/90 via-amber-500/40 to-transparent",
+    icon: "border-amber-400/30 bg-amber-950/50 text-amber-100 shadow-[0_0_20px_-6px_rgba(251,191,36,0.28)]",
+    badge: "border-amber-400/20 bg-amber-950/55 text-amber-100 ring-amber-400/15",
+    wash: "from-amber-500/[0.07] to-transparent",
+  },
+};
+
+function WorkflowSectionIntro({
+  sectionId,
   icon: Icon,
-  label,
   count,
   tone,
 }: {
+  sectionId: ClawWorkflowSection;
   icon: typeof Compass;
-  label: string;
   count: number;
-  tone: "cyan" | "lime" | "amber";
+  tone: "teal" | "emerald" | "amber";
 }) {
-  const toneClass = {
-    cyan: "border-cyan-300/25 bg-cyan-300/10 text-cyan-100",
-    lime: "border-lime-300/25 bg-lime-300/10 text-lime-100",
-    amber: "border-amber-300/25 bg-amber-300/10 text-amber-100",
-  }[tone];
+  const meta = CLAW_WORKFLOW_SECTIONS.find((s) => s.id === sectionId);
+  const theme = SECTION_THEME[tone];
 
   return (
-    <div className="flex items-center gap-3">
-      <span className={cn("inline-flex h-8 w-8 items-center justify-center rounded-lg border", toneClass)}>
-        <Icon className="h-3.5 w-3.5" />
-      </span>
-      <h3 className="text-lg font-semibold text-white">{label}</h3>
-      <Badge className={cn("ml-1", toneClass)}>{count}</Badge>
+    <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-zinc-950/50 ring-1 ring-inset ring-white/[0.04]">
+      <div
+        className={cn("pointer-events-none absolute inset-0 bg-gradient-to-br opacity-90", theme.wash)}
+        aria-hidden
+      />
+      <div className={cn("absolute left-0 top-0 h-full w-1 bg-gradient-to-b", theme.bar)} aria-hidden />
+      <div className="relative z-10 flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8 sm:p-6">
+        <div className="flex min-w-0 flex-1 flex-col gap-4 pl-1 sm:flex-row sm:items-start sm:gap-5 sm:pl-2">
+          <span
+            className={cn(
+              "inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ring-1 ring-inset ring-white/[0.06]",
+              theme.icon
+            )}
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 pt-0.5">
+            <h3 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">{meta?.title ?? sectionId}</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">{meta?.description}</p>
+          </div>
+        </div>
+        <Badge
+          className={cn(
+            "h-fit shrink-0 border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider shadow-none ring-1 ring-inset",
+            theme.badge
+          )}
+        >
+          {count} {count === 1 ? "workflow" : "workflows"}
+        </Badge>
+      </div>
     </div>
   );
 }
 
-function WorkflowCard({ workflow }: { workflow: ClawWorkflowDefinition }) {
+function WorkflowCard({ workflow, staggerIndex }: { workflow: ClawWorkflowDefinition; staggerIndex: number }) {
   const sectionMeta = WORKFLOW_SECTION_META[workflow.section];
   const studioHref = buildClawWorkflowStudioHref(workflow);
   const telegramHref = buildClawWorkflowTelegramHref(workflow);
-  const telegramCommand = buildClawWorkflowTelegramCommand(workflow);
   const backdrop = WORKFLOW_BACKDROP_MAP[workflow.id] || `${ASSET_BASE}/capabilities/capabilities3.png`;
+  const mediaBadge =
+    workflow.mediaType === "video"
+      ? "border-amber-400/35 bg-amber-950/90 text-amber-50"
+      : "border-teal-400/35 bg-teal-950/90 text-teal-50";
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0c0f] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_16px_48px_rgba(0,0,0,0.4)]">
-      {/* image */}
-      <div className="relative h-40 overflow-hidden">
-        <img src={backdrop} alt={workflow.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c0f] via-[#0a0c0f]/60 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-4">
-          <h3 className="text-base font-semibold leading-tight text-white">{workflow.title}</h3>
-        </div>
-        <div className="absolute right-3 top-3 flex gap-1.5">
-          <Badge className={cn("text-[10px] capitalize backdrop-blur-md", sectionMeta.accent)}>{sectionMeta.badge}</Badge>
-          <Badge className={cn(
-            "text-[10px] capitalize backdrop-blur-md",
-            workflow.mediaType === "video" ? "border-amber-300/30 bg-amber-300/10 text-amber-100" : "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
-          )}>
-            {workflow.mediaType}
-          </Badge>
+    <article
+      className={cn(clawWorkflowCardClass, clawWorkflowEnterClass)}
+      style={{ animationDelay: `${Math.min(staggerIndex, 12) * 28}ms` }}
+    >
+      <div className="relative aspect-[3/2] overflow-hidden bg-zinc-900">
+        <img
+          src={backdrop}
+          alt={workflow.title}
+          className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+          loading="lazy"
+          decoding="async"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0a0b0e] via-[#0a0b0e]/25 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/50 to-transparent" />
+
+        <div className="absolute left-3 right-3 top-3 z-10 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            <span
+              className={cn(
+                "inline-flex items-center rounded-lg border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ring-1 ring-white/10",
+                sectionMeta.badgeGlass
+              )}
+            >
+              {sectionMeta.badge}
+            </span>
+            <span className={cn("inline-flex items-center rounded-lg border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ring-1 ring-white/10", mediaBadge)}>
+              {workflow.mediaType}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* body */}
-      <div className="flex flex-1 flex-col p-4">
-        <p className="text-[13px] leading-relaxed text-zinc-400">{workflow.summary}</p>
+      <div className="relative flex flex-1 flex-col px-5 pb-5 pt-5">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
-        <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
-          <span className="rounded-md border border-white/8 bg-white/[0.03] px-2 py-0.5">{workflow.model}</span>
-          <span className="rounded-md border border-white/8 bg-white/[0.03] px-2 py-0.5">{workflow.inputLabel}</span>
-        </div>
+        <h3 className="text-[1.0625rem] font-semibold leading-snug tracking-tight text-white">{workflow.title}</h3>
+        <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-zinc-400">{workflow.summary}</p>
 
-        <div className="mt-auto flex gap-2 pt-4">
-          <Button asChild size="sm" className="h-8 flex-1 rounded-lg bg-white text-xs text-black hover:bg-zinc-200">
-            <Link href={studioHref}>
+        <dl className="mt-4 grid grid-cols-2 gap-3 text-[11px]">
+          <div className={cn(clawInsetClass, "rounded-xl px-3 py-2.5")}>
+            <dt className="font-medium uppercase tracking-wider text-zinc-600">Model</dt>
+            <dd className="mt-1 truncate font-medium text-zinc-300" title={workflow.model}>
+              {workflow.model}
+            </dd>
+          </div>
+          <div className={cn(clawInsetClass, "rounded-xl px-3 py-2.5")}>
+            <dt className="font-medium uppercase tracking-wider text-zinc-600">Input</dt>
+            <dd className="mt-1 truncate font-medium text-zinc-300" title={workflow.inputLabel}>
+              {workflow.inputLabel}
+            </dd>
+          </div>
+        </dl>
+
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          <Button
+            asChild
+            size="sm"
+            className="h-10 w-full rounded-xl border border-white/18 bg-white text-xs font-semibold tracking-wide text-zinc-900 shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset] transition duration-300 hover:bg-zinc-100"
+          >
+            <Link href={studioHref} className="inline-flex w-full items-center justify-center gap-2">
               Studio
-              <ArrowRight className="ml-1.5 h-3 w-3" />
+              <ArrowRight className="h-3.5 w-3.5 opacity-55" />
             </Link>
           </Button>
-          <Button asChild size="sm" variant="outline" className="h-8 flex-1 rounded-lg border-white/12 bg-white/[0.03] text-xs text-zinc-300 hover:bg-white/[0.08]">
-            <a href={telegramHref} target="_blank" rel="noreferrer">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="h-10 w-full rounded-xl border-white/[0.14] bg-black/50 text-xs font-semibold tracking-wide text-zinc-100 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition duration-300 hover:border-teal-500/30 hover:bg-teal-950/30"
+          >
+            <a href={telegramHref} target="_blank" rel="noreferrer" className="inline-flex w-full items-center justify-center gap-2">
               Telegram
-              <ArrowUpRight className="ml-1.5 h-3 w-3" />
+              <ArrowUpRight className="h-3.5 w-3.5 opacity-55" />
             </a>
           </Button>
         </div>

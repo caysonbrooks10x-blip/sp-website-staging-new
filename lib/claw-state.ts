@@ -30,6 +30,8 @@ export interface ClawStateResponse {
   link: ClawLinkRecord | null
   recentJobs: ClawRecentJob[]
   scheduledJobs: ClawScheduledJob[]
+  creditBalance: number
+  generationCount: number
 }
 
 export async function fetchClawState(idToken: string): Promise<ClawStateResponse> {
