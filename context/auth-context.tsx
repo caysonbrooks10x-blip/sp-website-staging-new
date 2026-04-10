@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import {
     User,
     onAuthStateChanged,
+    getRedirectResult,
     signInWithRedirect,
     GoogleAuthProvider,
     signInWithEmailAndPassword,
@@ -77,18 +78,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            setUser(currentUser);
-            if (currentUser) {
-                await createUserDoc(currentUser);
-                fetchCredits(currentUser.uid);
-            } else {
-                setCredits(null);
-            }
-            setLoading(false);
-        });
+        let isMounted = true;
+        let unsubscribe = () => { };
 
-        return () => unsubscribe();
+        const initializeAuth = async () => {
+            try {
+                await getRedirectResult(auth);
+            } catch (error) {
+                console.error("Error completing redirect sign in", error);
+            }
+
+            if (!isMounted) return;
+
+            unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+                setUser(currentUser);
+                if (currentUser) {
+                    await createUserDoc(currentUser);
+                    fetchCredits(currentUser.uid);
+                } else {
+                    setCredits(null);
+                }
+                setLoading(false);
+            });
+        };
+
+        initializeAuth();
+
+        return () => {
+            isMounted = false;
+            unsubscribe();
+        };
     }, []);
 
     const signInWithGoogle = async () => {
