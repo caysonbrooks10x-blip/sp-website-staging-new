@@ -153,7 +153,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-start overflow-x-hidden overflow-y-auto bg-[#050505] px-4 pt-28 pb-12 sm:px-6 md:justify-center md:py-12 lg:px-8">
+        <div className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-start overflow-x-hidden overflow-y-auto bg-[#050505] px-4 pt-32 pb-12 sm:px-6 md:pt-36 md:pb-12 lg:px-8 lg:pt-40">
 
             { }
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" />
@@ -171,7 +171,7 @@ export default function LoginPage() {
                             src="/brand/studiox-lockup.png"
                             alt="StudioX"
                             draggable="false"
-                            className="h-14 md:h-16 w-auto object-contain filter drop-shadow-[0_0_30px_rgba(168,85,247,0.45)] select-none z-10"
+                            className="h-28 md:h-32 w-auto object-contain filter drop-shadow-[0_0_40px_rgba(168,85,247,0.55)] select-none z-10"
                         />
                     </div>
                 </div>
