@@ -4,7 +4,6 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import {
     User,
     onAuthStateChanged,
-    signInWithPopup,
     signInWithRedirect,
     GoogleAuthProvider,
     signInWithEmailAndPassword,
@@ -96,18 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: "select_account" });
         try {
-            await signInWithPopup(auth, provider);
+            await signInWithRedirect(auth, provider);
         } catch (error: any) {
-            const popupFallbackCodes = new Set([
-                "auth/popup-blocked",
-                "auth/popup-closed-by-user",
-                "auth/cancelled-popup-request"
-            ]);
-
-            if (popupFallbackCodes.has(error?.code)) {
-                await signInWithRedirect(auth, provider);
-                return;
-            }
             console.error("Error signing in with Google", error);
             throw error;
         }
