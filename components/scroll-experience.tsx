@@ -5,18 +5,16 @@ import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { BackgroundSystem } from "@/components/background-system"
 import { HeroState } from "@/components/scroll-states/hero-state"
-import { FeaturesState } from "@/components/scroll-states/features-state"
 import { WorkflowState } from "@/components/scroll-states/workflow-state"
 import { WorkflowStepState } from "@/components/scroll-states/workflow-step-state"
 
 
 
-const TOTAL_STATES = 4
-const SCROLL_HEIGHT_PER_STATE = 200
+const TOTAL_STATES = 3
+const SCROLL_HEIGHT_PER_STATE = 20
 
 export function ScrollExperience() {
     const containerRef = useRef<HTMLDivElement>(null)
-    const progressBarRef = useRef<HTMLDivElement>(null)
 
     
     const listeners = useRef<((progress: number, index: number) => void)[]>([])
@@ -51,14 +49,10 @@ export function ScrollExperience() {
                         start: "top top",
                         end: `+=${TOTAL_STATES * SCROLL_HEIGHT_PER_STATE}%`,
                         pin: true,
-                        scrub: 0.6,
+                        scrub: 0.5,
                         onUpdate: (self) => {
                             const globalProgress = self.progress
                             const currentIndex = Math.min(TOTAL_STATES - 1, Math.floor(globalProgress * TOTAL_STATES))
-
-                            if (progressBarRef.current) {
-                                progressBarRef.current.style.width = `${globalProgress * 100}%`
-                            }
 
                             listeners.current.forEach(cb => cb(globalProgress, currentIndex))
 
@@ -103,42 +97,44 @@ export function ScrollExperience() {
         const slice = 1 / total
         const start = index * slice
         const end = (index + 1) * slice
-        const transition = slice * 0.12 
+        // half the cross-fade window — fades are centered on the boundary so they overlap
+        const half = slice * 0.15
 
         let opacity = 0
         let translateY = 0
         let scale = 1
 
-        
-        if (globalProgress < start - transition || globalProgress > end + transition) {
+        // Completely outside the extended visibility range
+        if (globalProgress < start - half || globalProgress > end + half) {
             return { opacity: 0, translateY: 20, scale: 0.98, blur: 0, visibility: 'hidden' as const, zIndex: 0, pointerEvents: 'none' as const }
         }
 
-        if (globalProgress >= start && globalProgress < end) {
-            if (globalProgress < start + transition && index !== 0) {
-                
-                const p = (globalProgress - start) / transition
-                const eased = p * p * (3 - 2 * p) 
+        if (globalProgress < start + half) {
+            // Fade-in zone: [start - half, start + half] centered on the boundary
+            if (index === 0) {
+                // First section is always fully visible from the start
+                opacity = 1
+            } else {
+                const p = Math.max(0, (globalProgress - (start - half)) / (2 * half))
+                const eased = p * p * (3 - 2 * p)
                 opacity = eased
                 translateY = (1 - eased) * 15
                 scale = 0.99 + (eased * 0.01)
-            } else if (globalProgress > end - transition && index !== total - 1) {
-                
-                const p = (end - globalProgress) / transition
+            }
+        } else if (globalProgress > end - half) {
+            // Fade-out zone: [end - half, end + half] centered on the boundary
+            if (index === total - 1) {
+                // Last section stays fully visible at its end boundary
+                opacity = 1
+            } else {
+                const p = Math.max(0, ((end + half) - globalProgress) / (2 * half))
                 const eased = p * p * (3 - 2 * p)
                 opacity = eased
                 translateY = (eased - 1) * 15
                 scale = 1 - ((1 - eased) * 0.01)
-            } else {
-                
-                opacity = 1
-                translateY = 0
-                scale = 1
             }
-        }
-
-        
-        if (index === 0 && globalProgress <= transition) {
+        } else {
+            // Full-opacity zone: [start + half, end - half]
             opacity = 1
             translateY = 0
             scale = 1
@@ -151,7 +147,7 @@ export function ScrollExperience() {
             opacity: clampedOpacity,
             translateY,
             scale,
-            blur: 0, 
+            blur: 0,
             pointerEvents: (clampedOpacity > 0.5) ? 'auto' as const : 'none' as const,
             visibility: isActive ? 'visible' as const : 'hidden' as const,
             zIndex: isActive ? 100 - Math.round((1 - clampedOpacity) * 50) : 0
@@ -159,9 +155,9 @@ export function ScrollExperience() {
     }
 
     return (
-        <div ref={containerRef} className="relative w-full md:h-screen bg-background text-foreground selection:bg-primary/30">
-            {}
-            <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <div ref={containerRef} className="relative w-full md:h-screen bg-background text-foreground selection:bg-primary/30 z-[45]">
+            {/* BackgroundSystem only renders on desktop — on mobile it leaks into MarketplaceSection via the scroll-experience z-[45] stacking context (inherited -z-50 child still outranks z-40 siblings of the parent context) */}
+            <div className="hidden md:block fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
                 <BackgroundSystem register={register} />
             </div>
 
@@ -179,18 +175,17 @@ export function ScrollExperience() {
                         }}
                     >
                         {i === 0 && <HeroState register={register} />}
-                        {i === 1 && <FeaturesState register={register} />}
-                        {i === 2 && <WorkflowState register={register} />}
+                        {i === 1 && <WorkflowState register={register} />}
 
                         {}
-                        {i === 3 && (
+                        {i === 2 && (
                             <WorkflowStepState
                                 register={register}
-                                stepIndex={3}
+                                stepIndex={2}
                                 totalSteps={TOTAL_STATES}
                                 title="Create"
                                 description="Start with a spark. Our engine interprets your intent and generates the foundation."
-                                semicircleColor="rgba(45, 212, 191, 0.4)" 
+                                semicircleColor="rgba(45, 212, 191, 0.4)"
                             />
                         )}
                     </div>
@@ -198,14 +193,6 @@ export function ScrollExperience() {
 
             </div>
 
-            {}
-            <div className="invisible md:visible fixed bottom-0 left-0 h-1 bg-white/5 w-full z-50">
-                <div
-                    ref={progressBarRef}
-                    className="h-full bg-white/20 transition-none"
-                    style={{ width: '0%' }}
-                />
-            </div>
         </div>
     )
 }

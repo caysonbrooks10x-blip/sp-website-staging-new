@@ -133,24 +133,15 @@ export function Navbar() {
                   ; (window as any).lenis?.scrollTo(0, { duration: 1.5, easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) })
               }
             }}
-            className="flex shrink-0 items-center gap-3 group relative z-[110]"
+            className="flex shrink-0 items-center group relative z-[110]"
           >
             <img
-              src="/studio_logo.svg"
+              src="/brand/studiox-lockup.png"
               alt="StudioX"
               draggable="false"
               className={cn(
-                "md:hidden object-contain w-auto transition-all duration-300 brightness-0 invert opacity-90 group-hover:opacity-100 select-none filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)] origin-left",
-                scrolled ? "h-10 scale-110" : "h-12 scale-125 md:scale-150"
-              )}
-            />
-            <img
-              src="/comb_logo.svg"
-              alt="StudioX"
-              draggable="false"
-              className={cn(
-                "hidden md:block object-contain w-auto transition-all duration-300 brightness-0 invert opacity-90 group-hover:opacity-100 select-none filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)] origin-left",
-                scrolled ? "h-10 lg:h-12 scale-110 lg:scale-125" : "h-12 lg:h-16 scale-[1.35] lg:scale-[1.75]"
+                "object-contain w-auto transition-all duration-300 opacity-90 group-hover:opacity-100 select-none filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)] origin-left",
+                scrolled ? "h-12" : "h-14"
               )}
             />
           </Link>

@@ -4,6 +4,7 @@ export interface App {
   description: string
   icon?: string
   image?: string
+  videoScale?: number
   tags: string[]
   creditCost: number
   isNew?: boolean
