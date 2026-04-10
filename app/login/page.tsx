@@ -57,6 +57,20 @@ export default function LoginPage() {
 
     const redirectPath = useRef("/");
 
+    const buildStableLoginUrl = () => {
+        if (!stableSiteUrl || typeof window === "undefined") return null;
+        try {
+            const stableOrigin = new URL(stableSiteUrl).origin;
+            if (stableOrigin === window.location.origin) return null;
+            const currentPath = window.location.pathname + window.location.search;
+            const loginUrl = new URL("/login", stableOrigin);
+            loginUrl.searchParams.set("redirect", currentPath);
+            return loginUrl.toString();
+        } catch {
+            return null;
+        }
+    };
+
     useEffect(() => {
 
         const params = new URLSearchParams(window.location.search);
@@ -90,22 +104,20 @@ export default function LoginPage() {
         setError("");
         setRecoveryUrl(null);
         setIsSubmitting(true);
+        const isPreviewHost =
+            typeof window !== "undefined" &&
+            window.location.hostname.includes("studioproject1s-projects.vercel.app");
+        const stableLoginUrl = buildStableLoginUrl();
+        if (isPreviewHost && stableLoginUrl) {
+            window.location.href = stableLoginUrl;
+            return;
+        }
         try {
             await signInWithGoogle();
         } catch (err: any) {
             setError(mapAuthError(err));
             if (err?.code === "auth/unauthorized-domain" && stableSiteUrl) {
-                try {
-                    const stableOrigin = new URL(stableSiteUrl).origin;
-                    if (stableOrigin !== window.location.origin) {
-                        const currentPath = window.location.pathname + window.location.search;
-                        const loginUrl = new URL("/login", stableOrigin);
-                        loginUrl.searchParams.set("redirect", currentPath);
-                        setRecoveryUrl(loginUrl.toString());
-                    }
-                } catch {
-                    setRecoveryUrl(null);
-                }
+                setRecoveryUrl(buildStableLoginUrl());
             }
             setIsSubmitting(false);
         }
