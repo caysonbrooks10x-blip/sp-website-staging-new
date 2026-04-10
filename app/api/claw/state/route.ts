@@ -74,6 +74,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     runQuery("claw_scheduled_jobs", accessToken, {
       from: [{ collectionId: "claw_scheduled_jobs" }],
       where: fieldFilter("firebaseUID", "EQUAL", { stringValue: firebaseUID }),
+      orderBy: [
+        orderBy("nextRunAt", "ASCENDING"),
+        orderBy("__name__", "ASCENDING"),
+      ],
       limit: 50,
     }),
     runQuery("jobs", accessToken, {
@@ -87,6 +91,10 @@ export async function GET(request: Request): Promise<NextResponse> {
           ],
         },
       },
+      orderBy: [
+        orderBy("createdAt", "DESCENDING"),
+        orderBy("__name__", "DESCENDING"),
+      ],
       limit: 24,
     }),
   ]);
@@ -215,6 +223,13 @@ function fieldFilter(field: string, op: string, value: FirestoreValue) {
       op,
       value,
     },
+  };
+}
+
+function orderBy(field: string, direction: "ASCENDING" | "DESCENDING") {
+  return {
+    field: { fieldPath: field },
+    direction,
   };
 }
 

@@ -14,7 +14,9 @@ import { storage } from "@/lib/firebaseClient"
 import { useAuth } from "@/context/auth-context"
 import { ASSET_BASE } from "@/lib/assets"
 import { publishCommunityPost } from "@/lib/community-publish"
-import type { CommunityCampaignMeta } from "@/lib/types"
+import type { CommunityCampaignMeta, CommunityPost } from "@/lib/types"
+
+type CommunityAspectRatio = CommunityPost["aspectRatio"]
 
 interface UploadModalProps {
     isOpen: boolean
@@ -31,7 +33,46 @@ interface UploadModalProps {
         campaign?: CommunityCampaignMeta
         generationPlatform?: string
         taskId?: string
+        aspectRatio?: CommunityAspectRatio
     }
+}
+
+function classifyAspectRatio(width: number, height: number): CommunityAspectRatio {
+    if (!width || !height) return "square"
+
+    const ratio = width / height
+    if (Math.abs(ratio - 1) <= 0.05) return "square"
+    return ratio > 1 ? "landscape" : "portrait"
+}
+
+function loadImageAspectRatio(url: string): Promise<CommunityAspectRatio> {
+    return new Promise((resolve, reject) => {
+        const image = new window.Image()
+        image.onload = () => resolve(classifyAspectRatio(image.naturalWidth, image.naturalHeight))
+        image.onerror = () => reject(new Error("Failed to load image dimensions"))
+        image.src = url
+    })
+}
+
+function loadVideoAspectRatio(url: string): Promise<CommunityAspectRatio> {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement("video")
+        video.preload = "metadata"
+        video.onloadedmetadata = () => resolve(classifyAspectRatio(video.videoWidth, video.videoHeight))
+        video.onerror = () => reject(new Error("Failed to load video metadata"))
+        video.src = url
+    })
+}
+
+async function resolveAspectRatioFromSource(
+    url: string,
+    type: "image" | "video"
+): Promise<CommunityAspectRatio> {
+    if (type === "video") {
+        return loadVideoAspectRatio(url).catch(() => "landscape")
+    }
+
+    return loadImageAspectRatio(url).catch(() => "square")
 }
 
 export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) {
@@ -90,6 +131,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
             let downloadUrl = "";
             let uploadType = "image";
             let modelOutput = "External";
+            let resolvedAspectRatio: CommunityAspectRatio = initialData?.aspectRatio || "square";
 
             if (file) {
                 
@@ -97,10 +139,14 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                 const uploadResult = await uploadBytesResumable(fileRef, file);
                 downloadUrl = await getDownloadURL(uploadResult.ref);
                 uploadType = file.type.startsWith('video') ? "video" : "image";
+                resolvedAspectRatio = await resolveAspectRatioFromSource(preview || downloadUrl, uploadType as "image" | "video");
             } else if (initialData) {
                 downloadUrl = initialData.url;
                 uploadType = initialData.type;
                 modelOutput = "StudioX";
+                resolvedAspectRatio =
+                    initialData.aspectRatio ||
+                    await resolveAspectRatioFromSource(initialData.url, initialData.type);
             }
 
             const { postId } = await publishCommunityPost({
@@ -127,6 +173,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                 campaign: initialData?.campaign,
                 generationPlatform: initialData?.generationPlatform,
                 taskId: initialData?.taskId,
+                aspectRatio: resolvedAspectRatio,
             });
 
             console.log("Successfully published external post!", postId);

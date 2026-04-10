@@ -3,7 +3,9 @@
 import { addDoc, collection, serverTimestamp } from "firebase/firestore"
 import { httpsCallable } from "firebase/functions"
 import { db, functions } from "@/lib/firebaseClient"
-import type { CommunityCampaignMeta } from "@/lib/types"
+import type { CommunityCampaignMeta, CommunityPost } from "@/lib/types"
+
+type CommunityAspectRatio = CommunityPost["aspectRatio"]
 
 export interface CommunityPublishInput {
   title: string
@@ -29,12 +31,20 @@ export interface CommunityPublishInput {
   campaign?: CommunityCampaignMeta
   generationPlatform?: string
   taskId?: string
+  aspectRatio?: CommunityAspectRatio
 }
 
-function deriveAspectRatio(type: "image" | "video", creationId?: string | null): "square" | "portrait" | "landscape" {
+function deriveAspectRatio(
+  type: "image" | "video",
+  creationId?: string | null,
+  aspectRatio?: CommunityAspectRatio
+): CommunityAspectRatio {
+  if (aspectRatio) return aspectRatio
   if (type === "video") return "landscape"
-  if (creationId?.includes("9:16")) return "portrait"
-  return "portrait"
+  if (creationId?.includes("1:1")) return "square"
+  if (creationId?.includes("9:16") || creationId?.includes("3:4") || creationId?.includes("4:5")) return "portrait"
+  if (creationId?.includes("16:9") || creationId?.includes("4:3") || creationId?.includes("3:2")) return "landscape"
+  return "square"
 }
 
 function buildPayload(input: CommunityPublishInput) {
@@ -52,7 +62,7 @@ function buildPayload(input: CommunityPublishInput) {
     thumbnailUrl: input.thumbnailUrl,
     allowRemix: input.allowRemix,
     isPublic: input.isPublic ?? true,
-    aspectRatio: deriveAspectRatio(input.type, input.creationId),
+    aspectRatio: deriveAspectRatio(input.type, input.creationId, input.aspectRatio),
     likes: 0,
     views: 0,
     status: "published",
