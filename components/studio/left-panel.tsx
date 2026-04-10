@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +34,8 @@ import {
     type VideoModelConfig,
     type ModelConfig,
 } from "@/lib/model-config";
+import { chooseProvider } from "@/lib/provider-routing";
+import { EXPORT_PACK_PRESETS, normalizeExportPresetIds } from "@/lib/export-pack";
 
 interface StudioLeftPanelProps {
     onGenerate: (prompt: string, settings: any) => void;
@@ -63,6 +65,25 @@ function getConfig(modelId: string): ModelConfig | undefined {
     return IMAGE_MODELS[modelId] || VIDEO_MODELS[modelId];
 }
 
+function estimateModelCost(modelId: string): number {
+    const config = getConfig(modelId);
+    if (config?.type === "image") return config.getCost({ resolution: config.defaultResolution, n: 1 });
+    if (config?.type === "video") {
+        return config.getCost({
+            resolution: config.defaultResolution,
+            duration: config.defaultDuration,
+            generateAudio: false,
+        });
+    }
+    return 0;
+}
+
+function getCostTier(cost: number): "Economy" | "Balanced" | "Premium" {
+    if (cost <= 5) return "Economy";
+    if (cost <= 12) return "Balanced";
+    return "Premium";
+}
+
 export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio }: StudioLeftPanelProps) {
     const searchParams = useSearchParams();
 
@@ -70,8 +91,21 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
     const urlPrompt = searchParams?.get("prompt") || "";
     const urlPreview = searchParams?.get("previewUrl") || "";
     const urlRemixType = searchParams?.get("remixType")?.toLowerCase() || "image";
+    const urlTaskId = searchParams?.get("taskId") || "";
+    const urlGenerationPlatform = searchParams?.get("generationPlatform") || "";
+    const urlCampaignGoal = searchParams?.get("campaignGoal") || "";
+    const urlCampaignPlatform = searchParams?.get("campaignPlatform") || "";
+    const urlCampaignStyle = searchParams?.get("campaignStyle") || "";
+    const urlCampaignVariationCount = searchParams?.get("campaignVariationCount") || "";
+    const urlCampaignBrief = searchParams?.get("campaignBrief") || "";
+    const urlCampaignDirected = searchParams?.get("campaignDirected") || "";
+    const urlCampaignPresetIds = searchParams?.get("campaignPresetIds") || "";
+    const urlAutoExportPack = searchParams?.get("autoExportPack") || "";
 
     const urlCreationId = searchParams?.get("creationId") || "";
+    const urlRootCreationId = searchParams?.get("rootCreationId") || "";
+    const urlRemixDepth = searchParams?.get("remixDepth") || "0";
+    const urlSourcePostId = searchParams?.get("sourcePostId") || "";
     const [creationMode, setCreationMode] = useState<string>(urlMode);
     const [prompt, setPrompt] = useState(() => {
         if (urlPrompt) return urlPrompt;
@@ -80,6 +114,9 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
     });
     const [previewUrl, setPreviewUrl] = useState(urlPreview);
     const [creationId, setCreationId] = useState(urlCreationId);
+    const [rootCreationId, setRootCreationId] = useState(urlRootCreationId);
+    const [remixDepth, setRemixDepth] = useState(() => Number.parseInt(urlRemixDepth, 10) || 0);
+    const [sourcePostId, setSourcePostId] = useState(urlSourcePostId);
     const [remixType, setRemixType] = useState<string>(urlRemixType);
     const [sourceFile, setSourceFile] = useState<File | null>(null);
     const [sourceVideo, setSourceVideo] = useState<File | null>(null);
@@ -108,6 +145,22 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
     const [negativePrompt, setNegativePrompt] = useState<string>("");
     const [videoMode, setVideoMode] = useState<string>("normal");
     const [characterOrientation, setCharacterOrientation] = useState<string>("image");
+    const [directorModeEnabled, setDirectorModeEnabled] = useState<boolean>(() =>
+        urlCampaignDirected === "1" ||
+        Boolean(urlCampaignGoal || urlCampaignPlatform || urlCampaignStyle || urlCampaignVariationCount || urlCampaignBrief || urlCampaignPresetIds)
+    );
+    const [directorGoal, setDirectorGoal] = useState<string>(urlCampaignGoal);
+    const [directorPlatform, setDirectorPlatform] = useState<string>(urlCampaignPlatform || "instagram");
+    const [directorStyle, setDirectorStyle] = useState<string>(urlCampaignStyle || "Cinematic");
+    const [directorBrief, setDirectorBrief] = useState<string>(urlCampaignBrief || "");
+    const [directorVariations, setDirectorVariations] = useState<number>(() => {
+        const parsed = Number.parseInt(urlCampaignVariationCount, 10);
+        return Number.isNaN(parsed) ? 4 : Math.min(8, Math.max(1, parsed));
+    });
+    const [directorPresetIds, setDirectorPresetIds] = useState<string[]>(() =>
+        normalizeExportPresetIds(urlCampaignPresetIds)
+    );
+    const [autoExportPack, setAutoExportPack] = useState<boolean>(urlAutoExportPack === "1");
 
     const [selectedModel, setSelectedModel] = useState(() => {
         if (urlMode === 'video' || (urlMode === 'remix' && urlRemixType === 'video')) return AI_VIDEO_MODELS[0];
@@ -144,6 +197,21 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         if (cId && cId !== creationId) {
             setCreationId(cId);
         }
+        const rootId = searchParams?.get("rootCreationId");
+        if (rootId && rootId !== rootCreationId) {
+            setRootCreationId(rootId);
+        }
+        const remixDepthParam = searchParams?.get("remixDepth");
+        if (remixDepthParam) {
+            const parsed = Number.parseInt(remixDepthParam, 10);
+            if (!Number.isNaN(parsed) && parsed !== remixDepth) {
+                setRemixDepth(parsed);
+            }
+        }
+        const sourcePost = searchParams?.get("sourcePostId");
+        if (sourcePost && sourcePost !== sourcePostId) {
+            setSourcePostId(sourcePost);
+        }
         const ar = searchParams?.get("aspectRatio");
         if (ar && ar !== aspectRatio) {
             setAspectRatio(ar);
@@ -156,6 +224,41 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         const res = searchParams?.get("resolution");
         if (res && res !== resolution) {
             setResolution(res);
+        }
+        const directed = searchParams?.get("campaignDirected");
+        if (directed === "1") {
+            setDirectorModeEnabled(true);
+        }
+        const goal = searchParams?.get("campaignGoal");
+        if (goal !== null) {
+            setDirectorGoal(goal);
+        }
+        const platform = searchParams?.get("campaignPlatform");
+        if (platform !== null && platform.length > 0) {
+            setDirectorPlatform(platform);
+        }
+        const style = searchParams?.get("campaignStyle");
+        if (style !== null && style.length > 0) {
+            setDirectorStyle(style);
+        }
+        const brief = searchParams?.get("campaignBrief");
+        if (brief !== null) {
+            setDirectorBrief(brief);
+        }
+        const variationText = searchParams?.get("campaignVariationCount");
+        if (variationText !== null && variationText.length > 0) {
+            const parsedVariation = Number.parseInt(variationText, 10);
+            if (!Number.isNaN(parsedVariation)) {
+                setDirectorVariations(Math.min(8, Math.max(1, parsedVariation)));
+            }
+        }
+        const presetIds = searchParams?.get("campaignPresetIds");
+        if (presetIds !== null) {
+            setDirectorPresetIds(normalizeExportPresetIds(presetIds));
+        }
+        const autoExportParam = searchParams?.get("autoExportPack");
+        if (autoExportParam !== null) {
+            setAutoExportPack(autoExportParam === "1");
         }
     }, [searchParams]);
 
@@ -213,6 +316,20 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
 
     const handleGenerate = () => {
         let parameters: any = {};
+        const urlPresetIds = normalizeExportPresetIds(urlCampaignPresetIds);
+        const activeDirectorPresets = directorPresetIds.length > 0 ? directorPresetIds : urlPresetIds;
+        const shouldUseDirectorMode =
+            directorModeEnabled ||
+            urlCampaignDirected === "1" ||
+            Boolean(urlCampaignGoal || urlCampaignPlatform || urlCampaignStyle || urlCampaignVariationCount || urlCampaignBrief || activeDirectorPresets.length);
+        const resolvedDirectorGoal = directorGoal || urlCampaignGoal || "";
+        const resolvedDirectorPlatform = directorPlatform || urlCampaignPlatform || "";
+        const resolvedDirectorStyle = directorStyle || urlCampaignStyle || "";
+        const resolvedDirectorBrief = directorBrief || urlCampaignBrief || prompt;
+        const parsedUrlVariations = Number.parseInt(urlCampaignVariationCount, 10);
+        const fallbackVariationCount = Number.isNaN(parsedUrlVariations) ? 4 : parsedUrlVariations;
+        const resolvedDirectorVariations = Math.min(8, Math.max(1, directorVariations || fallbackVariationCount));
+        const resolvedAutoExportPack = autoExportPack || urlAutoExportPack === "1";
 
         if (sourceFile) {
             parameters.sourceFile = sourceFile;
@@ -238,12 +355,18 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             const ic = cfg as ImageModelConfig;
             parameters.prompt = prompt;
             parameters.size = aspectRatio;
-            if (ic.supportsN) parameters.n = imageCount;
+            if (ic.supportsN) {
+                const directorN = Math.min(ic.maxN, resolvedDirectorVariations);
+                parameters.n = shouldUseDirectorMode ? directorN : imageCount;
+            }
             if (ic.supportsResolution) parameters.resolution = resolution;
             if (ic.supportsOutputFormat) parameters.output_format = outputFormat;
         }
         else if (creationMode === "remix") {
-            parameters.n = imageCount;
+            const remixModelConfig = cfg?.type === "image" ? (cfg as ImageModelConfig) : null;
+            const remixMaxN = remixModelConfig?.supportsN ? remixModelConfig.maxN : 8;
+            const remixDirectorN = Math.min(remixMaxN, resolvedDirectorVariations);
+            parameters.n = shouldUseDirectorMode ? remixDirectorN : imageCount;
             parameters.prompt = prompt;
             parameters.image_weight = remixStrength / 100;
             parameters.size = aspectRatio;
@@ -285,6 +408,28 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             mode: creationMode,
             model: selectedModel.id,
             originalCreationId: creationId || undefined,
+            rootCreationId: rootCreationId || creationId || undefined,
+            remixDepth: remixDepth || undefined,
+            sourcePostId: sourcePostId || undefined,
+            originalTaskId: urlTaskId || undefined,
+            provider: urlGenerationPlatform === "apimart" || urlGenerationPlatform === "poyo"
+                ? urlGenerationPlatform
+                : chooseProvider({
+                    mode: creationMode === "remix" ? "remix" : (cfg?.type === "video" ? "video" : "image"),
+                    model: selectedModel.id,
+                    wantsRemix: creationMode === "remix" || Boolean(creationId),
+                    hasReferenceImage: Boolean(sourceFile || startImageFile || previewUrl),
+                }),
+            campaign_brief: shouldUseDirectorMode ? (resolvedDirectorBrief || undefined) : undefined,
+            campaign_directed: shouldUseDirectorMode ? "1" : undefined,
+            campaign_preset_ids: shouldUseDirectorMode && activeDirectorPresets.length > 0
+                ? activeDirectorPresets.join(",")
+                : undefined,
+            auto_export_pack: shouldUseDirectorMode && resolvedAutoExportPack ? "1" : undefined,
+            director_goal: shouldUseDirectorMode ? (resolvedDirectorGoal || undefined) : undefined,
+            director_platform: shouldUseDirectorMode ? (resolvedDirectorPlatform || undefined) : undefined,
+            director_style: shouldUseDirectorMode ? (resolvedDirectorStyle || undefined) : undefined,
+            director_variations: shouldUseDirectorMode ? String(resolvedDirectorVariations) : undefined,
             sourceFile: sourceFile || undefined,
             sourceVideo: sourceVideo || undefined,
             aspectRatio,
@@ -357,6 +502,45 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         return selectedModel.cost || 0;
     })();
 
+    const activeModelPool = useMemo(
+        () => (creationMode === "video" || (creationMode === "remix" && remixType === "video") ? AI_VIDEO_MODELS : AI_IMAGE_MODELS),
+        [creationMode, remixType]
+    );
+
+    const quickModelPicks = useMemo(() => {
+        const weighted = activeModelPool
+            .map((model) => ({ ...model, estimatedCost: estimateModelCost(model.id) }))
+            .sort((a, b) => a.estimatedCost - b.estimatedCost);
+
+        if (weighted.length === 0) return [];
+        const economy = weighted[0];
+        const balanced = weighted[Math.floor(weighted.length / 2)];
+        const premium = weighted[weighted.length - 1];
+
+        const unique = [economy, balanced, premium].filter(
+            (value, index, array) => array.findIndex((entry) => entry.id === value.id) === index
+        );
+
+        return unique.map((item) => ({
+            id: item.id,
+            label: getCostTier(item.estimatedCost),
+            helper: `${item.estimatedCost} cr`,
+            name: item.name,
+        }));
+    }, [activeModelPool]);
+
+    const providerMode = creationMode === "remix"
+        ? "remix"
+        : creationMode === "video" || (creationMode === "templates" && VIDEO_MODELS[selectedModel.id])
+            ? "video"
+            : "image";
+
+    const selectedProvider = chooseProvider({
+        mode: providerMode,
+        model: selectedModel.id,
+        wantsRemix: creationMode === "remix" || Boolean(previewUrl),
+    });
+
     const showImageUpload = isImageMode ? imgCfg!.supportsReferenceImage : (isVideoMode ? vidCfg!.supportsReferenceImage : false);
     const showVideoUpload = isVideoMode && vidCfg?.supportsReferenceVideo;
     const showPrompt = isVideoMode ? vidCfg!.supportsPrompt : true;
@@ -408,6 +592,12 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
 
     const maxN = imgCfg?.maxN || 4;
 
+    useEffect(() => {
+        if (directorVariations > maxN) {
+            setDirectorVariations(maxN);
+        }
+    }, [directorVariations, maxN]);
+
 
     return (
         <div className="w-full h-full flex flex-col bg-white/[0.04] backdrop-blur-[24px] border border-white/[0.08] shadow-[0_20px_60px_rgba(0,0,0,0.7)] rounded-[28px] relative z-20 text-zinc-100 overflow-hidden transition-all duration-500 before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.05] before:to-transparent before:pointer-events-none">
@@ -451,6 +641,32 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 <label className="text-[10px] font-medium text-zinc-500 tracking-[0.2em] uppercase flex items-center gap-2 px-1">
                                     <Settings2 className="w-3.5 h-3.5 text-zinc-600" /> Model Engine
                                 </label>
+
+                                {quickModelPicks.length > 0 && (
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {quickModelPicks.map((pick) => (
+                                            <button
+                                                key={pick.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    const target = activeModelPool.find((model) => model.id === pick.id);
+                                                    if (target) setSelectedModel(target);
+                                                }}
+                                                className={cn(
+                                                    "rounded-xl border px-2.5 py-1.5 text-left transition-all duration-300",
+                                                    selectedModel.id === pick.id
+                                                        ? "border-cyan-300/40 bg-cyan-300/12 text-cyan-100"
+                                                        : "border-white/10 bg-black/25 text-zinc-300 hover:border-white/20 hover:text-white"
+                                                )}
+                                            >
+                                                <p className="text-[10px] font-semibold uppercase tracking-[0.16em]">{pick.label}</p>
+                                                <p className="mt-0.5 truncate text-[11px] text-zinc-300">{pick.name}</p>
+                                                <p className="text-[10px] text-zinc-500">{pick.helper}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
                                 <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen} modal={false}>
                                     <DropdownMenuTrigger asChild>
                                         <div className="w-full h-[54px] px-4.5 bg-black/20 hover:bg-black/40 rounded-[18px] border border-white/5 hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.03)] transition-all duration-500 cursor-pointer flex items-center justify-between group overflow-hidden">
@@ -485,40 +701,68 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             onTouchMove={(e) => e.stopPropagation()}
                                         >
                                             <div className="space-y-0.5">
-                                                {(creationMode === "video" || (creationMode === "remix" && remixType === "video") ? AI_VIDEO_MODELS : AI_IMAGE_MODELS).map((model) => (
-                                                    <DropdownMenuItem
-                                                        key={model.id}
-                                                        onClick={() => setSelectedModel(model)}
-                                                        className="hover:bg-white/[0.05] focus:bg-white/[0.05] cursor-pointer flex items-center justify-between p-3 rounded-xl transition-all group"
-                                                    >
-                                                        <div className="flex items-center gap-2.5">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 group-hover:bg-indigo-400 transition-colors shadow-[0_0_8px_transparent] group-hover:shadow-indigo-500/50" />
-                                                            <span className={cn("text-[13px] font-medium text-zinc-400 group-hover:text-zinc-100 transition-colors")}>{model.name}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {model.cost !== undefined && (
-                                                                <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                                                                    <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-sm">
-                                                                        <Sparkles className="w-2.5 h-2.5 text-white fill-white" />
-                                                                    </div>
-                                                                    <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white tabular-nums tracking-wide">
-                                                                        {(() => {
-                                                                            const mc = getConfig(model.id);
-                                                                            if (mc?.type === "image") return mc.getCost({ resolution: mc.defaultResolution, n: 1 });
-                                                                            if (mc?.type === "video") return mc.getCost({ resolution: mc.defaultResolution, duration: mc.defaultDuration, generateAudio: false });
-                                                                            return model.cost || 0;
-                                                                        })()}
-                                                                    </span>
+                                                {activeModelPool.map((model) => {
+                                                    const estimatedCost = estimateModelCost(model.id);
+                                                    const tier = getCostTier(estimatedCost);
+                                                    const modelProviderMode = creationMode === "remix"
+                                                        ? "remix"
+                                                        : creationMode === "video" || (creationMode === "templates" && VIDEO_MODELS[model.id])
+                                                            ? "video"
+                                                            : "image";
+                                                    const modelProvider = chooseProvider({
+                                                        mode: modelProviderMode,
+                                                        model: model.id,
+                                                        wantsRemix: creationMode === "remix",
+                                                    });
+
+                                                    return (
+                                                        <DropdownMenuItem
+                                                            key={model.id}
+                                                            onClick={() => setSelectedModel(model)}
+                                                            className="hover:bg-white/[0.05] focus:bg-white/[0.05] cursor-pointer flex items-center justify-between p-3 rounded-xl transition-all group"
+                                                        >
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-2.5">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 group-hover:bg-indigo-400 transition-colors shadow-[0_0_8px_transparent] group-hover:shadow-indigo-500/50" />
+                                                                    <span className={cn("text-[13px] font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors truncate")}>{model.name}</span>
                                                                 </div>
-                                                            )}
-                                                            {model.isNew && <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border border-indigo-500/20 shrink-0">New</span>}
-                                                        </div>
-                                                    </DropdownMenuItem>
-                                                ))}
+                                                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                                                    <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-cyan-100">
+                                                                        {modelProvider}
+                                                                    </span>
+                                                                    <span className="rounded-full border border-white/15 bg-white/[0.04] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-zinc-400">
+                                                                        {tier}
+                                                                    </span>
+                                                                    {model.isNew && <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border border-indigo-500/20">New</span>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="ml-2 flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                                                <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-sm">
+                                                                    <Sparkles className="w-2.5 h-2.5 text-white fill-white" />
+                                                                </div>
+                                                                <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white tabular-nums tracking-wide">
+                                                                    {estimatedCost}
+                                                                </span>
+                                                            </div>
+                                                        </DropdownMenuItem>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+
+                                <div className="flex flex-wrap items-center gap-1.5 px-1">
+                                    <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-cyan-100">
+                                        Provider: {selectedProvider}
+                                    </span>
+                                    <span className="rounded-full border border-white/15 bg-white/[0.03] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-zinc-400">
+                                        Tier: {getCostTier(currentCostEstimate)}
+                                    </span>
+                                    <span className="rounded-full border border-white/15 bg-white/[0.03] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-zinc-400">
+                                        Estimated: {currentCostEstimate} credits
+                                    </span>
+                                </div>
                             </div>
                         )}
 
@@ -610,6 +854,115 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 </div>
                             </div>
                         )}
+
+                        {}
+                        <div className="space-y-2.5 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <label className="text-[10px] font-medium text-zinc-500 tracking-[0.2em] uppercase flex items-center gap-2 px-1">
+                                <Sparkles className="w-3.5 h-3.5 text-zinc-600" /> Director Mode
+                            </label>
+                            <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.02] p-4 space-y-4">
+                                <button
+                                    onClick={() => setDirectorModeEnabled((prev) => !prev)}
+                                    className="w-full flex items-center justify-between rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2.5 hover:bg-black/45 transition-colors"
+                                >
+                                    <div className="text-left">
+                                        <p className="text-[12px] font-semibold text-zinc-100">Campaign Director</p>
+                                        <p className="text-[10px] text-zinc-500">Guides generation + export pack strategy</p>
+                                    </div>
+                                    <div className={cn("w-10 h-5.5 rounded-full transition-all duration-300 relative", directorModeEnabled ? "bg-lime-500/80" : "bg-zinc-700")}>
+                                        <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-xl", directorModeEnabled ? "left-[19px]" : "left-[3px]")} />
+                                    </div>
+                                </button>
+
+                                {directorModeEnabled && (
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input
+                                                value={directorGoal}
+                                                onChange={(event) => setDirectorGoal(event.target.value)}
+                                                placeholder="Goal (e.g. launch teaser)"
+                                                className="h-11 rounded-xl border border-white/[0.08] bg-black/30 px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20"
+                                            />
+                                            <input
+                                                value={directorPlatform}
+                                                onChange={(event) => setDirectorPlatform(event.target.value)}
+                                                placeholder="Primary platform"
+                                                className="h-11 rounded-xl border border-white/[0.08] bg-black/30 px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20"
+                                            />
+                                        </div>
+                                        <input
+                                            value={directorStyle}
+                                            onChange={(event) => setDirectorStyle(event.target.value)}
+                                            placeholder="Style direction"
+                                            className="h-11 w-full rounded-xl border border-white/[0.08] bg-black/30 px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20"
+                                        />
+                                        <textarea
+                                            value={directorBrief}
+                                            onChange={(event) => setDirectorBrief(event.target.value)}
+                                            placeholder="Campaign brief (optional)"
+                                            className="min-h-[74px] w-full rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2.5 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20 resize-none"
+                                        />
+
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between text-[10px] text-zinc-500 uppercase tracking-[0.16em]">
+                                                <span>Director Variations</span>
+                                                <span className="text-zinc-300">{directorVariations}</span>
+                                            </div>
+                                            <Slider
+                                                min={1}
+                                                max={8}
+                                                step={1}
+                                                value={[directorVariations]}
+                                                onValueChange={(value) => setDirectorVariations(value[0] || 1)}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] text-zinc-500 uppercase tracking-[0.16em]">Export Presets</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {EXPORT_PACK_PRESETS.map((preset) => {
+                                                    const isActive = directorPresetIds.includes(preset.id)
+                                                    return (
+                                                        <button
+                                                            key={preset.id}
+                                                            onClick={() =>
+                                                                setDirectorPresetIds((prev) =>
+                                                                    prev.includes(preset.id)
+                                                                        ? prev.filter((id) => id !== preset.id)
+                                                                        : [...prev, preset.id]
+                                                                )
+                                                            }
+                                                            className={cn(
+                                                                "rounded-xl border px-2.5 py-2 text-left transition-colors",
+                                                                isActive
+                                                                    ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
+                                                                    : "border-white/[0.08] bg-black/30 text-zinc-300 hover:border-white/[0.16]"
+                                                            )}
+                                                        >
+                                                            <p className="text-[11px] font-semibold leading-tight">{preset.label}</p>
+                                                            <p className="mt-0.5 text-[10px] text-zinc-500">{preset.width}x{preset.height}</p>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setAutoExportPack((prev) => !prev)}
+                                            className="w-full flex items-center justify-between rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2.5 hover:bg-black/45 transition-colors"
+                                        >
+                                            <div className="text-left">
+                                                <p className="text-[12px] font-semibold text-zinc-100">Auto Export Pack</p>
+                                                <p className="text-[10px] text-zinc-500">Open export pack immediately after completion</p>
+                                            </div>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-300 relative", autoExportPack ? "bg-lime-500/80" : "bg-zinc-700")}>
+                                                <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-xl", autoExportPack ? "left-[19px]" : "left-[3px]")} />
+                                            </div>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
                         {}
                         {hasAspectRatio && (
@@ -952,4 +1305,3 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         </div>
     );
 }
-

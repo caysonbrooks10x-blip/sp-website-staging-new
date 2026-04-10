@@ -38,6 +38,9 @@ const Divider = () => (
 export default function LoginPage() {
     const { user, loading, signInWithGoogle, signInWithEmail, signInWithPhone, verifyOtp, setUpRecaptcha } = useAuth();
     const router = useRouter();
+    const canonicalAuthHost =
+        process.env.NEXT_PUBLIC_AUTH_CANONICAL_HOST?.trim() ||
+        "sp-website-staging-new-git-code-e5bebe-studioproject1s-projects.vercel.app";
 
     const [view, setView] = useState<"selection" | "email" | "phone">("selection");
 
@@ -62,10 +65,49 @@ export default function LoginPage() {
     }, []);
 
     useEffect(() => {
+        if (typeof window === "undefined") return;
+        const host = window.location.hostname;
+        const isVercelPreviewHost = host.includes("studioproject1s-projects.vercel.app");
+        if (isVercelPreviewHost && host !== canonicalAuthHost) {
+            const target = new URL(window.location.href);
+            target.hostname = canonicalAuthHost;
+            window.location.replace(target.toString());
+        }
+    }, [canonicalAuthHost]);
+
+    useEffect(() => {
         if (!loading && user) {
             router.push(redirectPath.current);
         }
     }, [user, loading, router]);
+
+    const mapAuthError = (err: any) => {
+        const code = err?.code;
+        if (code === "auth/unauthorized-domain") {
+            return `This site domain is not authorized in Firebase Auth. Add "${window.location.hostname}" in Firebase Console -> Authentication -> Settings -> Authorized domains.`;
+        }
+        if (code === "auth/popup-closed-by-user") {
+            return "Google sign-in popup was closed before completing sign in.";
+        }
+        if (code === "auth/popup-blocked") {
+            return "Popup was blocked by the browser. Please allow popups and try again.";
+        }
+        if (code === "auth/network-request-failed") {
+            return "Network issue detected. Please check your connection and retry.";
+        }
+        return err?.message || "Sign in failed. Please try again.";
+    };
+
+    const handleGoogleSignIn = async () => {
+        setError("");
+        setIsSubmitting(true);
+        try {
+            await signInWithGoogle();
+        } catch (err: any) {
+            setError(mapAuthError(err));
+            setIsSubmitting(false);
+        }
+    };
 
 
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,7 +167,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-start pt-48 pb-12 md:pt-56 md:pb-24 bg-[#050505] px-4 sm:px-6 lg:px-8 relative overflow-x-hidden">
+        <div className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-start overflow-x-hidden overflow-y-auto bg-[#050505] px-4 pt-32 pb-12 sm:px-6 md:pt-36 md:pb-12 lg:px-8 lg:pt-40">
 
             { }
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" />
@@ -138,18 +180,12 @@ export default function LoginPage() {
                 className="w-full max-w-[500px] relative z-10"
             >
                 <div className="text-center mb-8">
-                    <div className="flex flex-col items-center transition-all duration-500 hover:scale-105">
+                    <div className="flex items-center justify-center transition-all duration-500 hover:scale-105">
                         <img
-                            src="/studio_logo.svg"
-                            alt="StudioX Icon"
-                            draggable="false"
-                            className="h-20 md:h-32 w-auto object-contain filter drop-shadow-[0_0_40px_rgba(168,85,247,0.55)] select-none z-10"
-                        />
-                        <img
-                            src="/studio_brandname.svg"
+                            src="/brand/studiox-lockup.png"
                             alt="StudioX"
                             draggable="false"
-                            className="h-10 md:h-16 w-auto object-contain filter drop-shadow-[0_0_30px_rgba(168,85,247,0.4)] select-none -mt-8 md:-mt-20"
+                            className="h-28 md:h-32 w-auto object-contain filter drop-shadow-[0_0_40px_rgba(168,85,247,0.55)] select-none z-10"
                         />
                     </div>
                 </div>
@@ -185,7 +221,8 @@ export default function LoginPage() {
                                     <SocialButton
                                         icon={<svg className="h-5 w-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.17c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.56z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>}
                                         text="Continue with Google"
-                                        onClick={signInWithGoogle}
+                                        onClick={handleGoogleSignIn}
+                                        disabled={isSubmitting}
                                     />
 
                                     <SocialButton
@@ -201,6 +238,12 @@ export default function LoginPage() {
                                         text="Continue with Email"
                                         onClick={() => setView("email")}
                                     />
+
+                                    {error && (
+                                        <div className="pt-2 text-center">
+                                            <p className="text-xs text-red-400 font-medium">{error}</p>
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
 

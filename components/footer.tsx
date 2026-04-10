@@ -20,23 +20,17 @@ export function Footer() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-4">
           { }
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center md:items-start gap-2">
             <Link href="/" className="flex items-center group">
               <img
-                src="/studio_logo.svg"
-                alt="StudioX Icon"
-                draggable="false"
-                className="h-16 md:h-20 w-auto object-contain brightness-0 invert opacity-80 group-hover:opacity-100 transition-all select-none z-10"
-              />
-              <img
-                src="/studio_brandname.svg"
+                src="/brand/studiox-lockup.png"
                 alt="StudioX"
                 draggable="false"
-                className="h-10 md:h-12 w-auto object-contain brightness-0 invert opacity-80 group-hover:opacity-100 transition-all select-none hidden sm:block -ml-4 md:-ml-6"
+                className="h-12 w-auto object-contain opacity-80 group-hover:opacity-100 transition-all select-none z-10"
               />
             </Link>
 
-            <p className="text-[10px] text-muted-foreground hidden sm:block border-l border-white/10 pl-4 ml-2">
+            <p className="text-[10px] text-muted-foreground text-center md:text-left">
               AI tools for modern creators.
             </p>
           </div>

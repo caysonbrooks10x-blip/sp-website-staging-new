@@ -81,7 +81,7 @@ export function CTASection() {
                     </div>
 
                     <p className="text-xl md:text-3xl text-background/80 max-w-2xl mx-auto font-light leading-relaxed px-4">
-                        Join the revolution of AI-assisted artistry. Your first 50 credits are on us.
+                        Join the revolution of AI-assisted artistry. Your first 200 credits are on us.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-12 w-full px-4">

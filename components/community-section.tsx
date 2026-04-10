@@ -71,9 +71,9 @@ export function CommunitySection() {
     }, [])
 
     return (
-        <section ref={sectionRef} className="py-12 md:py-20 bg-background relative z-40 min-h-screen flex flex-col justify-center overflow-hidden border-t border-border/10 will-change-transform">
-            {}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent/10 via-background to-background pointer-events-none" />
+        <section ref={sectionRef} className="py-12 md:py-20 relative z-40 min-h-screen flex flex-col justify-center overflow-hidden border-t border-white/5 will-change-transform" style={{ background: '#05091a' }}>
+            {/* Deep navy radial accent */}
+            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(99,102,241,0.06) 0%, transparent 60%)' }} />
 
             <div ref={contentRef} className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full mb-10">
                 <div className="text-center mb-10 space-y-4">

@@ -58,10 +58,10 @@ export function HeroState({ register }: HeroStateProps) {
         setIsMobile(mobile)
         if (mobile) {
             setPositions({
-                reference: { x: 2, y: 22 },
-                imageGen: { x: 38, y: 2 },
-                videoGen: { x: 38, y: 52 },
-                prompt: { x: 56, y: 32 },
+                reference: { x: 2, y: 15 },
+                imageGen: { x: 34, y: 5 },
+                videoGen: { x: 40, y: 55 },
+                prompt: { x: 72, y: 30 },
             })
         }
     }, [])
@@ -102,10 +102,10 @@ export function HeroState({ register }: HeroStateProps) {
     const resetCards = useCallback(() => {
         const isMobile = window.innerWidth < 768;
         const targets = isMobile ? {
-            reference: { x: 2, y: 22 },
-            imageGen: { x: 38, y: 2 },
-            videoGen: { x: 38, y: 52 },
-            prompt: { x: 56, y: 32 },
+            reference: { x: 2, y: 15 },
+            imageGen: { x: 34, y: 5 },
+            videoGen: { x: 40, y: 55 },
+            prompt: { x: 72, y: 30 },
         } : {
             reference: { x: 2.3, y: 14.8 },
             imageGen: { x: 38.3, y: 2.5 },
@@ -178,8 +178,8 @@ export function HeroState({ register }: HeroStateProps) {
 
         const GAP = 28
         const RADIUS = 140
-        const BASE = 0.04
-        const PEAK = 0.32
+        const BASE = 0.12
+        const PEAK = 0.35
         const DOT_R = 1.0
 
         let mouseX = -9999
@@ -442,7 +442,7 @@ export function HeroState({ register }: HeroStateProps) {
     return (
         <section
             ref={containerRef}
-            className="md:absolute md:inset-0 relative w-full h-auto min-h-[100svh] flex flex-col items-start overflow-hidden pt-36 md:pt-32 pb-16"
+            className="md:absolute md:inset-0 relative w-full h-auto min-h-[100svh] flex flex-col items-start overflow-hidden pt-24 md:pt-28 2xl:pt-40 pb-6 2xl:pb-12"
             style={{
                 background: 'linear-gradient(135deg, #2d3a2e 0%, #4a5d3a 18%, #7a8a5a 35%, #c8b88a 55%, #e8c8a0 70%, #f0b8a0 85%, #e8a8a0 100%)',
             }}
@@ -499,7 +499,7 @@ export function HeroState({ register }: HeroStateProps) {
             <div ref={contentRef} className="relative z-20 w-full max-w-[1100px] mx-auto px-6 sm:px-8 lg:px-12 will-change-transform" style={{ pointerEvents: 'auto' }}>
 
                 {}
-                <div className="mb-10 md:mb-14 flex flex-col items-start text-left">
+                <div className="mb-5 md:mb-4 2xl:mb-10 flex flex-col items-start text-left">
                     <h1
                         ref={headingRef}
                         className="opacity-0 text-[2.8rem] sm:text-5xl md:text-6xl lg:text-[4.5rem] font-semibold tracking-[-0.04em] leading-[1.05] text-[#0a0a0a] mb-4"
@@ -568,7 +568,7 @@ export function HeroState({ register }: HeroStateProps) {
                     {}
                     <div
                         ref={canvasInnerRef}
-                        className="relative min-h-[300px] md:min-h-[540px]"
+                        className="relative min-h-[240px] sm:min-h-[280px] md:min-h-[280px] lg:min-h-[340px] xl:min-h-[360px] 2xl:min-h-[480px]"
                         style={{ marginLeft: isMobile ? '36px' : '48px', cursor: dragging ? 'grabbing' : 'default' }}
                     >
 
@@ -627,7 +627,7 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                             <div
                                 ref={el => { innerCardRefs.current.reference = el }}
-                                className="w-[90px] sm:w-[130px] md:w-[190px] h-[65px] sm:h-[95px] md:h-[138px] rounded-[10px] sm:rounded-[14px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
+                                className="w-[70px] sm:w-[90px] md:w-[145px] xl:w-[165px] 2xl:w-[190px] h-[50px] sm:h-[65px] md:h-[105px] xl:h-[120px] 2xl:h-[138px] rounded-[8px] sm:rounded-[10px] lg:rounded-[14px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
                                 style={{
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
@@ -654,7 +654,7 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                             <div
                                 ref={el => { innerCardRefs.current.imageGen = el }}
-                                className="w-[105px] sm:w-[160px] md:w-[244px] h-[76px] sm:h-[120px] md:h-[190px] rounded-[12px] sm:rounded-[16px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
+                                className="w-[85px] sm:w-[105px] md:w-[145px] xl:w-[165px] 2xl:w-[220px] h-[60px] sm:h-[76px] md:h-[105px] xl:h-[120px] 2xl:h-[160px] rounded-[8px] sm:rounded-[12px] lg:rounded-[16px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
                                 style={{
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     boxShadow: '0 25px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
@@ -681,7 +681,7 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                             <div
                                 ref={el => { innerCardRefs.current.videoGen = el }}
-                                className="w-[105px] sm:w-[160px] md:w-[244px] h-[76px] sm:h-[115px] md:h-[175px] rounded-[12px] sm:rounded-[16px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
+                                className="w-[85px] sm:w-[105px] md:w-[145px] xl:w-[165px] 2xl:w-[220px] h-[60px] sm:h-[76px] md:h-[105px] xl:h-[120px] 2xl:h-[160px] rounded-[8px] sm:rounded-[12px] lg:rounded-[16px] overflow-hidden transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
                                 style={{
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     boxShadow: '0 25px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
@@ -716,14 +716,14 @@ export function HeroState({ register }: HeroStateProps) {
                             </div>
                             <div
                                 ref={el => { innerCardRefs.current.prompt = el }}
-                                className="px-2.5 sm:px-3.5 py-3 sm:py-4 rounded-[10px] sm:rounded-[14px] w-[95px] sm:w-[140px] md:w-[168px] transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
+                                className="px-2 sm:px-2.5 md:px-3 py-2 sm:py-3 md:py-3 rounded-[8px] sm:rounded-[10px] lg:rounded-[14px] w-[75px] sm:w-[95px] md:w-[145px] xl:w-[160px] 2xl:w-[168px] transition-all duration-300 group-hover:-translate-y-[3px] group-hover:scale-[1.01] group-active:scale-[0.98]"
                                 style={{
                                     background: 'rgba(18,18,18,0.95)',
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
                                 }}
                             >
-                                <p className="text-[8px] sm:text-[10px] md:text-[10.5px] leading-[1.35] sm:leading-[1.45] font-light" style={{ color: 'rgba(240,237,232,0.7)' }}>
+                                <p className="text-[7px] sm:text-[8px] md:text-[10.5px] leading-[1.3] sm:leading-[1.35] md:leading-[1.45] font-light" style={{ color: 'rgba(240,237,232,0.7)' }}>
                                     A futuristic black supercar racing through a neon cyberpunk city at night. Cinematic Unreal Engine 5 render.
                                 </p>
                             </div>

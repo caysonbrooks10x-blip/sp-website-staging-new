@@ -2,6 +2,8 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "./firebaseClient";
 import type { User } from "firebase/auth";
 
+export const INITIAL_TOKEN_BALANCE = 200;
+
 export async function createUserDoc(user: User) {
     if (!user || !user.uid) return;
 
@@ -15,7 +17,7 @@ export async function createUserDoc(user: User) {
                 name: user.displayName || user.email?.split('@')[0] || "User",
                 email: user.email || "",
                 avatar: user.photoURL || "",
-                tokenBalance: 0,
+                tokenBalance: INITIAL_TOKEN_BALANCE,
                 createdAt: Date.now()
             });
         }

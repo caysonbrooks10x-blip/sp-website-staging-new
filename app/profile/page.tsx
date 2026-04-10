@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
 import Image from "next/image"
 import { ASSET_BASE } from "@/lib/assets"
+import { listPersistedStudioGenerations } from "@/lib/studio-generations"
 
 
 import { doc, onSnapshot } from "firebase/firestore"
@@ -82,21 +83,54 @@ function ProfileContent() {
     if (!user || activeTab !== "creations") return
 
     let isMounted = true;
+    const uid = user.uid
+    const createdAt = user.metadata.creationTime ? new Date(user.metadata.creationTime).getTime() : null
+    const isFreshAccount = createdAt ? Date.now() - createdAt < 10 * 60 * 1000 : false
+    const hasLocalHistory =
+      typeof window !== "undefined" && Boolean(window.localStorage.getItem("studio_generations_history"))
+
     async function loadCreations() {
       setLoadingCreations(true)
+      if (isFreshAccount && !hasLocalHistory) {
+        setCreations([])
+        setLoadingCreations(false)
+        return
+      }
+
       try {
         const getUserCreations = httpsCallable(functions, "getUserCreations")
-        const result = await getUserCreations()
-        if (isMounted) {
-          const data = result.data as any
-          console.log("CREATIONS RESPONSE:", data)
+        const [remoteResult, persistedResult] = await Promise.allSettled([
+          getUserCreations(),
+          listPersistedStudioGenerations(uid),
+        ])
 
-          if (Array.isArray(data)) {
-            setCreations(data)
-          } else {
-            setCreations(data.creations || [])
+        if (!isMounted) return
+
+        const merged = new Map<string, any>()
+
+        if (remoteResult.status === "fulfilled") {
+          const data = remoteResult.value.data as any
+          const creationsList = Array.isArray(data) ? data : data.creations || []
+          for (const creation of creationsList) {
+            merged.set(creation.id, creation)
           }
+        } else {
+          console.warn("Callable getUserCreations failed, showing persisted generations only.", remoteResult.reason)
         }
+
+        if (persistedResult.status === "fulfilled") {
+          for (const creation of persistedResult.value) {
+            merged.set(String(creation.id), {
+              ...creation,
+              id: creation.id,
+              _localPersisted: true,
+            })
+          }
+        } else {
+          console.warn("Persisted generations query failed.", persistedResult.reason)
+        }
+
+        setCreations(Array.from(merged.values()))
       } catch (err) {
         console.error("Failed to fetch user creations:", err)
       } finally {

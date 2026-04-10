@@ -66,7 +66,31 @@ const nextConfig: NextConfig = {
         hostname: "pub-68982972900648a6b75dcc11da69a242.r2.dev",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "upload.apimart.ai",
+        pathname: "/**",
+      },
+
+      {
+        protocol: "https",
+        hostname: "cdn.apimart.ai",
+        pathname: "/**",
+      },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
+          },
+        ],
+      },
+    ];
   },
 };
 

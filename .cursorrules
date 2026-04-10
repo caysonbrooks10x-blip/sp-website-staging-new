@@ -1,0 +1,144 @@
+# StudioX Claw — .cursorrules
+# Stack: Next.js 16 App Router + TypeScript 5 (existing) + Node.js 20 Gateway (new)
+
+## IDENTITY AND SCOPE
+
+You are working on StudioX Claw. Two distinct parts:
+1. Existing Next.js 16 app (repo root) — DO NOT refactor or reorganize existing code
+2. New Claw Gateway at /claw-gateway/ — Node.js 20 TypeScript service
+
+Never mix: no Next.js imports in Gateway, no Gateway imports in Next.js.
+When in /claw-gateway/: write Node.js code. When in /app/ or /components/: write Next.js.
+
+## TYPESCRIPT RULES
+
+- TypeScript strict mode is mandatory everywhere. Zero `any` types.
+- Use `unknown` with type guards, or define proper interfaces.
+- In /claw-gateway/ with NodeNext module resolution: all local imports must include .js extension.
+  Correct:   import { ClawMessage } from './types/index.js'
+  Incorrect: import { ClawMessage } from './types/index'
+- All async functions must have typed return values (Promise<SpecificType>, not Promise<any>).
+- Zod for all runtime validation of external input.
+
+## NEXT.JS APP ROUTER RULES
+
+- Server Components are the default. Add 'use client' only when interactivity requires it.
+- Route handlers in app/api/ use the Web API Request/Response pattern (not Express).
+- Never import firebase-admin in client components. Admin SDK is server-only.
+- For auth in API routes: verify Firebase ID token server-side using Admin SDK.
+- All new Claw pages: app/claw/. All new Claw API routes: app/api/claw/.
+- New Claw UI components: components/claw/. Do not add to components/studio/.
+
+## GATEWAY (NODE.JS) RULES
+
+- Long-running process. In-memory state is valid (session store, connection maps).
+- All channels extend BaseChannel from channels/base.ts.
+- GatewayServer.routeMessage() is the SINGLE entry point for all channels.
+- Channel adapters: protocol handling + immediate ack only. Business logic in agent/core.ts.
+- Firebase Admin: initialized once in firebase-admin.ts, never re-initialized.
+
+## TELEGRAM (grammY)
+
+- Respond to webhooks within 3 seconds. Send "Got it! Generating..." immediately.
+- Deliver generation results as separate messages via bot.api (not as replies to webhook).
+- Use sendChatAction('upload_video' or 'upload_photo') while jobs are pending.
+- Command handlers in commands.ts. Keyboard builders in keyboards.ts.
+- Callback query data format: "action:jobId:userId" — validate userId match before processing.
+- Unsubscribe Firestore listeners after 10 minutes.
+
+## DISCORD (discord.js v14)
+
+- Always call interaction.deferReply() before any async operation.
+- Use interaction.editReply() for the final result, not followUp().
+- EmbedBuilder for all rich responses. Never send raw text for generation results.
+- ActionRowBuilder + ButtonBuilder for post-generation actions.
+- Validate ButtonInteraction.user.id === original command user before processing.
+- Slash commands defined in commands/index.ts. Register via register-commands.ts (not at startup).
+
+## WEB CHAT (WebSocket)
+
+- First message from client must be auth. Close 4001 if not.
+- All WebSocket messages are JSON. No raw strings.
+- Keepalive: ping every 30 seconds. Close if no pong within 10 seconds.
+- Use Firebase Admin auth.verifyIdToken() — never trust client-provided UID.
+
+## SKILL SYSTEM RULES
+
+- Every skill is a SKILL.md file with YAML frontmatter parsed by gray-matter.
+- Required fields: name, description, version, author, triggers[], args[], cost_estimate, channels[], agent.
+- Skills are DATA — never eval() or Function() skill content.
+- SkillExecutor reads credit balance LIVE from Firestore before every execution. No exceptions.
+- Credit check is mandatory for every skill. No bypasses, not even in admin/test paths.
+- SkillRegistry.findByTrigger() uses longest-match against triggers array.
+
+## MEMORY SYSTEM RULES
+
+- UserMemory stored in Firestore at claw_memory/{firebaseUID}.
+- SessionContext is in-memory only (Map, TTL 30 minutes).
+- injectMemoryIntoPrompt() enriches prompts before every generation.
+- New users get default values — never throw or return null for first-time users.
+- SOUL.md and IDENTITY.md read at Gateway startup. Not user-editable.
+
+## PAIRING SYSTEM RULES
+
+- Codes: crypto.randomInt(100000, 999999). Never Math.random().
+- Codes expire in 10 minutes. Single-use only.
+- approvePairing() throws typed PairingError: 'not_found' | 'expired' | 'already_used'.
+- LinkResolver called on EVERY inbound message. If null for DM: prompt to pair.
+- Never expose Firebase UIDs in channel messages.
+- Return 401 (not 403) for unauthenticated requests to Claw API routes.
+
+## CREDIT SYSTEM RULES
+
+- Source of truth: Firestore users/{uid}.tokenBalance
+- Pattern: read balance → compare cost → if ok: proceed + deduct → else: return error
+- Every channel response must include: "X credits used | Balance: Y credits"
+- Credit low alert: 500cr threshold, max once per 24h per user.
+- Never mock credit balances in production code paths.
+
+## SCHEDULER RULES
+
+- Three formats: { at: ISO }, { every: "2h" }, { cron: "0 9 * * MON", timezone }
+- Validate timezone with Intl.supportedValuesOf('timeZone').
+- Persist all jobs in Firestore. rehydrateJobs() on Gateway restart.
+- Failed jobs: retry 3x at 5-min intervals, then permanently_failed + notify.
+- Heartbeat tasks catch own errors. Never crash the Gateway.
+
+## SECURITY RULES
+
+- Never log: bot tokens, Firebase private keys, credit balances, Firebase UIDs.
+- All user input validated with Zod before use.
+- WhatsApp Baileys: mark all code with comments noting unofficial API.
+- OWASP: parameterize all Firestore queries, validate all inputs.
+
+## ANTI-PATTERNS — NEVER DO THESE
+
+- Never cross-import between Next.js app and claw-gateway
+- Never Math.random() for security-sensitive randomness
+- Never eval() or new Function() with skill content
+- Never await long operations before sending channel ack
+- Never skip the credit check for any generation
+- Never add Claw features to existing studio components
+- Never use polling for Telegram (webhook only in production)
+- Never call interaction.reply() after deferReply() — use editReply()
+
+## FILE NAMING
+
+- Gateway source: camelCase.ts (connectionManager.ts)
+- Gateway skills: kebab-case.md (image-gen.md, template-fire-lava.md)
+- Next.js components: PascalCase.tsx (SkillCard.tsx, WebChatWidget.tsx)
+- Identity files: UPPERCASE.md (SOUL.md, IDENTITY.md, MEMORY.md)
+- Test files: kebab-case.test.ts (message-routing.test.ts)
+
+## COMMIT FORMAT
+
+claw(scope): description
+
+Scopes: gateway, telegram, discord, slack, whatsapp, web-chat, skills,
+        memory, scheduler, pairing, marketplace, tests
+
+Examples:
+  claw(telegram): add async video delivery with Firestore onSnapshot
+  claw(skills): implement smart-model-picker credit optimization
+  claw(pairing): enforce 10-minute code expiry with crypto.randomInt
+  claw(web-chat): add WebSocket keepalive ping/pong

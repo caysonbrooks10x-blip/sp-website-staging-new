@@ -11,6 +11,7 @@ export const marketplaceApps: App[] = [
         creditCost: 5,
         isNew: true,
         type: "video",
+        videoScale: 1.16,
         prompt: "air bending - environment trees bend violently dust and debris spiral outward in a perfect circular vortex, clothes and hair whip back with hurricane force. The air itself distorts like heat haze on steroids IMAX-level cinematography"
     },
     {

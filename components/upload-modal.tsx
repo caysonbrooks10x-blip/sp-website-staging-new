@@ -10,11 +10,13 @@ import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
-import { storage, db, functions } from "@/lib/firebaseClient"
+import { storage } from "@/lib/firebaseClient"
 import { useAuth } from "@/context/auth-context"
-import { httpsCallable } from "firebase/functions"
 import { ASSET_BASE } from "@/lib/assets"
+import { publishCommunityPost } from "@/lib/community-publish"
+import type { CommunityCampaignMeta, CommunityPost } from "@/lib/types"
+
+type CommunityAspectRatio = CommunityPost["aspectRatio"]
 
 interface UploadModalProps {
     isOpen: boolean
@@ -24,7 +26,53 @@ interface UploadModalProps {
         type: "image" | "video"
         prompt?: string
         creationId?: string
+        parentCreationId?: string
+        rootCreationId?: string
+        remixDepth?: number
+        sourcePostId?: string
+        campaign?: CommunityCampaignMeta
+        generationPlatform?: string
+        taskId?: string
+        aspectRatio?: CommunityAspectRatio
     }
+}
+
+function classifyAspectRatio(width: number, height: number): CommunityAspectRatio {
+    if (!width || !height) return "square"
+
+    const ratio = width / height
+    if (Math.abs(ratio - 1) <= 0.05) return "square"
+    return ratio > 1 ? "landscape" : "portrait"
+}
+
+function loadImageAspectRatio(url: string): Promise<CommunityAspectRatio> {
+    return new Promise((resolve, reject) => {
+        const image = new window.Image()
+        image.onload = () => resolve(classifyAspectRatio(image.naturalWidth, image.naturalHeight))
+        image.onerror = () => reject(new Error("Failed to load image dimensions"))
+        image.src = url
+    })
+}
+
+function loadVideoAspectRatio(url: string): Promise<CommunityAspectRatio> {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement("video")
+        video.preload = "metadata"
+        video.onloadedmetadata = () => resolve(classifyAspectRatio(video.videoWidth, video.videoHeight))
+        video.onerror = () => reject(new Error("Failed to load video metadata"))
+        video.src = url
+    })
+}
+
+async function resolveAspectRatioFromSource(
+    url: string,
+    type: "image" | "video"
+): Promise<CommunityAspectRatio> {
+    if (type === "video") {
+        return loadVideoAspectRatio(url).catch(() => "landscape")
+    }
+
+    return loadImageAspectRatio(url).catch(() => "square")
 }
 
 export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) {
@@ -83,6 +131,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
             let downloadUrl = "";
             let uploadType = "image";
             let modelOutput = "External";
+            let resolvedAspectRatio: CommunityAspectRatio = initialData?.aspectRatio || "square";
 
             if (file) {
                 
@@ -90,20 +139,22 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                 const uploadResult = await uploadBytesResumable(fileRef, file);
                 downloadUrl = await getDownloadURL(uploadResult.ref);
                 uploadType = file.type.startsWith('video') ? "video" : "image";
+                resolvedAspectRatio = await resolveAspectRatioFromSource(preview || downloadUrl, uploadType as "image" | "video");
             } else if (initialData) {
                 downloadUrl = initialData.url;
                 uploadType = initialData.type;
                 modelOutput = "StudioX";
+                resolvedAspectRatio =
+                    initialData.aspectRatio ||
+                    await resolveAspectRatioFromSource(initialData.url, initialData.type);
             }
 
-            
-            const publishPost = httpsCallable(functions, "publishPost");
-            await publishPost({
+            const { postId } = await publishCommunityPost({
                 title: title || "StudioX Upload",
                 prompt: description || "No description provided.",
                 caption: description || "",
                 model: modelOutput,
-                type: uploadType,
+                type: uploadType as "image" | "video",
                 creationId: initialData?.creationId || null,
                 author: {
                     name: user.displayName || user.email?.split('@')[0] || "Creator",
@@ -112,19 +163,27 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                 },
                 tags: isPublic ? ["community", "upload"] : ["private", "upload"],
                 assetUrl: downloadUrl,
-                thumbnailUrl: downloadUrl, 
+                thumbnailUrl: downloadUrl,
                 allowRemix,
-                isPublic
+                isPublic,
+                parentCreationId: initialData?.parentCreationId,
+                rootCreationId: initialData?.rootCreationId,
+                remixDepth: initialData?.remixDepth,
+                sourcePostId: initialData?.sourcePostId,
+                campaign: initialData?.campaign,
+                generationPlatform: initialData?.generationPlatform,
+                taskId: initialData?.taskId,
+                aspectRatio: resolvedAspectRatio,
             });
 
-            console.log("Successfully published external post!");
+            console.log("Successfully published external post!", postId);
             onClose();
             setFile(null);
             setPreview(null);
             setTitle("");
             setDescription("");
 
-            router.push("/community");
+            router.push(postId ? `/community/${postId}` : "/community");
             router.refresh();
         } catch (error: any) {
             console.error("Upload failed:", error);

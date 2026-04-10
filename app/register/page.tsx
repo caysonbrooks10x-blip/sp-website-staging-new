@@ -34,10 +34,10 @@ export default function RegisterPage() {
     useEffect(() => {
         
         
-        if (!loading && user) {
+        if (!isSubmitting && !isVerificationSent && !loading && user) {
             router.push(redirectPath.current || "/onboarding");
         }
-    }, [user, loading, router]);
+    }, [user, loading, router, isVerificationSent, isSubmitting]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
