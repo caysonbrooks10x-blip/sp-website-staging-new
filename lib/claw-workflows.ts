@@ -1,3 +1,5 @@
+import { buildTelegramBotStartUrl } from "@/lib/claw-urls"
+
 export type ClawWorkflowSection = "core" | "commerce" | "motion"
 export type ClawWorkflowProvider = "apimart" | "poyo"
 export type ClawWorkflowMode = "image" | "video" | "remix"
@@ -439,7 +441,7 @@ export function buildClawWorkflowTelegramHref(workflow: ClawWorkflowDefinition) 
             ? "video"
             : `commerce_${botWorkflowId}`
 
-  return `https://t.me/StudioXCbot?start=${encodeURIComponent(startParam)}`
+  return buildTelegramBotStartUrl(startParam)
 }
 
 export function buildClawWorkflowTelegramCommand(workflow: ClawWorkflowDefinition) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useClawLink } from "@/hooks/use-claw-link";
@@ -17,6 +17,7 @@ import {
   clawPageBgClass,
 } from "@/components/claw/claw-primitives";
 import { ClawSubNav } from "@/components/claw/claw-subnav";
+import { buildTelegramBotStartUrl, getTelegramBotUsername } from "@/lib/claw-urls";
 
 export default function ClawPairPage() {
   return (
@@ -37,7 +38,8 @@ function PairContent() {
   const [step, setStep] = useState<Step>("enter");
   const [errorMsg, setErrorMsg] = useState("");
   const [channelInfo, setChannelInfo] = useState<{ channelType: string; channelUserId: string } | null>(null);
-  const telegramBotUrl = useMemo(() => "https://t.me/StudioXCbot?start=pair", []);
+  const telegramBotUrl = buildTelegramBotStartUrl("pair");
+  const telegramBotUsername = getTelegramBotUsername();
 
   useEffect(() => {
     if (!linkLoading && isLinked && step === "enter" && !code) {
@@ -112,7 +114,7 @@ function PairContent() {
             <div className="space-y-6">
               <div className="relative space-y-0">
                 {[
-                  { num: "1", text: "Open @StudioXCbot in Telegram" },
+                  { num: "1", text: `Open ${telegramBotUsername} in Telegram` },
                   { num: "2", text: "Send /pair to get a 6-digit code" },
                   { num: "3", text: "Enter the code below" },
                 ].map((item, i) => (

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTelegramBotUrl } from "@/lib/claw-urls";
 
 export const runtime = "nodejs";
 
@@ -158,7 +159,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     channelType,
     channelUserId,
     chatId,
-    telegramUrl: channelType === "telegram" ? "https://t.me/StudioXCbot" : undefined,
+    telegramUrl: channelType === "telegram" ? getTelegramBotUrl() : undefined,
     message: "Account linked successfully",
   });
 }

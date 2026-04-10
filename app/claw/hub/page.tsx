@@ -37,6 +37,7 @@ import {
   type ClawWorkflowDefinition,
   type ClawWorkflowSection,
 } from "@/lib/claw-workflows";
+import { buildTelegramBotStartUrl, getTelegramBotUrl, getTelegramBotUsername } from "@/lib/claw-urls";
 import {
   ClawBackdropHub,
   clawCardClass,
@@ -117,6 +118,8 @@ const statusTone = (status: string) => {
 export default function ClawHubPage() {
   const { user } = useAuth();
   const { link, isLinked, loading: linkLoading } = useClawLink();
+  const telegramBotUrl = getTelegramBotUrl();
+  const telegramBotUsername = getTelegramBotUsername();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const [libraryView, setLibraryView] = useState<LibraryView>("sections");
@@ -261,7 +264,7 @@ export default function ClawHubPage() {
                 asChild
                 className="h-11 rounded-xl border border-teal-400/30 bg-gradient-to-b from-teal-400 to-teal-600 px-6 text-sm font-semibold text-teal-950 shadow-lg shadow-teal-950/20 transition duration-300 hover:brightness-110"
               >
-                <a href="https://t.me/StudioXCbot" target="_blank" rel="noreferrer">
+                <a href={telegramBotUrl} target="_blank" rel="noreferrer">
                   <Bot className="mr-2 h-4 w-4" />
                   Telegram Bot
                 </a>
@@ -307,10 +310,10 @@ export default function ClawHubPage() {
         {/* ── Quick Actions → Telegram Bot ── */}
         <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: "🖼️", label: "Image Gen", desc: "Generate any image from text", href: "https://t.me/StudioXCbot?start=image", action: "/image [prompt]" },
-            { icon: "🎬", label: "Video Gen", desc: "Create cinematic AI videos", href: "https://t.me/StudioXCbot?start=video", action: "/video [prompt]" },
-            { icon: "⏱️", label: "Schedule", desc: "Automate recurring jobs", href: "https://t.me/StudioXCbot?start=schedule", action: "/schedule every 1h ..." },
-            { icon: "💰", label: "Credits", desc: `${creditBalance > 0 ? creditBalance + " available" : "Check balance"}`, href: "https://t.me/StudioXCbot?start=credits", action: "/credits" },
+            { icon: "🖼️", label: "Image Gen", desc: "Generate any image from text", href: buildTelegramBotStartUrl("image"), action: "/image [prompt]" },
+            { icon: "🎬", label: "Video Gen", desc: "Create cinematic AI videos", href: buildTelegramBotStartUrl("video"), action: "/video [prompt]" },
+            { icon: "⏱️", label: "Schedule", desc: "Automate recurring jobs", href: buildTelegramBotStartUrl("schedule"), action: "/schedule every 1h ..." },
+            { icon: "💰", label: "Credits", desc: `${creditBalance > 0 ? creditBalance + " available" : "Check balance"}`, href: buildTelegramBotStartUrl("credits"), action: "/credits" },
           ].map((item) => (
             <a
               key={item.label}
@@ -385,7 +388,7 @@ export default function ClawHubPage() {
                     <Bot className="h-[18px] w-[18px]" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-white">@StudioXCbot</p>
+                    <p className="text-sm font-semibold text-white">{telegramBotUsername}</p>
                     <p className="text-xs text-zinc-500">
                       {isLinked ? "Linked" : "Not linked"} · Telegram
                     </p>
@@ -407,7 +410,7 @@ export default function ClawHubPage() {
                   asChild
                   className="h-10 flex-1 rounded-xl border border-teal-400/25 bg-gradient-to-b from-teal-400 to-teal-600 text-xs font-semibold text-teal-950 shadow-md transition duration-300 hover:brightness-110"
                 >
-                  <a href="https://t.me/StudioXCbot" target="_blank" rel="noreferrer">
+                  <a href={telegramBotUrl} target="_blank" rel="noreferrer">
                     Open bot
                   </a>
                 </Button>
