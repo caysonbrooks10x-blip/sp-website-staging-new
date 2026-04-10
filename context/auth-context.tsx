@@ -4,8 +4,9 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import {
     User,
     onAuthStateChanged,
-    getRedirectResult,
+    signInWithPopup,
     signInWithRedirect,
+    getRedirectResult,
     GoogleAuthProvider,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -78,46 +79,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        let isMounted = true;
-        let unsubscribe = () => { };
-
-        const initializeAuth = async () => {
-            try {
-                await getRedirectResult(auth);
-            } catch (error) {
-                console.error("Error completing redirect sign in", error);
+        // Register onAuthStateChanged FIRST so we never miss a state change.
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            setUser(currentUser);
+            if (currentUser) {
+                await createUserDoc(currentUser);
+                fetchCredits(currentUser.uid);
+            } else {
+                setCredits(null);
             }
+            setLoading(false);
+        });
 
-            if (!isMounted) return;
+        // Handle any pending redirect result (e.g., from a previous signInWithRedirect call).
+        // Errors are intentionally ignored here — onAuthStateChanged is already the source of truth.
+        getRedirectResult(auth).catch((error) => {
+            console.error("Pending redirect sign-in error:", error?.code, error?.message);
+        });
 
-            unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-                setUser(currentUser);
-                if (currentUser) {
-                    await createUserDoc(currentUser);
-                    fetchCredits(currentUser.uid);
-                } else {
-                    setCredits(null);
-                }
-                setLoading(false);
-            });
-        };
-
-        initializeAuth();
-
-        return () => {
-            isMounted = false;
-            unsubscribe();
-        };
+        return () => unsubscribe();
     }, []);
 
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: "select_account" });
         try {
-            await signInWithRedirect(auth, provider);
-        } catch (error: any) {
-            console.error("Error signing in with Google", error);
-            throw error;
+            // Popup is preferred — works synchronously, no cross-page storage issues.
+            // COOP header (same-origin-allow-popups) is set in next.config.ts to allow this.
+            await signInWithPopup(auth, provider);
+        } catch (popupError: any) {
+            const code = popupError?.code;
+            // If popup was blocked or closed, fall back to redirect flow.
+            if (
+                code === "auth/popup-blocked" ||
+                code === "auth/popup-closed-by-user" ||
+                code === "auth/cancelled-popup-request"
+            ) {
+                await signInWithRedirect(auth, provider);
+                return;
+            }
+            throw popupError;
         }
     };
 
