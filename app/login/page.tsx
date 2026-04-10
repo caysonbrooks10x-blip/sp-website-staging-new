@@ -38,7 +38,7 @@ const Divider = () => (
 export default function LoginPage() {
     const { user, loading, signInWithGoogle, signInWithEmail, signInWithPhone, verifyOtp, setUpRecaptcha } = useAuth();
     const router = useRouter();
-    const stableSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "";
+    const stableSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://studiox-v1.vercel.app";
 
     const [view, setView] = useState<"selection" | "email" | "phone">("selection");
 
