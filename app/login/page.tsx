@@ -38,6 +38,7 @@ const Divider = () => (
 export default function LoginPage() {
     const { user, loading, signInWithGoogle, signInWithEmail, signInWithPhone, verifyOtp, setUpRecaptcha } = useAuth();
     const router = useRouter();
+    const stableSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "";
 
     const [view, setView] = useState<"selection" | "email" | "phone">("selection");
 
@@ -51,6 +52,7 @@ export default function LoginPage() {
     const [phoneStep, setPhoneStep] = useState<"phone" | "code">("phone");
 
     const [error, setError] = useState("");
+    const [recoveryUrl, setRecoveryUrl] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const redirectPath = useRef("/");
@@ -86,11 +88,25 @@ export default function LoginPage() {
 
     const handleGoogleSignIn = async () => {
         setError("");
+        setRecoveryUrl(null);
         setIsSubmitting(true);
         try {
             await signInWithGoogle();
         } catch (err: any) {
             setError(mapAuthError(err));
+            if (err?.code === "auth/unauthorized-domain" && stableSiteUrl) {
+                try {
+                    const stableOrigin = new URL(stableSiteUrl).origin;
+                    if (stableOrigin !== window.location.origin) {
+                        const currentPath = window.location.pathname + window.location.search;
+                        const loginUrl = new URL("/login", stableOrigin);
+                        loginUrl.searchParams.set("redirect", currentPath);
+                        setRecoveryUrl(loginUrl.toString());
+                    }
+                } catch {
+                    setRecoveryUrl(null);
+                }
+            }
             setIsSubmitting(false);
         }
     };
@@ -225,7 +241,21 @@ export default function LoginPage() {
                                         onClick={() => setView("email")}
                                     />
 
-                                    {error && <p className="text-xs text-red-400 text-center pt-2 font-medium">{error}</p>}
+                                    {error && (
+                                        <div className="pt-2 text-center">
+                                            <p className="text-xs text-red-400 font-medium">{error}</p>
+                                            {recoveryUrl && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => window.location.href = recoveryUrl}
+                                                    className="mt-3 h-9 rounded-lg border-white/15 bg-black/30 text-xs text-white hover:bg-black/50"
+                                                >
+                                                    Open Stable Login
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
 
