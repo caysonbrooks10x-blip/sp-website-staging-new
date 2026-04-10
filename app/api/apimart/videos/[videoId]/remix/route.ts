@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { ApiMartRequestError, remixApiMartVideo } from "@/lib/apimart"
 
-export const runtime = "edge"
+export const runtime = "nodejs"
 
 export async function POST(request: Request, context: { params: Promise<{ videoId: string }> }) {
   try {

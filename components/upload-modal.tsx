@@ -10,19 +10,11 @@ import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"
-<<<<<<< HEAD
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
-import { storage, db, functions } from "@/lib/firebaseClient"
-import { useAuth } from "@/context/auth-context"
-import { httpsCallable } from "firebase/functions"
-import { ASSET_BASE } from "@/lib/assets"
-=======
 import { storage } from "@/lib/firebaseClient"
 import { useAuth } from "@/context/auth-context"
 import { ASSET_BASE } from "@/lib/assets"
 import { publishCommunityPost } from "@/lib/community-publish"
 import type { CommunityCampaignMeta } from "@/lib/types"
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
 interface UploadModalProps {
     isOpen: boolean
@@ -32,8 +24,6 @@ interface UploadModalProps {
         type: "image" | "video"
         prompt?: string
         creationId?: string
-<<<<<<< HEAD
-=======
         parentCreationId?: string
         rootCreationId?: string
         remixDepth?: number
@@ -41,7 +31,6 @@ interface UploadModalProps {
         campaign?: CommunityCampaignMeta
         generationPlatform?: string
         taskId?: string
->>>>>>> 6369408 (feat: initial frontend + fixes)
     }
 }
 
@@ -114,22 +103,12 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                 modelOutput = "StudioX";
             }
 
-<<<<<<< HEAD
-            
-            const publishPost = httpsCallable(functions, "publishPost");
-            await publishPost({
-=======
             const { postId } = await publishCommunityPost({
->>>>>>> 6369408 (feat: initial frontend + fixes)
                 title: title || "StudioX Upload",
                 prompt: description || "No description provided.",
                 caption: description || "",
                 model: modelOutput,
-<<<<<<< HEAD
-                type: uploadType,
-=======
                 type: uploadType as "image" | "video",
->>>>>>> 6369408 (feat: initial frontend + fixes)
                 creationId: initialData?.creationId || null,
                 author: {
                     name: user.displayName || user.email?.split('@')[0] || "Creator",
@@ -138,14 +117,6 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                 },
                 tags: isPublic ? ["community", "upload"] : ["private", "upload"],
                 assetUrl: downloadUrl,
-<<<<<<< HEAD
-                thumbnailUrl: downloadUrl, 
-                allowRemix,
-                isPublic
-            });
-
-            console.log("Successfully published external post!");
-=======
                 thumbnailUrl: downloadUrl,
                 allowRemix,
                 isPublic,
@@ -159,18 +130,13 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
             });
 
             console.log("Successfully published external post!", postId);
->>>>>>> 6369408 (feat: initial frontend + fixes)
             onClose();
             setFile(null);
             setPreview(null);
             setTitle("");
             setDescription("");
 
-<<<<<<< HEAD
-            router.push("/community");
-=======
             router.push(postId ? `/community/${postId}` : "/community");
->>>>>>> 6369408 (feat: initial frontend + fixes)
             router.refresh();
         } catch (error: any) {
             console.error("Upload failed:", error);

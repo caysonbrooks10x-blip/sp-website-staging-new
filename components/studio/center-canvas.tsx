@@ -2,20 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-<<<<<<< HEAD
-import { Download, Loader2, Maximize2, Share, Sparkles, Wand2, Settings2 } from "lucide-react";
-=======
 import { Bot, Download, Loader2, Maximize2, Package, Share, Sparkles, Wand2, Settings2 } from "lucide-react";
->>>>>>> 6369408 (feat: initial frontend + fixes)
 import { cn } from "@/lib/utils";
 import { UploadModal } from "@/components/upload-modal";
 import { MediaRenderer } from "@/components/media-renderer";
 import { ASSET_BASE } from "@/lib/assets";
-<<<<<<< HEAD
-=======
 import { buildExportPackHref, normalizeExportPresetIds } from "@/lib/export-pack";
 import type { CommunityCampaignMeta } from "@/lib/types";
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
 export interface GenerationItem {
     id: string;
@@ -24,12 +17,9 @@ export interface GenerationItem {
     srcs?: string[];
     creationId?: string;
     creationIds?: string[];
-<<<<<<< HEAD
-=======
     taskId?: string;
     generationPlatform?: "poyo" | "apimart" | string;
     thumbnailUrl?: string;
->>>>>>> 6369408 (feat: initial frontend + fixes)
     prompt: string;
     model?: string;
     status: "queued" | "generating" | "completed" | "failed";
@@ -50,11 +40,6 @@ interface StudioCenterCanvasProps {
 
 export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspectRatio, onOpenPanel }: StudioCenterCanvasProps) {
     const [showPublishModal, setShowPublishModal] = useState(false);
-<<<<<<< HEAD
-    const [publishTarget, setPublishTarget] = useState<{ url: string; type: "image" | "video"; prompt: string; creationId?: string } | null>(null);
-    const [isDownloading, setIsDownloading] = useState(false);
-    const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
-=======
     const [publishTarget, setPublishTarget] = useState<{
         url: string;
         type: "image" | "video";
@@ -72,7 +57,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
     const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
     const autoExportDoneRef = useRef<string | null>(null);
     const activePlatform = activeGeneration?.generationPlatform || activeGeneration?.settings?.provider || "poyo";
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
     const getFileExtension = (url: string, type: string): string => {
         try {
@@ -137,13 +121,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         }
     };
 
-<<<<<<< HEAD
-    const handlePublishSingle = (url: string, creationId: string | undefined, type: "image" | "video", prompt: string) => {
-        setPublishTarget({ url, type, prompt, creationId });
-        setShowPublishModal(true);
-    };
-
-=======
     const handlePublishSingle = (
         url: string,
         creationId: string | undefined,
@@ -264,7 +241,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         openExportPack(primarySource, activeGeneration.type, activeGeneration.creationId);
     }, [activeGeneration]);
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
     const getAspectRatioClass = (ratio: string) => {
         switch (ratio) {
             case "1:1": return "aspect-square";
@@ -330,8 +306,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                 className="w-full px-4 sm:px-6 py-12 md:py-20 self-start transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
                                 style={{ maxWidth: maxWidthStyle }}
                             >
-<<<<<<< HEAD
-=======
                                 <div className="mb-6 sm:mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="text-sm text-zinc-300">
                                         Campaign set ready: <span className="font-semibold text-white">{activeGeneration.srcs?.length || 0} outputs</span>
@@ -344,7 +318,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                         Export Full Campaign Pack
                                     </button>
                                 </div>
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                 <div className={cn(
                                     "grid gap-20 sm:gap-24 w-full mx-auto justify-items-center items-start",
                                     getGridClass(activeGeneration.srcs!.length)
@@ -378,11 +351,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-<<<<<<< HEAD
-                                                        const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(src)}&prompt=${encodeURIComponent(activeGeneration.prompt)}&remixType=image&creationId=${activeGeneration.creationIds?.[idx] || activeGeneration.id}&aspectRatio=${encodeURIComponent(activeGeneration.settings?.aspectRatio || activeGeneration.settings?.size || "1:1")}&model=${encodeURIComponent(activeGeneration.model || activeGeneration.settings?.model || "gpt-image-1.5")}`;
-=======
                                                         const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(src)}&prompt=${encodeURIComponent(activeGeneration.prompt)}&remixType=image&creationId=${activeGeneration.creationIds?.[idx] || activeGeneration.id}&rootCreationId=${activeGeneration.settings?.rootCreationId || activeGeneration.settings?.originalCreationId || activeGeneration.creationIds?.[idx] || activeGeneration.id}&remixDepth=${(activeGeneration.settings?.remixDepth || 0) + 1}&sourcePostId=${activeGeneration.settings?.sourcePostId || ""}&taskId=${encodeURIComponent(activeGeneration.taskId || activeGeneration.creationIds?.[idx] || activeGeneration.creationId || "")}&generationPlatform=${encodeURIComponent(activePlatform)}&aspectRatio=${encodeURIComponent(activeGeneration.settings?.aspectRatio || activeGeneration.settings?.size || "1:1")}&model=${encodeURIComponent(activeGeneration.model || activeGeneration.settings?.model || "gpt-image-1.5")}`;
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                                         window.history.pushState({}, '', remixUrl);
                                                         window.dispatchEvent(new PopStateEvent('popstate'));
                                                     }}
@@ -409,8 +378,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-<<<<<<< HEAD
-=======
                                                             openExportPack(src, activeGeneration.type, activeGeneration.creationIds?.[idx] || activeGeneration.creationId);
                                                         }}
                                                         title="Export Campaign Pack"
@@ -421,14 +388,10 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                                             handlePublishSingle(
                                                                 src,
                                                                 activeGeneration.creationIds?.[idx] || activeGeneration.creationId,
                                                                 activeGeneration.type,
-<<<<<<< HEAD
-                                                                activeGeneration.prompt
-=======
                                                                 activeGeneration.prompt,
                                                                 {
                                                                     parentCreationId: activeGeneration.settings?.originalCreationId,
@@ -439,7 +402,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                                     generationPlatform: activePlatform,
                                                                     taskId: activeGeneration.taskId || activeGeneration.creationIds?.[idx] || activeGeneration.creationId,
                                                                 }
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                                             );
                                                         }}
                                                         title="Publish"
@@ -448,8 +410,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                         <Share className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover/pbtn:-translate-y-[1px] transition-transform" />
                                                         <span className="font-bold tracking-tight text-[10px] sm:text-[11px] whitespace-nowrap">Publish</span>
                                                     </button>
-<<<<<<< HEAD
-=======
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -460,7 +420,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     >
                                                         <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-300 group-hover/cbtn:-translate-y-[1px] transition-transform" />
                                                     </button>
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                                 </div>
                                             </div>
                                         </div>
@@ -521,11 +480,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 </button>
                                                 <button
                                                     onClick={() => {
-<<<<<<< HEAD
-                                                        const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(activeGeneration.src || "")}&prompt=${encodeURIComponent(activeGeneration.prompt)}&remixType=${activeGeneration.type}&creationId=${activeGeneration.creationId || activeGeneration.id}`;
-=======
                                                         const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(activeGeneration.src || "")}&prompt=${encodeURIComponent(activeGeneration.prompt)}&remixType=${activeGeneration.type}&creationId=${activeGeneration.creationId || activeGeneration.id}&rootCreationId=${activeGeneration.settings?.rootCreationId || activeGeneration.settings?.originalCreationId || activeGeneration.creationId || activeGeneration.id}&remixDepth=${(activeGeneration.settings?.remixDepth || 0) + 1}&sourcePostId=${activeGeneration.settings?.sourcePostId || ""}&taskId=${encodeURIComponent(activeGeneration.taskId || activeGeneration.creationId || activeGeneration.id)}&generationPlatform=${encodeURIComponent(activePlatform)}`;
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                                         window.history.pushState({}, '', remixUrl);
                                                         window.dispatchEvent(new PopStateEvent('popstate'));
                                                     }}
@@ -535,8 +490,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     <Wand2 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
                                                 </button>
                                                 <button
-<<<<<<< HEAD
-=======
                                                     onClick={() => openExportPack(activeGeneration.src || "", activeGeneration.type, activeGeneration.creationId)}
                                                     className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-2xl h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-2xl border border-white/10 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                     title="Export Campaign Pack"
@@ -544,14 +497,10 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     <Package className="w-4 h-4 sm:w-5 sm:h-5 text-lime-300 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
                                                 </button>
                                                 <button
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                                     onClick={() => handlePublishSingle(
                                                         activeGeneration.src || "",
                                                         activeGeneration.creationId,
                                                         activeGeneration.type,
-<<<<<<< HEAD
-                                                        activeGeneration.prompt
-=======
                                                         activeGeneration.prompt,
                                                         {
                                                             parentCreationId: activeGeneration.settings?.originalCreationId,
@@ -562,15 +511,12 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                             generationPlatform: activePlatform,
                                                             taskId: activeGeneration.taskId || activeGeneration.creationId,
                                                         }
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                                     )}
                                                     className="bg-white hover:bg-zinc-100 text-black px-4 sm:px-6 lg:px-5 h-10 sm:h-12 lg:h-11 rounded-xl sm:rounded-2xl shadow-xl shadow-white/10 flex items-center gap-1.5 sm:gap-2 pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                 >
                                                     <Share className="w-4 h-4 sm:w-5 sm:h-5 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
                                                     <span className="font-bold tracking-tight text-xs sm:text-sm lg:text-[13px]">Publish</span>
                                                 </button>
-<<<<<<< HEAD
-=======
                                                 <button
                                                     onClick={() => openClawHub(activeGeneration.src || "", activeGeneration.creationId)}
                                                     className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-2xl h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-2xl border border-white/10 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
@@ -578,7 +524,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 >
                                                     <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-300 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
                                                 </button>
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                             </div>
                                         </div>
                                     ) : null}
@@ -638,9 +583,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                         url: publishTarget.url,
                         type: publishTarget.type,
                         prompt: publishTarget.prompt,
-<<<<<<< HEAD
-                        creationId: publishTarget.creationId
-=======
                         creationId: publishTarget.creationId,
                         parentCreationId: publishTarget.parentCreationId,
                         rootCreationId: publishTarget.rootCreationId,
@@ -649,7 +591,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                         campaign: publishTarget.campaign,
                         generationPlatform: publishTarget.generationPlatform,
                         taskId: publishTarget.taskId,
->>>>>>> 6369408 (feat: initial frontend + fixes)
                     }}
                 />
             )}

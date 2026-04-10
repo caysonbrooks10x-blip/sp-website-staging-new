@@ -11,11 +11,8 @@ import { httpsCallable } from "firebase/functions"
 import { functions } from "@/lib/firebaseClient"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-<<<<<<< HEAD
-=======
 import { useAuth } from "@/context/auth-context"
 import { deletePersistedStudioGeneration } from "@/lib/studio-generations"
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
 interface CreationCardProps {
     item: {
@@ -28,15 +25,12 @@ interface CreationCardProps {
         type?: "image" | "video"
         remixCount?: number
         likes?: number
-<<<<<<< HEAD
-=======
         taskId?: string
         generationPlatform?: string
         rootCreationId?: string
         remixDepth?: number
         sourcePostId?: string
         persistedSource?: boolean
->>>>>>> 6369408 (feat: initial frontend + fixes)
     }
     index: number
     onDelete?: (id: string) => void
@@ -44,10 +38,7 @@ interface CreationCardProps {
 
 export function CreationCard({ item, index, onDelete }: CreationCardProps) {
     const router = useRouter();
-<<<<<<< HEAD
-=======
     const { user } = useAuth();
->>>>>>> 6369408 (feat: initial frontend + fixes)
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -56,11 +47,7 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
     const handleRemix = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-<<<<<<< HEAD
-        const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(item.previewUrl)}&prompt=${encodeURIComponent(item.prompt || "")}&remixType=${item.type || 'image'}&creationId=${item.id}`;
-=======
         const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(item.previewUrl)}&prompt=${encodeURIComponent(item.prompt || "")}&remixType=${item.type || 'image'}&creationId=${item.id}&rootCreationId=${item.rootCreationId || item.id}&remixDepth=${(item.remixDepth || 0) + 1}&sourcePostId=${item.sourcePostId || ""}&taskId=${encodeURIComponent(item.taskId || item.id)}&generationPlatform=${encodeURIComponent(item.generationPlatform || "")}`;
->>>>>>> 6369408 (feat: initial frontend + fixes)
         router.push(remixUrl);
     };
 
@@ -112,17 +99,12 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
         if (onDelete) onDelete(item.id);
 
         try {
-<<<<<<< HEAD
-            const deleteCreation = httpsCallable(functions, "deleteCreation");
-            await deleteCreation({ creationId: item.id });
-=======
             if (item.persistedSource && user?.uid) {
                 await deletePersistedStudioGeneration(user.uid, item.id);
             } else {
                 const deleteCreation = httpsCallable(functions, "deleteCreation");
                 await deleteCreation({ creationId: item.id });
             }
->>>>>>> 6369408 (feat: initial frontend + fixes)
             toast.success("Creation deleted successfully");
         } catch (error) {
             console.error("Delete failed:", error);
@@ -237,16 +219,12 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                         url: item.previewUrl,
                         type: item.type || (item.previewUrl.includes('.mp4') ? 'video' : 'image'),
                         prompt: item.prompt || item.appName,
-<<<<<<< HEAD
-                        creationId: item.id
-=======
                         creationId: item.id,
                         rootCreationId: item.rootCreationId,
                         remixDepth: item.remixDepth,
                         sourcePostId: item.sourcePostId,
                         generationPlatform: item.generationPlatform,
                         taskId: item.taskId,
->>>>>>> 6369408 (feat: initial frontend + fixes)
                     }}
                 />
             )}

@@ -4,15 +4,6 @@
 import { Suspense, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-<<<<<<< HEAD
-import { Search, ArrowUpRight, Filter, Play, Plus } from "lucide-react"
-import { gsap } from "gsap"
-import { CommunityGrid } from "@/components/community-grid"
-import { UploadModal } from "@/components/upload-modal"
-
-import { useAuth } from "@/context/auth-context"
-import { useRouter } from "next/navigation"
-=======
 import { Search, ArrowUpRight, Filter, Plus } from "lucide-react"
 import { gsap } from "gsap"
 import { CommunityGrid } from "@/components/community-grid"
@@ -21,15 +12,10 @@ import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/context/auth-context"
 import { useRouter, useSearchParams } from "next/navigation"
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
 function CommunityContent() {
   const headerRef = useRef<HTMLDivElement>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
-<<<<<<< HEAD
-  const { user } = useAuth()
-  const router = useRouter()
-=======
   const [searchValue, setSearchValue] = useState("")
   const [isFiltersVisible, setIsFiltersVisible] = useState(true)
   const { user } = useAuth()
@@ -63,7 +49,6 @@ function CommunityContent() {
   const applySearch = () => {
     updateQuery({ q: searchValue.trim() || null })
   }
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -89,13 +74,10 @@ function CommunityContent() {
     return () => ctx.revert()
   }, [])
 
-<<<<<<< HEAD
-=======
   useEffect(() => {
     setSearchValue(searchParams.get("q") || "")
   }, [searchParams])
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
   return (
     <main ref={headerRef} className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30 overflow-x-hidden">
 
@@ -113,13 +95,8 @@ function CommunityContent() {
       </div>
 
       {}
-<<<<<<< HEAD
-      <section className="relative z-10 pt-40 md:pt-48 pb-12 md:pb-24 px-6 md:px-16 max-w-[2000px] mx-auto">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 md:gap-10 mb-12 md:mb-20">
-=======
       <section className="relative z-10 pt-48 md:pt-56 pb-12 md:pb-24 px-6 md:px-16 max-w-[2000px] mx-auto">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 md:gap-10 mb-12 md:mb-16">
->>>>>>> 6369408 (feat: initial frontend + fixes)
           <div className="space-y-4 md:space-y-6 max-w-3xl">
             <div className="flex items-center gap-3 hero-text transform-gpu">
               <div className="h-[1px] w-8 bg-purple-500/50"></div>
@@ -134,32 +111,6 @@ function CommunityContent() {
             </p>
           </div>
 
-<<<<<<< HEAD
-          <div className="hero-controls w-full lg:w-auto flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
-            <Button
-              className="h-14 rounded-full px-8 bg-white text-black hover:bg-neutral-200 transition-all duration-300 font-medium"
-              onClick={() => {
-                if (!user) {
-                  router.push(`/login?redirect=${encodeURIComponent("/community")}`)
-                  return
-                }
-                setIsUploadOpen(true)
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Upload
-            </Button>
-            <div className="relative group w-full sm:w-[280px]">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500 group-hover:text-white transition-colors duration-300" />
-              <Input
-                placeholder="Search the gallery..."
-                className="pl-12 h-14 bg-white/[0.03] border-white/5 rounded-full text-base text-white placeholder:text-neutral-600 focus:bg-white/[0.08] focus:border-white/10 transition-all duration-300 shadow-xl"
-              />
-            </div>
-            <Button variant="outline" size="icon" className="h-14 w-14 rounded-full border-white/5 bg-white/[0.03] hover:bg-white/[0.08] hover:text-white hover:border-white/10 transition-all duration-300">
-              <Filter className="h-4 w-4" />
-            </Button>
-=======
           <div className="hero-controls flex w-full flex-col gap-4 lg:w-[min(640px,100%)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <Button
@@ -238,7 +189,6 @@ function CommunityContent() {
                 })}
               </div>
             </div>
->>>>>>> 6369408 (feat: initial frontend + fixes)
           </div>
         </div>
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import type { ClawRecentJob, ClawScheduledJob } from "@/lib/claw-state";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 interface AccountsLookupResponse {

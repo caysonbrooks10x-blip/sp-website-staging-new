@@ -7,11 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
-<<<<<<< HEAD
-import { useState, useCallback, useEffect } from "react"
-=======
 import { useState, useCallback, useEffect, useMemo } from "react"
->>>>>>> 6369408 (feat: initial frontend + fixes)
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,19 +15,13 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-<<<<<<< HEAD
-import { doc, getDoc } from "firebase/firestore"
-=======
 import { collection, doc, getDoc, getDocs, limit, query, where } from "firebase/firestore"
->>>>>>> 6369408 (feat: initial frontend + fixes)
 import { db, functions } from "@/lib/firebaseClient"
 import type { CommunityPost } from "@/lib/types"
 import { usePostLike } from "@/hooks/use-post-like"
 import { cn } from "@/lib/utils"
 import { httpsCallable } from "firebase/functions"
 import { ASSET_BASE } from "@/lib/assets"
-<<<<<<< HEAD
-=======
 import { mapCommunityPost } from "@/lib/community-post"
 import { buildExportPackHref } from "@/lib/export-pack"
 import {
@@ -43,21 +33,17 @@ import {
 } from "@/lib/community-graph"
 
 export const runtime = "edge"
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
 export default function PostDetailPage() {
     const params = useParams()
     const postId = params.postId as string
 
     const [post, setPost] = useState<CommunityPost | null>(null)
-<<<<<<< HEAD
-=======
     const [parentPost, setParentPost] = useState<CommunityPost | null>(null)
     const [rootPost, setRootPost] = useState<CommunityPost | null>(null)
     const [childPosts, setChildPosts] = useState<CommunityPost[]>([])
     const [siblingPosts, setSiblingPosts] = useState<CommunityPost[]>([])
     const [graphPosts, setGraphPosts] = useState<CommunityPost[]>([])
->>>>>>> 6369408 (feat: initial frontend + fixes)
     const [isLoading, setIsLoading] = useState(true)
     const { isLiked, likesCount, toggleLike, isLoading: isLikeLoading } = usePostLike(postId, post?.likes || 0)
     const [showInfo, setShowInfo] = useState(true)
@@ -110,35 +96,6 @@ export default function PostDetailPage() {
                         return
                     }
 
-<<<<<<< HEAD
-                    setPost({
-                        id: docSnap.id,
-                        type: data.type || "image",
-                        title: data.title || "Untitled",
-                        description: data.description || "",
-                        prompt: data.prompt || "",
-                        author: {
-                            id: data.author?.uid || "unknown",
-                            name: data.author?.name || "Anonymous",
-                            avatar: data.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${docSnap.id}`
-                        },
-                        assetUrl: data.assetUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2560&auto=format&fit=crop",
-                        thumbnailUrl: data.thumbnailUrl || data.assetUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2560&auto=format&fit=crop",
-                        aspectRatio: data.type === "video" ? "landscape" : "portrait",
-                        likes: data.likes || 0,
-                        views: data.views || 0,
-                        allowRemix: data.allowRemix ?? true,
-                        createdAt: data.createdAt?.toDate() || new Date(),
-                        creationId: data.creationId || data.parameters?.originalCreationId,
-                        tags: data.tags || [],
-                        model: data.model || "Unknown",
-                        preset: data.preset || "General",
-                        quality: data.quality || "Standard",
-                        size: data.size || "1024x1024",
-                    } as CommunityPost)
-                } else {
-                    setPost(null)
-=======
                     const mappedPost = mapCommunityPost(docSnap.id, data as Record<string, any>)
                     setPost(mappedPost)
 
@@ -236,19 +193,15 @@ export default function PostDetailPage() {
                     setChildPosts([])
                     setSiblingPosts([])
                     setGraphPosts([])
->>>>>>> 6369408 (feat: initial frontend + fixes)
                 }
             } catch (err) {
                 console.error("Error fetching post details:", err)
                 setPost(null)
-<<<<<<< HEAD
-=======
                 setParentPost(null)
                 setRootPost(null)
                 setChildPosts([])
                 setSiblingPosts([])
                 setGraphPosts([])
->>>>>>> 6369408 (feat: initial frontend + fixes)
             } finally {
                 setIsLoading(false)
             }
@@ -284,8 +237,6 @@ export default function PostDetailPage() {
         }
     }, [post?.title])
 
-<<<<<<< HEAD
-=======
     const lineageChain = useMemo(
         () => post ? buildLineageChain(post, parentPost, rootPost) : [],
         [parentPost, post, rootPost]
@@ -327,7 +278,6 @@ export default function PostDetailPage() {
         [childPosts, graphPosts, post?.id, siblingPosts]
     )
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
     
     if (isLoading) {
         return (
@@ -351,8 +301,6 @@ export default function PostDetailPage() {
         )
     }
 
-<<<<<<< HEAD
-=======
     const exportPackHref = buildExportPackHref({
         assetUrl: post.assetUrl,
         type: post.type,
@@ -391,7 +339,6 @@ export default function PostDetailPage() {
     })()
 
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
     return (
         <main className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30">
 
@@ -575,15 +522,12 @@ export default function PostDetailPage() {
                                         <span className="text-sm font-medium text-white">{post.model}</span>
                                     </div>
                                 )}
-<<<<<<< HEAD
-=======
                                 {post.generationPlatform && (
                                     <div className="flex items-center justify-between px-5 py-3.5">
                                         <span className="text-sm text-zinc-500">Generation Platform</span>
                                         <span className="text-sm font-medium uppercase text-white">{post.generationPlatform}</span>
                                     </div>
                                 )}
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                 {post.preset && (
                                     <div className="flex items-center justify-between px-5 py-3.5">
                                         <span className="text-sm text-zinc-500">Preset</span>
@@ -626,8 +570,6 @@ export default function PostDetailPage() {
                         </button>
                     </div>
 
-<<<<<<< HEAD
-=======
                     {(parentPost || rootPost || childPosts.length > 0 || siblingPosts.length > 0 || branchPreview.length > 0) && (
                         <div className="mb-8 rounded-2xl bg-[#111113] border border-white/5 p-5 space-y-4">
                             <div>
@@ -876,17 +818,12 @@ export default function PostDetailPage() {
                         </div>
                     )}
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
                     {}
                     <div className="mb-8 space-y-3">
                         <Button
                             className="w-full h-12 rounded-xl bg-[#c8ff00] hover:bg-[#b8ef00] text-black font-semibold text-sm transition-all duration-200"
                             onClick={() => {
-<<<<<<< HEAD
-                                const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&remixType=${post.type}`
-=======
                                 const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&rootCreationId=${post.rootCreationId || post.creationId || ''}&remixDepth=${(post.remixDepth || 0) + 1}&sourcePostId=${post.id}&taskId=${encodeURIComponent(post.taskId || post.creationId || '')}&generationPlatform=${encodeURIComponent(post.generationPlatform || '')}&remixType=${post.type}`
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                 if (!user) {
                                     router.push(`/login?redirect=${encodeURIComponent(target)}`)
                                 } else {
@@ -897,8 +834,6 @@ export default function PostDetailPage() {
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Remix Creation
                         </Button>
-<<<<<<< HEAD
-=======
                         <Button
                             variant="outline"
                             className="w-full h-12 rounded-xl border-lime-300/30 bg-lime-300/10 hover:bg-lime-300/20 text-lime-100 text-sm"
@@ -923,7 +858,6 @@ export default function PostDetailPage() {
                                 Export Campaign Pack
                             </Link>
                         </Button>
->>>>>>> 6369408 (feat: initial frontend + fixes)
                         <div className="grid grid-cols-2 gap-3">
                             <Button
                                 variant="outline"
@@ -1018,11 +952,7 @@ export default function PostDetailPage() {
                                 <Button
                                     className="w-full bg-white text-black hover:bg-zinc-200 rounded-xl h-12 text-base font-medium font-sans"
                                     onClick={() => {
-<<<<<<< HEAD
-                                        const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&remixType=${post.type}`
-=======
                                         const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&rootCreationId=${post.rootCreationId || post.creationId || ''}&remixDepth=${(post.remixDepth || 0) + 1}&sourcePostId=${post.id}&taskId=${encodeURIComponent(post.taskId || post.creationId || '')}&generationPlatform=${encodeURIComponent(post.generationPlatform || '')}&remixType=${post.type}`
->>>>>>> 6369408 (feat: initial frontend + fixes)
                                         if (!user) {
                                             router.push(`/login?redirect=${encodeURIComponent(target)}`)
                                         } else {

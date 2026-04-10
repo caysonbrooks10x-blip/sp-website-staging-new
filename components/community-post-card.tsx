@@ -108,11 +108,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
 
     if (!user) {
       toast.error("You must be logged in to remix a post.");
-<<<<<<< HEAD
-      const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&remixType=${post.type}`;
-=======
       const target = `/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&rootCreationId=${post.rootCreationId || post.creationId || ''}&remixDepth=${(post.remixDepth || 0) + 1}&sourcePostId=${post.id}&taskId=${encodeURIComponent(post.taskId || post.creationId || '')}&generationPlatform=${encodeURIComponent(post.generationPlatform || '')}&remixType=${post.type}`;
->>>>>>> 6369408 (feat: initial frontend + fixes)
       router.push(`/login?redirect=${encodeURIComponent(target)}`)
       return;
     }
@@ -121,17 +117,10 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
     toast.success("Blueprint loaded! Taking you to the studio...");
 
     
-<<<<<<< HEAD
-    router.push(`/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&remixType=${post.type}`);
-
-    setTimeout(() => setIsRemixing(false), 2000); 
-  }, [user, post.prompt, post.assetUrl, post.creationId, router, isRemixing])
-=======
     router.push(`/studio?mode=remix&prompt=${encodeURIComponent(post.prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}&creationId=${post.creationId || ''}&rootCreationId=${post.rootCreationId || post.creationId || ''}&remixDepth=${(post.remixDepth || 0) + 1}&sourcePostId=${post.id}&taskId=${encodeURIComponent(post.taskId || post.creationId || '')}&generationPlatform=${encodeURIComponent(post.generationPlatform || '')}&remixType=${post.type}`);
 
     setTimeout(() => setIsRemixing(false), 2000); 
   }, [user, post.prompt, post.assetUrl, post.creationId, post.rootCreationId, post.remixDepth, post.id, post.taskId, post.generationPlatform, post.type, router, isRemixing])
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
   const navigateToStudio = useCallback((mode: string, prompt: string) => {
     const target = `/studio?mode=${mode}&prompt=${encodeURIComponent(prompt)}&previewUrl=${encodeURIComponent(post.assetUrl)}`

@@ -15,8 +15,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ASSET_BASE } from "@/lib/assets";
-<<<<<<< HEAD
-=======
 import { chooseProvider, type StudioProvider } from "@/lib/provider-routing";
 import { VIDEO_MODELS } from "@/lib/model-config";
 import { persistStudioGeneration } from "@/lib/studio-generations";
@@ -114,7 +112,6 @@ function extensionFromBlob(blob: Blob, fallback = "png") {
   if (blob.type.includes("png")) return "png";
   return fallback;
 }
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
 export default function StudioPage() {
   return (
@@ -232,8 +229,6 @@ function StudioLayout() {
     return () => ctx.revert();
   }, []);
 
-<<<<<<< HEAD
-=======
   const buildCampaignMeta = (prompt: string, settings: any) => {
     const presetIds = normalizeExportPresetIds(settings?.campaign_preset_ids || settings?.campaign?.presetIds || []);
     if (settings?.campaign) {
@@ -290,7 +285,6 @@ function StudioLayout() {
     }
   };
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
   const handleGenerate = async (prompt: string, settings: any) => {
     setIsGenerating(true);
     
@@ -300,16 +294,6 @@ function StudioLayout() {
     localStorage.removeItem("studio_active_generation");
     localStorage.removeItem("studio_active_time");
 
-<<<<<<< HEAD
-    const createStudioJob = httpsCallable(functions, "createStudioJob");
-
-    try {
-      const { model, mode: genMode, sourceFile, sourceVideo, sourceFiles, sourceVideos, end_image_file, aspectRatio: _ar, ...dynamicParameters } = settings;
-
-      const uploadAsset = async (file: File) => {
-        const extension = file.name.split('.').pop() || "png";
-        const storagePath = `studio-inputs/${user?.uid || "anonymous"}/${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
-=======
     try {
       const createStudioJob = httpsCallable(functions, "createStudioJob");
       const { model, mode: genMode, provider, sourceFile, sourceVideo, sourceFiles, sourceVideos, end_image_file, aspectRatio: _ar, ...dynamicParameters } = settings;
@@ -317,14 +301,11 @@ function StudioLayout() {
       const uploadAsset = async (file: File) => {
         const extension = file.name.split('.').pop() || "png";
         const storagePath = `community-uploads/${user?.uid || "anonymous"}/${Date.now()}_studio-input_${Math.random().toString(36).substring(7)}.${extension}`;
->>>>>>> 6369408 (feat: initial frontend + fixes)
         const storageRef = ref(storage, storagePath);
         const uploadResult = await uploadBytesResumable(storageRef, file);
         return await getDownloadURL(uploadResult.ref);
       };
 
-<<<<<<< HEAD
-=======
       const uploadGeneratedAsset = async (blob: Blob, jobId: string, index: number, fallbackExtension = "png") => {
         const extension = extensionFromBlob(blob, fallbackExtension);
         const storagePath = `community-uploads/${user?.uid || "anonymous"}/${jobId}_studio-result_${index}.${extension}`;
@@ -333,7 +314,6 @@ function StudioLayout() {
         return await getDownloadURL(uploadResult.ref);
       };
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
       if (sourceFile) {
         toast.loading('Uploading reference media securely...', { id: 'gen-toast' });
         const url = await uploadAsset(sourceFile);
@@ -371,20 +351,6 @@ function StudioLayout() {
 
       const count = dynamicParameters.n && typeof dynamicParameters.n === 'number' ? dynamicParameters.n : 1;
       const usedModel = model || (genMode === 'video' ? "sora-2" : "flux-2-pro");
-<<<<<<< HEAD
-
-      const result = await createStudioJob({
-        provider: "poyo",
-        model: usedModel,
-        parameters: {
-          ...(prompt ? { prompt } : {}),
-          ...dynamicParameters,
-          n: Number(count),
-        }
-      });
-
-      const jobId = (result.data as any).jobId;
-=======
       const generationType = inferGenerationType(genMode || mode, usedModel);
       const resolvedProvider =
         (provider as StudioProvider | undefined) ||
@@ -506,33 +472,23 @@ function StudioLayout() {
         jobId = (result.data as any).jobId;
       }
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
       console.log(`Job queued! ID:`, jobId);
       toast.success(`Task queued! Rendering ${count} results...`, { id: 'gen-toast' });
 
       const newItem: GenerationItem = {
         id: jobId,
-<<<<<<< HEAD
-        type: settings.mode === 'video' ? 'video' : 'image',
-        prompt: prompt,
-=======
         taskId: taskId || jobId,
         generationPlatform: resolvedProvider,
         type: generationType,
         prompt: prompt,
         model: usedModel,
->>>>>>> 6369408 (feat: initial frontend + fixes)
         status: "queued" as const,
         settings: {
           ...settings,
           n: count,
-<<<<<<< HEAD
-          previewUrl: dynamicParameters.image_url || settings.previewUrl
-=======
           provider: resolvedProvider,
           previewUrl: dynamicParameters.image_url || settings.previewUrl,
           taskId: taskId || jobId,
->>>>>>> 6369408 (feat: initial frontend + fixes)
         }
       };
 
@@ -557,9 +513,6 @@ function StudioLayout() {
   };
 
   const startJobPoller = async (jobId: string, item: GenerationItem) => {
-<<<<<<< HEAD
-    const getJobStatus = httpsCallable(functions, "getJobStatus");
-=======
     const provider = (item.generationPlatform || item.settings?.provider || "poyo") as StudioProvider;
     const getJobStatus = provider === "poyo" ? httpsCallable(functions, "getJobStatus") : null;
     const maxPollAttempts = provider === "apimart" ? 240 : 200;
@@ -587,7 +540,6 @@ function StudioLayout() {
       const delay = Math.min(Math.round(baseDelay * factor), isError ? 12_000 : 5_500);
       setTimeout(checkStatus, delay);
     };
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
     const checkStatus = async () => {
       if (cancelledJobsRef.current.has(jobId)) {
@@ -595,11 +547,6 @@ function StudioLayout() {
         cancelledJobsRef.current.delete(jobId);
         return;
       }
-<<<<<<< HEAD
-      try {
-        const result = await getJobStatus({ jobId: jobId });
-        const data = result.data as any;
-=======
 
       if (pollAttempts >= maxPollAttempts) {
         markTerminalFailure("Generation timed out before completion. Please retry or switch to a lighter model.");
@@ -629,7 +576,6 @@ function StudioLayout() {
           : (await getJobStatus!({ jobId: jobId })).data;
 
         consecutiveErrors = 0;
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
         if (data.status === "completed") {
           console.log("Finished Rendering!", data);
@@ -643,12 +589,6 @@ function StudioLayout() {
             const completedItems = urls.map((url: string, index: number) => ({
               ...item,
               id: index === 0 ? jobId : `${jobId}_${index}`,
-<<<<<<< HEAD
-              creationId: (data.creationIds || data.creation_ids)?.[index] || data.creationId,
-              status: "completed" as const,
-              src: url,
-              srcs: undefined 
-=======
               creationId: (data.creationIds || data.creation_ids)?.[index] || data.creationId || data.taskId || item.taskId || jobId,
               taskId: data.taskId || item.taskId || jobId,
               generationPlatform: provider,
@@ -656,19 +596,12 @@ function StudioLayout() {
               src: url,
               srcs: undefined,
               thumbnailUrl: data.thumbnailUrl,
->>>>>>> 6369408 (feat: initial frontend + fixes)
             }));
 
             
             const batchItem: GenerationItem = {
               ...item,
               id: jobId,
-<<<<<<< HEAD
-              status: "completed" as const,
-              src: urls[0], 
-              srcs: urls,
-              creationIds: data.creationIds || data.creation_ids || Array(urls.length).fill(data.creationId)
-=======
               taskId: data.taskId || item.taskId || jobId,
               generationPlatform: provider,
               creationId: data.creationId || data.taskId || item.creationId || jobId,
@@ -677,7 +610,6 @@ function StudioLayout() {
               srcs: urls,
               creationIds: data.creationIds || data.creation_ids || Array(urls.length).fill(data.creationId || data.taskId || item.taskId || jobId),
               thumbnailUrl: data.thumbnailUrl,
->>>>>>> 6369408 (feat: initial frontend + fixes)
             };
 
             setActiveGeneration(batchItem);
@@ -687,29 +619,12 @@ function StudioLayout() {
               const cleaned = prev.filter(g => g.id !== jobId);
               return [...completedItems, ...cleaned];
             });
-<<<<<<< HEAD
-=======
             void persistCompletedGeneration(batchItem);
->>>>>>> 6369408 (feat: initial frontend + fixes)
           } else {
             
             const finalUrl = urls[0] || data.outputUrl;
             const completedItem: GenerationItem = {
               ...item,
-<<<<<<< HEAD
-              status: "completed" as const,
-              src: finalUrl,
-              srcs: undefined,
-              creationId: data.creationId
-            };
-            setActiveGeneration(completedItem);
-            setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? completedItem : g));
-          }
-          setIsGenerating(false);
-        } else if (data.status === "failed") {
-          console.log("Task Failed, internal backend already refunded tokens!", data.error);
-          const failedItem: GenerationItem = { ...item, status: "failed" as const, error: data.error };
-=======
               taskId: data.taskId || item.taskId || jobId,
               generationPlatform: provider,
               status: "completed" as const,
@@ -732,7 +647,6 @@ function StudioLayout() {
             status: "failed" as const,
             error: data.error || (data.status === "cancelled" ? "Generation was cancelled." : "Generation failed."),
           };
->>>>>>> 6369408 (feat: initial frontend + fixes)
           setActiveGeneration(failedItem);
           setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? failedItem : g));
           setIsGenerating(false);
@@ -745,18 +659,6 @@ function StudioLayout() {
           const totalCount = data.totalCount || item.settings?.n || 1;
 
           setActiveGeneration((prev: GenerationItem | null) =>
-<<<<<<< HEAD
-            prev ? { ...prev, status: "generating", progress, completedCount, totalCount } : null
-          );
-          setGenerations((prev: GenerationItem[]) =>
-            prev.map(g => g.id === jobId ? { ...g, status: "generating", progress, completedCount, totalCount } : g)
-          );
-          setTimeout(checkStatus, 1500); 
-        }
-      } catch (error) {
-        console.error("Polling error:", error);
-        setTimeout(checkStatus, 2000);
-=======
             prev ? { ...prev, generationPlatform: provider, taskId: data.taskId || prev.taskId || jobId, status: "generating", progress, completedCount, totalCount } : null
           );
           setGenerations((prev: GenerationItem[]) =>
@@ -774,7 +676,6 @@ function StudioLayout() {
         }
 
         scheduleNextPoll(true);
->>>>>>> 6369408 (feat: initial frontend + fixes)
       }
     };
     checkStatus();
@@ -783,10 +684,7 @@ function StudioLayout() {
   const handleCancel = async () => {
     if (activeGeneration?.id) {
       const jobId = activeGeneration.id;
-<<<<<<< HEAD
-=======
       const provider = (activeGeneration.generationPlatform || activeGeneration.settings?.provider || "poyo") as StudioProvider;
->>>>>>> 6369408 (feat: initial frontend + fixes)
       cancelledJobsRef.current.add(jobId);
 
       const cancelledItem: GenerationItem = { ...activeGeneration, status: "failed" };
@@ -800,14 +698,11 @@ function StudioLayout() {
 
       console.log("Job marked as cancelled locally, syncing with backend...");
 
-<<<<<<< HEAD
-=======
       if (provider === "apimart") {
         toast.info("ApiMart cancellation is not wired yet, so the job was removed locally only.");
         return;
       }
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
       try {
         const cancelJob = httpsCallable(functions, "cancelStudioJob");
         await cancelJob({ jobId });
@@ -919,11 +814,7 @@ function StudioLayout() {
       </div>
 
       {}
-<<<<<<< HEAD
-      <div className="relative z-10 flex flex-col lg:flex-row w-full h-[100dvh] lg:h-[calc(100vh-24px)] pt-[72px] lg:pt-[104px] px-0 lg:px-6 gap-0 lg:gap-6 max-w-[2000px] mx-auto overflow-hidden">
-=======
       <div className="relative z-10 flex flex-col lg:flex-row w-full h-[100dvh] lg:h-[calc(100vh-24px)] pt-[120px] lg:pt-[160px] px-0 lg:px-6 gap-0 lg:gap-6 max-w-[2000px] mx-auto overflow-hidden">
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
         {}
         <div className="lg:hidden h-2" />

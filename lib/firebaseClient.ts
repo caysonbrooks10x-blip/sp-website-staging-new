@@ -5,15 +5,6 @@ import { getFunctions } from "firebase/functions";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-<<<<<<< HEAD
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-=======
     // Fallback values keep local/CI builds from crashing when envs are missing or empty.
     // Real Firebase access still requires valid NEXT_PUBLIC_FIREBASE_* values.
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim() || "AIzaSyDUMMY12345678901234567890123456789",
@@ -23,7 +14,6 @@ const firebaseConfig = {
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim() || "1234567890",
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID?.trim() || "1:1234567890:web:demo",
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID?.trim() || "G-DEMO0000"
->>>>>>> 6369408 (feat: initial frontend + fixes)
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];

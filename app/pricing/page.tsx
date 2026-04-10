@@ -102,34 +102,19 @@ export default function PricingPage() {
 
   return (
     <main className="relative min-h-screen bg-black text-white overflow-x-hidden selection:bg-cyan-500/30">
-<<<<<<< HEAD
-      { }
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        { }
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.08)_0%,transparent_70%)]" />
-        { }
-=======
       {}
       <div className="fixed inset-0 z-0 pointer-events-none">
         {}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.08)_0%,transparent_70%)]" />
         {}
->>>>>>> 6369408 (feat: initial frontend + fixes)
         <div className="absolute top-[40%] right-0 w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(6,182,212,0.04)_0%,transparent_70%)]" />
       </div>
 
       <div className="relative z-10">
-<<<<<<< HEAD
-        { }
-        <PricingHero billingCycle={billingCycle} setBillingCycle={setBillingCycle} />
-
-        { }
-=======
         {}
         <PricingHero billingCycle={billingCycle} setBillingCycle={setBillingCycle} />
 
         {}
->>>>>>> 6369408 (feat: initial frontend + fixes)
         <section className="relative z-10 -mt-6 pb-24 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start lg:gap-8">
@@ -145,17 +130,10 @@ export default function PricingPage() {
           </div>
         </section>
 
-<<<<<<< HEAD
-        { }
-        <PaymentMethods />
-
-        { }
-=======
         {}
         <PaymentMethods />
 
         {}
->>>>>>> 6369408 (feat: initial frontend + fixes)
         <PricingFaq />
       </div>
     </main>

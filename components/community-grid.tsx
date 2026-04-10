@@ -6,8 +6,6 @@ import { useSearchParams } from "next/navigation"
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebaseClient"
 import type { CommunityPost } from "@/lib/types"
-<<<<<<< HEAD
-=======
 import { mapCommunityPost } from "@/lib/community-post"
 
 const LEGACY_TEMPLATE_SLUG_FRAGMENTS = [
@@ -54,18 +52,14 @@ function isTemplatePost(post: CommunityPost) {
         (post.type === "video" && post.allowRemix)
     )
 }
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
 export function CommunityGrid() {
     const gridRef = useRef<HTMLDivElement>(null)
     const searchParams = useSearchParams()
 
     const tagFilter = searchParams.get("tag")
-<<<<<<< HEAD
-=======
     const textFilter = (searchParams.get("q") || "").trim().toLowerCase()
     const quickFilter = (searchParams.get("filter") || "").trim().toLowerCase()
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
     const [livePosts, setLivePosts] = useState<CommunityPost[]>([])
     const [removedPosts, setRemovedPosts] = useState<Set<string>>(new Set())
@@ -95,38 +89,7 @@ export function CommunityGrid() {
                     const data = doc.data();
                     return data.isDeleted !== true && data.status !== "deleted";
                 })
-<<<<<<< HEAD
-                .map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        type: data.type || "image",
-                        title: data.title || "Untitled",
-                        description: data.description || "",
-                        prompt: data.prompt || "",
-                        author: {
-                            id: data.author?.uid || "unknown",
-                            name: data.author?.name || "Anonymous",
-                            avatar: data.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.id}`
-                        },
-                        assetUrl: data.assetUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2560&auto=format&fit=crop",
-                        thumbnailUrl: data.thumbnailUrl || data.assetUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2560&auto=format&fit=crop",
-                        aspectRatio: data.type === "video" ? "landscape" : "portrait", 
-                        likes: data.likes || 0,
-                        views: data.views || 0,
-                        allowRemix: data.allowRemix ?? true,
-                        createdAt: data.createdAt?.toDate() || new Date(),
-                        creationId: data.creationId || data.parameters?.originalCreationId,
-                        tags: data.tags || [],
-                        model: data.model || "Unknown",
-                        preset: data.preset || "General",
-                        quality: data.quality || "Standard",
-                        size: data.size || "1024x1024",
-                    } as CommunityPost;
-                });
-=======
                 .map(doc => mapCommunityPost(doc.id, doc.data() as Record<string, any>));
->>>>>>> 6369408 (feat: initial frontend + fixes)
             setLivePosts(fetchedPosts);
         }, (error) => {
             console.error("Error fetching live posts:", error);
@@ -154,8 +117,6 @@ export function CommunityGrid() {
             );
         }
 
-<<<<<<< HEAD
-=======
         if (textFilter) {
             finalArray = finalArray.filter((post) => {
                 const haystack = [
@@ -197,7 +158,6 @@ export function CommunityGrid() {
             });
         }
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
         
         const images = finalArray.filter(p => p.type === 'image');
         const videos = finalArray.filter(p => p.type === 'video');
@@ -218,16 +178,6 @@ export function CommunityGrid() {
         }
 
         return mixed;
-<<<<<<< HEAD
-    }, [tagFilter, livePosts, removedPosts]);
-
-
-    if (filteredPosts.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-                <p className="text-xl font-medium text-white mb-2">No generations found</p>
-                <p className="text-zinc-500">There are no posts with the tag &quot;#{tagFilter}&quot;.</p>
-=======
     }, [quickFilter, tagFilter, textFilter, livePosts, removedPosts]);
 
 
@@ -243,7 +193,6 @@ export function CommunityGrid() {
             <div className="flex flex-col items-center justify-center py-20 text-center">
                 <p className="text-xl font-medium text-white mb-2">No generations found</p>
                 <p className="text-zinc-500">{reason}</p>
->>>>>>> 6369408 (feat: initial frontend + fixes)
             </div>
         )
     }

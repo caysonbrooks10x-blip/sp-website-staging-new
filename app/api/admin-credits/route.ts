@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 
-<<<<<<< HEAD
-=======
-export const runtime = 'edge';
+export const runtime = "nodejs";
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
 export async function POST(request: Request) {
     try {
         const payload = await request.json();

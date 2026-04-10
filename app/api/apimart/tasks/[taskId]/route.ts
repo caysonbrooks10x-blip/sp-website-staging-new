@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { ApiMartRequestError, queryApiMartTaskStatus } from "@/lib/apimart"
 
-export const runtime = "edge"
+export const runtime = "nodejs"
 
 export async function GET(request: Request, context: { params: Promise<{ taskId: string }> }) {
   try {

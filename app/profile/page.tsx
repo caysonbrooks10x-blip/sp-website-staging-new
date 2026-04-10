@@ -29,10 +29,7 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
 import Image from "next/image"
 import { ASSET_BASE } from "@/lib/assets"
-<<<<<<< HEAD
-=======
 import { listPersistedStudioGenerations } from "@/lib/studio-generations"
->>>>>>> 6369408 (feat: initial frontend + fixes)
 
 
 import { doc, onSnapshot } from "firebase/firestore"
@@ -86,23 +83,6 @@ function ProfileContent() {
     if (!user || activeTab !== "creations") return
 
     let isMounted = true;
-<<<<<<< HEAD
-    async function loadCreations() {
-      setLoadingCreations(true)
-      try {
-        const getUserCreations = httpsCallable(functions, "getUserCreations")
-        const result = await getUserCreations()
-        if (isMounted) {
-          const data = result.data as any
-          console.log("CREATIONS RESPONSE:", data)
-
-          if (Array.isArray(data)) {
-            setCreations(data)
-          } else {
-            setCreations(data.creations || [])
-          }
-        }
-=======
     const uid = user.uid
     const createdAt = user.metadata.creationTime ? new Date(user.metadata.creationTime).getTime() : null
     const isFreshAccount = createdAt ? Date.now() - createdAt < 10 * 60 * 1000 : false
@@ -151,7 +131,6 @@ function ProfileContent() {
         }
 
         setCreations(Array.from(merged.values()))
->>>>>>> 6369408 (feat: initial frontend + fixes)
       } catch (err) {
         console.error("Failed to fetch user creations:", err)
       } finally {

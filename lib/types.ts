@@ -77,8 +77,6 @@ export interface Creation {
   createdAt: Date
 }
 
-<<<<<<< HEAD
-=======
 export interface CommunityCampaignMeta {
   directed?: boolean
   goal?: string
@@ -89,7 +87,6 @@ export interface CommunityCampaignMeta {
   presetIds?: string[]
 }
 
->>>>>>> 6369408 (feat: initial frontend + fixes)
 export interface CommunityPost {
   id: string
   title: string
@@ -106,13 +103,8 @@ export interface CommunityPost {
   views: number
   allowRemix: boolean
   createdAt: Date
-<<<<<<< HEAD
-  remixSourceId?: string
-  parentAssetId?: string
-=======
   remixSourceId?: string 
   parentAssetId?: string 
->>>>>>> 6369408 (feat: initial frontend + fixes)
   type: "image" | "video"
   prompt: string
   tags: string[]
@@ -121,8 +113,6 @@ export interface CommunityPost {
   quality?: string
   size?: string
   creationId?: string
-<<<<<<< HEAD
-=======
   parentCreationId?: string
   rootCreationId?: string
   remixDepth?: number
@@ -130,5 +120,4 @@ export interface CommunityPost {
   campaign?: CommunityCampaignMeta
   generationPlatform?: "poyo" | "apimart" | string
   taskId?: string
->>>>>>> 6369408 (feat: initial frontend + fixes)
 }
