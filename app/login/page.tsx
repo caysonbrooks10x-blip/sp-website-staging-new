@@ -166,18 +166,12 @@ export default function LoginPage() {
                 className="w-full max-w-[500px] relative z-10"
             >
                 <div className="text-center mb-8">
-                    <div className="flex flex-col items-center transition-all duration-500 hover:scale-105">
+                    <div className="flex items-center justify-center transition-all duration-500 hover:scale-105">
                         <img
-                            src="/studio_logo.svg"
-                            alt="StudioX Icon"
-                            draggable="false"
-                            className="h-20 md:h-32 w-auto object-contain filter drop-shadow-[0_0_40px_rgba(168,85,247,0.55)] select-none z-10"
-                        />
-                        <img
-                            src="/studio_brandname.svg"
+                            src="/brand/studiox-lockup.png"
                             alt="StudioX"
                             draggable="false"
-                            className="h-10 md:h-16 w-auto object-contain filter drop-shadow-[0_0_30px_rgba(168,85,247,0.4)] select-none -mt-4 md:-mt-14"
+                            className="h-14 md:h-16 w-auto object-contain filter drop-shadow-[0_0_30px_rgba(168,85,247,0.45)] select-none z-10"
                         />
                     </div>
                 </div>
