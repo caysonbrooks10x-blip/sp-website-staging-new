@@ -64,16 +64,8 @@ export default function LoginPage() {
         redirectPath.current = params.get('redirect') || "/onboarding";
     }, []);
 
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-        const host = window.location.hostname;
-        const isVercelPreviewHost = host.includes("studioproject1s-projects.vercel.app");
-        if (isVercelPreviewHost && host !== canonicalAuthHost) {
-            const target = new URL(window.location.href);
-            target.hostname = canonicalAuthHost;
-            window.location.replace(target.toString());
-        }
-    }, [canonicalAuthHost]);
+    // Preview auth redirect disabled — each Vercel preview should handle auth on its own domain.
+    // The preview domain must be added to Firebase Auth authorized domains to allow sign-in.
 
     useEffect(() => {
         if (!loading && user) {
