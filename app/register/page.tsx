@@ -12,7 +12,7 @@ import Link from "next/link";
 import { ASSET_BASE } from "@/lib/assets";
 
 export default function RegisterPage() {
-    const { user, loading, signUpWithEmail } = useAuth();
+    const { user, loading, onboardingCompleted, signUpWithEmail } = useAuth();
     const router = useRouter();
     const [formData, setFormData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
     const [error, setError] = useState("");
@@ -23,21 +23,21 @@ export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const redirectPath = useRef("/");
+    const redirectPath = useRef<string | null>(null);
 
     useEffect(() => {
         
         const params = new URLSearchParams(window.location.search);
-        redirectPath.current = params.get('redirect') || "/onboarding";
+        redirectPath.current = params.get('redirect');
     }, []);
 
     useEffect(() => {
         
         
-        if (!isSubmitting && !isVerificationSent && !loading && user) {
-            router.push(redirectPath.current || "/onboarding");
+        if (!isSubmitting && !isVerificationSent && !loading && user && onboardingCompleted !== null) {
+            router.push(redirectPath.current || (onboardingCompleted ? "/studio" : "/onboarding"));
         }
-    }, [user, loading, router, isVerificationSent, isSubmitting]);
+    }, [user, loading, onboardingCompleted, router, isVerificationSent, isSubmitting]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

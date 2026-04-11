@@ -37,6 +37,8 @@ import {
 import { chooseProvider } from "@/lib/provider-routing";
 import { EXPORT_PACK_PRESETS, normalizeExportPresetIds } from "@/lib/export-pack";
 
+import type { StudioMode } from "@/components/studio/sidebar";
+
 interface StudioLeftPanelProps {
     onGenerate: (prompt: string, settings: any) => void;
     onCancel?: () => void;
@@ -44,6 +46,7 @@ interface StudioLeftPanelProps {
     mode?: "image" | "video" | "templates" | "remix" | string;
     aspectRatio: string;
     setAspectRatio: (val: string) => void;
+    studioMode?: StudioMode;
 }
 
 interface ModelItem {
@@ -84,7 +87,7 @@ function getCostTier(cost: number): "Economy" | "Balanced" | "Premium" {
     return "Premium";
 }
 
-export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio }: StudioLeftPanelProps) {
+export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode }: StudioLeftPanelProps) {
     const searchParams = useSearchParams();
 
     const urlMode = searchParams?.get("mode")?.toLowerCase() || initialMode || "image";
@@ -261,6 +264,34 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             setAutoExportPack(autoExportParam === "1");
         }
     }, [searchParams]);
+
+    // Sync sidebar mode to creation mode
+    useEffect(() => {
+        if (!studioMode) return;
+        switch (studioMode) {
+            case "text-to-image":
+                if (creationMode !== "image") handleModeSwitch("image");
+                break;
+            case "image-to-image":
+                if (creationMode !== "image") handleModeSwitch("image");
+                break;
+            case "text-to-video":
+                if (creationMode !== "video") handleModeSwitch("video");
+                break;
+            case "image-to-video":
+                if (creationMode !== "video") handleModeSwitch("video");
+                break;
+            case "motion-control":
+                if (creationMode !== "video") handleModeSwitch("video");
+                // Auto-select motion control model
+                const mcModel = AI_VIDEO_MODELS.find(m => m.id === "kling-3.0-motion-control");
+                if (mcModel) setSelectedModel(mcModel);
+                break;
+            case "remix":
+                if (creationMode !== "remix") handleModeSwitch("remix");
+                break;
+        }
+    }, [studioMode]);
 
     useEffect(() => {
         if (!cfg) return;
@@ -600,93 +631,40 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
 
 
     return (
-        <div className="w-full h-full flex flex-col bg-white/[0.04] backdrop-blur-[24px] border border-white/[0.08] shadow-[0_20px_60px_rgba(0,0,0,0.7)] rounded-[28px] relative z-20 text-zinc-100 overflow-hidden transition-all duration-500 before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.05] before:to-transparent before:pointer-events-none">
+        <div className="w-full h-full flex flex-col glass-card-gold relative z-20 text-zinc-100 overflow-hidden rounded-none border-0">
 
-            {}
+            {/* Scrollable form content */}
             <div className="flex-1 relative z-10 w-full min-h-0">
-                {}
                 <div
-                    className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar touch-pan-y pointer-events-auto"
+                    className="absolute inset-0 overflow-y-auto overflow-x-hidden studio-scrollbar touch-pan-y pointer-events-auto"
                     data-lenis-prevent="true"
                 >
                     <div className="p-5 pb-12 flex flex-col gap-5 w-full">
 
-                        {}
-                        <div className="flex p-1.5 bg-black/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[inset_0_1px_4px_rgba(255,255,255,0.05)] relative shrink-0">
-                            {}
-                            <div
-                                className="absolute top-1.5 bottom-1.5 left-1.5 bg-white/[0.08] border border-white/20 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.05)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] z-0"
-                                style={{
-                                    width: `calc((100% - 12px) / 4)`,
-                                    transform: `translateX(calc(${['image', 'video', 'remix', 'templates'].indexOf(creationMode)} * 100%))`
-                                }}
-                            />
-                            {['Image', 'Video', 'Remix', 'Templates'].map((mode) => (
-                                <button
-                                    key={mode}
-                                    onClick={() => handleModeSwitch(mode)}
-                                    className={cn(
-                                        "flex-1 min-w-0 flex items-center justify-center py-2.5 text-[10px] font-black tracking-wider uppercase transition-all duration-300 relative z-10",
-                                        creationMode === mode.toLowerCase() ? "text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]" : "text-zinc-500 hover:text-zinc-300"
-                                    )}
-                                >
-                                    {mode}
-                                </button>
-                            ))}
-                        </div>
-
-                        {}
+                        {/* Model Selector */}
                         {(creationMode === 'image' || creationMode === 'video' || creationMode === 'remix' || creationMode === 'templates') && (
-                            <div className="space-y-2.5 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                <label className="text-[10px] font-medium text-zinc-500 tracking-[0.2em] uppercase flex items-center gap-2 px-1">
-                                    <Settings2 className="w-3.5 h-3.5 text-zinc-600" /> Model Engine
-                                </label>
-
-                                {quickModelPicks.length > 0 && (
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {quickModelPicks.map((pick) => (
-                                            <button
-                                                key={pick.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    const target = activeModelPool.find((model) => model.id === pick.id);
-                                                    if (target) setSelectedModel(target);
-                                                }}
-                                                className={cn(
-                                                    "rounded-xl border px-2.5 py-1.5 text-left transition-all duration-300",
-                                                    selectedModel.id === pick.id
-                                                        ? "border-cyan-300/40 bg-cyan-300/12 text-cyan-100"
-                                                        : "border-white/10 bg-black/25 text-zinc-300 hover:border-white/20 hover:text-white"
-                                                )}
-                                            >
-                                                <p className="text-[10px] font-semibold uppercase tracking-[0.16em]">{pick.label}</p>
-                                                <p className="mt-0.5 truncate text-[11px] text-zinc-300">{pick.name}</p>
-                                                <p className="text-[10px] text-zinc-500">{pick.helper}</p>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                            <div className="space-y-3 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
                                 <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen} modal={false}>
                                     <DropdownMenuTrigger asChild>
-                                        <div className="w-full h-[54px] px-4.5 bg-black/20 hover:bg-black/40 rounded-[18px] border border-white/5 hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.03)] transition-all duration-500 cursor-pointer flex items-center justify-between group overflow-hidden">
+                                        <div className="w-full h-11 px-3 bg-[#111] hover:bg-[#161616] rounded-lg border border-[#222] hover:border-[#333] transition-all duration-200 cursor-pointer flex items-center justify-between group">
                                             <div className="flex flex-1 items-center justify-between">
-                                                <div className="flex items-center gap-3.5 min-w-0">
-                                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-white/[0.05] to-white/[0.12] border border-white/10 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-500 shrink-0">
-                                                        {creationMode === 'video' ? <Video className="w-4 h-4 text-white/80" /> : <Sparkles className="w-4 h-4 text-white/80" />}
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <div className="w-6 h-6 rounded-md bg-[#c5a44e]/10 border border-[#c5a44e]/20 flex items-center justify-center shrink-0">
+                                                        {creationMode === 'video' ? <Video className="w-3.5 h-3.5 text-[#c5a44e]" /> : <Sparkles className="w-3.5 h-3.5 text-[#c5a44e]" />}
                                                     </div>
-                                                    <div className="flex flex-col gap-0 min-w-0">
-                                                        <span className="text-[12px] font-bold text-zinc-100 group-hover:text-white transition-colors uppercase tracking-wider truncate">{selectedModel.name}</span>
-                                                        <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Active Engine</span>
-                                                    </div>
+                                                    <span className="text-sm font-medium text-zinc-200 truncate">{selectedModel.name}</span>
+                                                    {selectedModel.isNew && (
+                                                        <span className="text-[10px] bg-[#c5a44e] text-black px-1.5 py-0.5 rounded font-bold">NEW</span>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-4">
                                                     {currentCostEstimate > 0 && (
-                                                        <div className="flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full bg-black/60 border border-white/10 group-hover:border-indigo-500/20 transition-all shadow-inner">
-                                                            <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.5)]">
-                                                                <Sparkles className="w-2.5 h-2.5 text-white fill-white" />
+                                                        <div className="flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full bg-black/60 border border-[#c5a44e]/20 transition-all shadow-inner">
+                                                            <div className="w-3.5 h-3.5 rounded-full bg-[#c5a44e] flex items-center justify-center">
+                                                                <Sparkles className="w-2.5 h-2.5 text-black fill-black" />
                                                             </div>
-                                                            <span className="text-[11px] font-black text-indigo-100 group-hover:text-white tabular-nums tracking-wider">{currentCostEstimate}</span>
+                                                            <span className="text-[11px] font-black text-[#c5a44e] tabular-nums tracking-wider">{currentCostEstimate}</span>
                                                         </div>
                                                     )}
                                                     <ChevronDown className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 transition-all group-hover:translate-y-0.5" />
@@ -694,7 +672,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             </div>
                                         </div>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" sideOffset={8} className="z-[9999] w-[340px] max-w-[calc(100vw-64px)] bg-[#121217]/95 border border-white/[0.08] shadow-[0_30px_60px_rgba(0,0,0,0.9)] rounded-[20px] p-0 overflow-hidden backdrop-blur-3xl">
+                                    <DropdownMenuContent align="start" sideOffset={8} className="z-[9999] w-[340px] max-w-[calc(100vw-64px)] bg-[#0f0f0f] border border-[#222] shadow-[0_30px_60px_rgba(0,0,0,0.9)] rounded-xl p-0 overflow-hidden">
                                         <div
                                             className="max-h-[300px] overflow-y-auto p-2 custom-scrollbar pointer-events-auto"
                                             onWheel={(e) => e.stopPropagation()}
@@ -723,22 +701,22 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                         >
                                                             <div className="min-w-0">
                                                                 <div className="flex items-center gap-2.5">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 group-hover:bg-indigo-400 transition-colors shadow-[0_0_8px_transparent] group-hover:shadow-indigo-500/50" />
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 group-hover:bg-[#c5a44e] transition-colors" />
                                                                     <span className={cn("text-[13px] font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors truncate")}>{model.name}</span>
                                                                 </div>
                                                                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                                                    <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-cyan-100">
+                                                                    <span className="rounded-full border border-[#c5a44e]/30 bg-[#c5a44e]/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[#c5a44e]">
                                                                         {modelProvider}
                                                                     </span>
                                                                     <span className="rounded-full border border-white/15 bg-white/[0.04] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-zinc-400">
                                                                         {tier}
                                                                     </span>
-                                                                    {model.isNew && <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border border-indigo-500/20">New</span>}
+                                                                    {model.isNew && <span className="bg-[#c5a44e]/10 text-[#c5a44e] text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border border-[#c5a44e]/20">New</span>}
                                                                 </div>
                                                             </div>
                                                             <div className="ml-2 flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                                                                <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-sm">
-                                                                    <Sparkles className="w-2.5 h-2.5 text-white fill-white" />
+                                                                <div className="w-4 h-4 rounded-full bg-[#c5a44e] flex items-center justify-center">
+                                                                    <Sparkles className="w-2.5 h-2.5 text-black fill-black" />
                                                                 </div>
                                                                 <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white tabular-nums tracking-wide">
                                                                     {estimatedCost}
@@ -753,7 +731,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 </DropdownMenu>
 
                                 <div className="flex flex-wrap items-center gap-1.5 px-1">
-                                    <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-cyan-100">
+                                    <span className="rounded-full border border-[#c5a44e]/30 bg-[#c5a44e]/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[#c5a44e]">
                                         Provider: {selectedProvider}
                                     </span>
                                     <span className="rounded-full border border-white/15 bg-white/[0.03] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-zinc-400">
@@ -777,7 +755,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                         <button key={tpl} onClick={(e) => {
                                             e.preventDefault();
                                             setPrompt(prev => prev ? `${prev}, ${tpl} style` : `${tpl} style, `);
-                                        }} className="py-2.5 px-3 bg-white/[0.02] border border-white/[0.06] rounded-xl text-[11px] font-medium text-zinc-400 hover:text-white hover:border-white/[0.15] hover:bg-white/[0.04] transition-all text-left">
+                                        }} className="py-2.5 px-3 bg-[#111] border border-[#222] rounded-xl text-[11px] font-medium text-zinc-400 hover:text-white hover:border-[#333] hover:bg-[#161616] transition-all text-left">
                                             {tpl}
                                         </button>
                                     ))}
@@ -797,7 +775,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                         </button>
                                     )}
                                 </label>
-                                <div className="bg-white/[0.02] rounded-[20px] border border-white/[0.05] focus-within:border-white/[0.15] focus-within:bg-white/[0.04] focus-within:shadow-[0_0_40px_rgba(255,255,255,0.03)] transition-all duration-500 overflow-hidden shadow-inner flex flex-col group relative">
+                                <div className="bg-[#111] rounded-xl border border-[#222] focus-within:border-[#c5a44e]/40 focus-within:shadow-[0_0_0_2px_rgba(197,164,78,0.1)] transition-all duration-300 overflow-hidden flex flex-col group relative">
                                     <Textarea
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
@@ -817,7 +795,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                     
                                                     {}
                                                     {sourceFile && (
-                                                        <div className="absolute inset-0 bg-indigo-500/20 backdrop-blur-[2px] flex items-center justify-center animate-pulse">
+                                                        <div className="absolute inset-0 bg-[#c5a44e]/20 backdrop-blur-[2px] flex items-center justify-center animate-pulse">
                                                             <Sparkles className="w-5 h-5 text-white" />
                                                         </div>
                                                     )}
@@ -835,7 +813,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                         <span className="bg-red-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg shadow-lg">Remove</span>
                                                     </button>
                                                 </div>
-                                                <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-1.5 rounded-full shadow-lg border border-white/20 z-10">
+                                                <div className="absolute -bottom-2 -right-2 bg-[#c5a44e] text-black p-1.5 rounded-full shadow-lg border border-[#c5a44e]/40 z-10">
                                                     <Wand2 className="w-3 h-3" />
                                                 </div>
                                             </div>
@@ -860,16 +838,16 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                             <label className="text-[10px] font-medium text-zinc-500 tracking-[0.2em] uppercase flex items-center gap-2 px-1">
                                 <Sparkles className="w-3.5 h-3.5 text-zinc-600" /> Director Mode
                             </label>
-                            <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.02] p-4 space-y-4">
+                            <div className="rounded-xl border border-[#222] bg-[#111] p-4 space-y-4">
                                 <button
                                     onClick={() => setDirectorModeEnabled((prev) => !prev)}
-                                    className="w-full flex items-center justify-between rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2.5 hover:bg-black/45 transition-colors"
+                                    className="w-full flex items-center justify-between rounded-xl border border-[#222] bg-[#0e0e0e] px-3 py-2.5 hover:border-[#333] transition-colors"
                                 >
                                     <div className="text-left">
                                         <p className="text-[12px] font-semibold text-zinc-100">Campaign Director</p>
                                         <p className="text-[10px] text-zinc-500">Guides generation + export pack strategy</p>
                                     </div>
-                                    <div className={cn("w-10 h-5.5 rounded-full transition-all duration-300 relative", directorModeEnabled ? "bg-lime-500/80" : "bg-zinc-700")}>
+                                    <div className={cn("w-10 h-5.5 rounded-full transition-all duration-300 relative", directorModeEnabled ? "bg-[#c5a44e]" : "bg-zinc-700")}>
                                         <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-xl", directorModeEnabled ? "left-[19px]" : "left-[3px]")} />
                                     </div>
                                 </button>
@@ -881,26 +859,26 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                 value={directorGoal}
                                                 onChange={(event) => setDirectorGoal(event.target.value)}
                                                 placeholder="Goal (e.g. launch teaser)"
-                                                className="h-11 rounded-xl border border-white/[0.08] bg-black/30 px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20"
+                                                className="h-11 rounded-xl border border-[#222] bg-[#0e0e0e] px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a44e]/40"
                                             />
                                             <input
                                                 value={directorPlatform}
                                                 onChange={(event) => setDirectorPlatform(event.target.value)}
                                                 placeholder="Primary platform"
-                                                className="h-11 rounded-xl border border-white/[0.08] bg-black/30 px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20"
+                                                className="h-11 rounded-xl border border-[#222] bg-[#0e0e0e] px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a44e]/40"
                                             />
                                         </div>
                                         <input
                                             value={directorStyle}
                                             onChange={(event) => setDirectorStyle(event.target.value)}
                                             placeholder="Style direction"
-                                            className="h-11 w-full rounded-xl border border-white/[0.08] bg-black/30 px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20"
+                                            className="h-11 w-full rounded-xl border border-[#222] bg-[#0e0e0e] px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a44e]/40"
                                         />
                                         <textarea
                                             value={directorBrief}
                                             onChange={(event) => setDirectorBrief(event.target.value)}
                                             placeholder="Campaign brief (optional)"
-                                            className="min-h-[74px] w-full rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2.5 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20 resize-none"
+                                            className="min-h-[74px] w-full rounded-xl border border-[#222] bg-[#0e0e0e] px-3 py-2.5 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a44e]/40 resize-none"
                                         />
 
                                         <div className="space-y-2">
@@ -935,8 +913,8 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                             className={cn(
                                                                 "rounded-xl border px-2.5 py-2 text-left transition-colors",
                                                                 isActive
-                                                                    ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
-                                                                    : "border-white/[0.08] bg-black/30 text-zinc-300 hover:border-white/[0.16]"
+                                                                    ? "border-[#c5a44e]/40 bg-[#c5a44e]/10 text-[#c5a44e]"
+                                                                    : "border-[#222] bg-[#0e0e0e] text-zinc-300 hover:border-[#333]"
                                                             )}
                                                         >
                                                             <p className="text-[11px] font-semibold leading-tight">{preset.label}</p>
@@ -949,13 +927,13 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
 
                                         <button
                                             onClick={() => setAutoExportPack((prev) => !prev)}
-                                            className="w-full flex items-center justify-between rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2.5 hover:bg-black/45 transition-colors"
+                                            className="w-full flex items-center justify-between rounded-xl border border-[#222] bg-[#0e0e0e] px-3 py-2.5 hover:border-[#333] transition-colors"
                                         >
                                             <div className="text-left">
                                                 <p className="text-[12px] font-semibold text-zinc-100">Auto Export Pack</p>
                                                 <p className="text-[10px] text-zinc-500">Open export pack immediately after completion</p>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-300 relative", autoExportPack ? "bg-lime-500/80" : "bg-zinc-700")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-300 relative", autoExportPack ? "bg-[#c5a44e]" : "bg-zinc-700")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-xl", autoExportPack ? "left-[19px]" : "left-[3px]")} />
                                             </div>
                                         </button>
@@ -978,8 +956,8 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             className={cn(
                                                 "py-3 rounded-[12px] text-[12px] font-semibold transition-all duration-300 border flex items-center justify-center",
                                                 aspectRatio === ratio
-                                                    ? "bg-white/[0.08] text-white border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.05)]"
-                                                    : "bg-white/[0.01] text-zinc-500 border-white/[0.03] hover:bg-white/[0.03] hover:text-zinc-300 hover:border-white/[0.08]"
+                                                    ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40"
+                                                    : "bg-white/[0.02] text-zinc-500 border-[#222] hover:bg-white/[0.04] hover:text-zinc-300 hover:border-[#333]"
                                             )}
                                         >
                                             {ratio}
@@ -997,29 +975,29 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 </label>
                                 <div className="flex flex-col gap-2">
                                     {(creationMode === "image" || creationMode === "remix") && (
-                                        <div className={cn("flex flex-col gap-3 rounded-[20px] p-4 border transition-colors", supportsMultiOutput ? "bg-white/[0.02] border-white/[0.05] shadow-inner hover:bg-white/[0.03]" : "bg-black/20 border-white/[0.02]")}>
+                                        <div className={cn("flex flex-col gap-3 rounded-xl p-4 border transition-colors", supportsMultiOutput ? "bg-[#111] border-[#222] hover:border-[#333]" : "bg-[#0e0e0e] border-[#1a1a1a]")}>
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Image Count {maxN > 4 && <span className="text-zinc-600">({imageCount})</span>}</span>
                                             {maxN <= 4 ? (
                                                 <div className="flex gap-2">
                                                     {Array.from({ length: maxN }, (_, i) => i + 1).map(n => {
                                                         const isDisabled = !supportsMultiOutput && n > 1;
                                                         return (
-                                                            <button key={n} disabled={isDisabled} onClick={() => setImageCount(n)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", imageCount === n ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]" : isDisabled ? "bg-white/[0.01] text-zinc-700 border-white/[0.02] cursor-not-allowed" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>{n}</button>
+                                                            <button key={n} disabled={isDisabled} onClick={() => setImageCount(n)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", imageCount === n ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : isDisabled ? "bg-white/[0.01] text-zinc-700 border-white/[0.02] cursor-not-allowed" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>{n}</button>
                                                         );
                                                     })}
                                                 </div>
                                             ) : (
-                                                <input type="range" min="1" max={maxN} value={imageCount} onChange={(e) => setImageCount(parseInt(e.target.value))} className="w-full h-1.5 bg-black/50 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ background: `linear-gradient(to right, #8b5cf6 ${((imageCount - 1) / (maxN - 1)) * 100}%, rgba(0,0,0,0.5) ${((imageCount - 1) / (maxN - 1)) * 100}%)` }} />
+                                                <input type="range" min="1" max={maxN} value={imageCount} onChange={(e) => setImageCount(parseInt(e.target.value))} className="w-full h-1.5 bg-black/50 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ background: `linear-gradient(to right, #c5a44e ${((imageCount - 1) / (maxN - 1)) * 100}%, rgba(0,0,0,0.5) ${((imageCount - 1) / (maxN - 1)) * 100}%)` }} />
                                             )}
                                         </div>
                                     )}
 
                                     {showResolution && resOptions && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Quality (Resolution)</span>
                                             <div className="flex gap-2">
                                                 {resOptions.map(r => (
-                                                    <button key={r.value} onClick={() => setResolution(r.value)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", resolution === r.value ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
+                                                    <button key={r.value} onClick={() => setResolution(r.value)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", resolution === r.value ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {r.label}
                                                     </button>
                                                 ))}
@@ -1028,11 +1006,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {showOutputFormat && imgCfg?.outputFormatOptions && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Output Format</span>
                                             <div className="flex gap-2">
                                                 {imgCfg.outputFormatOptions.map(fmt => (
-                                                    <button key={fmt} onClick={() => setOutputFormat(fmt)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border uppercase", outputFormat === fmt ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
+                                                    <button key={fmt} onClick={() => setOutputFormat(fmt)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border uppercase", outputFormat === fmt ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {fmt}
                                                     </button>
                                                 ))}
@@ -1041,14 +1019,14 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {hasDuration && durationButtons.length > 0 && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[16px] p-3 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-3 hover:border-[#333] transition-colors">
                                             <span className="text-[11px] font-semibold text-zinc-400">Duration {vidCfg?.durationRange && <span className="text-zinc-600">({duration}s)</span>}</span>
                                             {vidCfg?.durationRange ? (
-                                                <input type="range" min={vidCfg.durationRange.min} max={vidCfg.durationRange.max} value={duration} onChange={(e) => setDuration(parseInt(e.target.value))} className="w-full h-1.5 bg-black/50 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ background: `linear-gradient(to right, #8b5cf6 ${((duration - vidCfg.durationRange.min) / (vidCfg.durationRange.max - vidCfg.durationRange.min)) * 100}%, rgba(0,0,0,0.5) ${((duration - vidCfg.durationRange.min) / (vidCfg.durationRange.max - vidCfg.durationRange.min)) * 100}%)` }} />
+                                                <input type="range" min={vidCfg.durationRange.min} max={vidCfg.durationRange.max} value={duration} onChange={(e) => setDuration(parseInt(e.target.value))} className="w-full h-1.5 bg-black/50 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ background: `linear-gradient(to right, #c5a44e ${((duration - vidCfg.durationRange.min) / (vidCfg.durationRange.max - vidCfg.durationRange.min)) * 100}%, rgba(0,0,0,0.5) ${((duration - vidCfg.durationRange.min) / (vidCfg.durationRange.max - vidCfg.durationRange.min)) * 100}%)` }} />
                                             ) : (
                                                 <div className="flex gap-1.5 flex-wrap">
                                                     {durationButtons.map(d => (
-                                                        <button key={d.value} disabled={d.disabled} onClick={() => setDuration(d.value)} className={cn("px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all border", duration === d.value ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" : d.disabled ? "bg-white/[0.01] text-zinc-700 border-white/[0.02] cursor-not-allowed opacity-40" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
+                                                        <button key={d.value} disabled={d.disabled} onClick={() => setDuration(d.value)} className={cn("px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all border", duration === d.value ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : d.disabled ? "bg-white/[0.01] text-zinc-700 border-white/[0.02] cursor-not-allowed opacity-40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                             {d.label}
                                                         </button>
                                                     ))}
@@ -1058,11 +1036,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {showStyleSelector && vidCfg?.styleOptions && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Style</span>
                                             <div className="flex gap-1.5 flex-wrap">
                                                 {vidCfg.styleOptions.map(s => (
-                                                    <button key={s} onClick={() => setVideoStyle(s)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", videoStyle === s ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
+                                                    <button key={s} onClick={() => setVideoStyle(s)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", videoStyle === s ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {s}
                                                     </button>
                                                 ))}
@@ -1071,11 +1049,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {showModeSelector && vidCfg?.modeOptions && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Mode</span>
                                             <div className="flex gap-2">
                                                 {vidCfg.modeOptions.map(m => (
-                                                    <button key={m} onClick={() => setVideoMode(m)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border capitalize", videoMode === m ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
+                                                    <button key={m} onClick={() => setVideoMode(m)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border capitalize", videoMode === m ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {m}
                                                     </button>
                                                 ))}
@@ -1084,11 +1062,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {showCharOrientationSelector && vidCfg?.characterOrientationOptions && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Character Orientation</span>
                                             <div className="flex gap-2">
                                                 {vidCfg.characterOrientationOptions.map(o => (
-                                                    <button key={o} onClick={() => setCharacterOrientation(o)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border capitalize", characterOrientation === o ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.05]")}>
+                                                    <button key={o} onClick={() => setCharacterOrientation(o)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border capitalize", characterOrientation === o ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {o}
                                                     </button>
                                                 ))}
@@ -1097,92 +1075,92 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {showSoundToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => { if (!(multiShots && vidCfg?.supportsMultiShots)) setSoundEnabled(!soundEnabled); }}>
+                                        <div className="flex items-center justify-between bg-[#111] border border-[#222] rounded-xl p-4 cursor-pointer hover:border-[#333] transition-all duration-300 group/item" onClick={() => { if (!(multiShots && vidCfg?.supportsMultiShots)) setSoundEnabled(!soundEnabled); }}>
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Audio Synthesis</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">{multiShots ? "Required for multi-shots" : "Generate matching soundscape"}</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", soundEnabled ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", soundEnabled ? "bg-[#c5a44e]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", soundEnabled ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showMultiShotsToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setMultiShots(!multiShots)}>
+                                        <div className="flex items-center justify-between bg-[#111] border border-[#222] rounded-xl p-4 cursor-pointer hover:border-[#333] transition-all duration-300 group/item" onClick={() => setMultiShots(!multiShots)}>
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Multi-Shots</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">Dynamic camera cuts & shifts</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", multiShots ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", multiShots ? "bg-[#c5a44e]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", multiShots ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showFixedLensToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setFixedLens(!fixedLens)}>
+                                        <div className="flex items-center justify-between bg-[#111] border border-[#222] rounded-xl p-4 cursor-pointer hover:border-[#333] transition-all duration-300 group/item" onClick={() => setFixedLens(!fixedLens)}>
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Fixed Lens</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">Maintain consistent focal length</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", fixedLens ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", fixedLens ? "bg-[#c5a44e]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", fixedLens ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showGenAudioToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setGenerateAudio(!generateAudio)}>
+                                        <div className="flex items-center justify-between bg-[#111] border border-[#222] rounded-xl p-4 cursor-pointer hover:border-[#333] transition-all duration-300 group/item" onClick={() => setGenerateAudio(!generateAudio)}>
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Audio Synthesis</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">AI generated foley & sound</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", generateAudio ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", generateAudio ? "bg-[#c5a44e]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", generateAudio ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showStoryboardToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setStoryboard(!storyboard)}>
+                                        <div className="flex items-center justify-between bg-[#111] border border-[#222] rounded-xl p-4 cursor-pointer hover:border-[#333] transition-all duration-300 group/item" onClick={() => setStoryboard(!storyboard)}>
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Storyboard</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">Enable storyboard mode</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", storyboard ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", storyboard ? "bg-[#c5a44e]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", storyboard ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showPromptOptimizerToggle && (
-                                        <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300 group/item" onClick={() => setPromptOptimizer(!promptOptimizer)}>
+                                        <div className="flex items-center justify-between bg-[#111] border border-[#222] rounded-xl p-4 cursor-pointer hover:border-[#333] transition-all duration-300 group/item" onClick={() => setPromptOptimizer(!promptOptimizer)}>
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Prompt Optimizer</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">Auto-enhance vision description</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", promptOptimizer ? "bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", promptOptimizer ? "bg-[#c5a44e]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", promptOptimizer ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
                                     )}
 
                                     {showNegativePrompt && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Negative Prompt</span>
-                                            <Textarea value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)} placeholder="Elements to avoid..." className="resize-none min-h-[60px] bg-black/20 border border-white/5 text-white placeholder:text-zinc-700 focus-visible:ring-0 px-4 py-3 text-[13px] font-medium rounded-xl" />
+                                            <Textarea value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)} placeholder="Elements to avoid..." className="resize-none min-h-[60px] bg-[#0e0e0e] border border-[#222] text-white placeholder:text-zinc-700 focus-visible:ring-0 focus:border-[#c5a44e]/40 px-4 py-3 text-[13px] font-medium rounded-xl" />
                                         </div>
                                     )}
 
                                     {creationMode === 'remix' && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4.5 group/strength">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 group/strength">
                                             <div className="flex items-center justify-between px-1">
                                                 <div className="flex flex-col gap-0.5">
-                                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.15em] drop-shadow-[0_0_8px_rgba(129,140,248,0.4)]">Remix Strength</span>
+                                                    <span className="text-[10px] font-black text-[#c5a44e] uppercase tracking-[0.15em]">Remix Strength</span>
                                                     <span className="text-[9px] text-zinc-600 font-bold italic tracking-wide">Creative deviation vs preservation</span>
                                                 </div>
-                                                <span className="text-[13px] font-black tabular-nums text-white bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 group-hover/strength:border-indigo-500/30 transition-all duration-500">{remixStrength}%</span>
+                                                <span className="text-[13px] font-black tabular-nums text-white bg-white/5 px-2.5 py-1 rounded-lg border border-[#222] group-hover/strength:border-[#c5a44e]/30 transition-all duration-500">{remixStrength}%</span>
                                             </div>
                                             <Slider
                                                 value={[remixStrength]}
@@ -1201,7 +1179,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {showVideoUpload && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Reference Video {vidCfg?.requiresReferenceVideo && <span className="text-red-400">*</span>}</span>
                                             {sourceVideoPreview ? (
                                                 <div className="relative w-full h-24 rounded-xl overflow-hidden border border-white/10">
@@ -1209,7 +1187,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                     <button onClick={() => { setSourceVideo(null); setSourceVideoPreview(""); if (videoInputRef.current) videoInputRef.current.value = ""; }} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><span className="bg-red-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg">Remove</span></button>
                                                 </div>
                                             ) : (
-                                                <button onClick={() => videoInputRef.current?.click()} className="w-full h-16 rounded-xl border border-dashed border-white/10 hover:border-white/20 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
+                                                <button onClick={() => videoInputRef.current?.click()} className="w-full h-16 rounded-xl border border-dashed border-[#333] hover:border-[#c5a44e]/40 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
                                                     <Upload className="w-4 h-4" /><span className="text-[11px] font-bold uppercase tracking-wider">Upload Video</span>
                                                 </button>
                                             )}
@@ -1218,7 +1196,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {showStartImage && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Start Frame Image</span>
                                             {startImagePreview ? (
                                                 <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
@@ -1226,7 +1204,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                     <button onClick={() => { setStartImageFile(null); setStartImagePreview(""); if (startImageRef.current) startImageRef.current.value = ""; }} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><X className="w-4 h-4 text-white" /></button>
                                                 </div>
                                             ) : (
-                                                <button onClick={() => startImageRef.current?.click()} className="w-full h-14 rounded-xl border border-dashed border-white/10 hover:border-white/20 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
+                                                <button onClick={() => startImageRef.current?.click()} className="w-full h-14 rounded-xl border border-dashed border-[#333] hover:border-[#c5a44e]/40 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
                                                     <Upload className="w-3.5 h-3.5" /><span className="text-[10px] font-bold uppercase tracking-wider">Upload Start Frame</span>
                                                 </button>
                                             )}
@@ -1235,7 +1213,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     )}
 
                                     {showEndImage && (
-                                        <div className="flex flex-col gap-3 bg-white/[0.02] border border-white/[0.05] rounded-[20px] p-4 shadow-inner hover:bg-white/[0.03] transition-colors">
+                                        <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">End Frame Image</span>
                                             {endImagePreview ? (
                                                 <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
@@ -1243,7 +1221,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                     <button onClick={() => { setEndImageFile(null); setEndImagePreview(""); if (endImageRef.current) endImageRef.current.value = ""; }} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><X className="w-4 h-4 text-white" /></button>
                                                 </div>
                                             ) : (
-                                                <button onClick={() => endImageRef.current?.click()} className="w-full h-14 rounded-xl border border-dashed border-white/10 hover:border-white/20 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
+                                                <button onClick={() => endImageRef.current?.click()} className="w-full h-14 rounded-xl border border-dashed border-[#333] hover:border-[#c5a44e]/40 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
                                                     <Upload className="w-3.5 h-3.5" /><span className="text-[10px] font-bold uppercase tracking-wider">Upload End Frame</span>
                                                 </button>
                                             )}
@@ -1259,31 +1237,31 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             </div>
 
             {}
-            <div className="flex-none p-5 pt-1 bg-gradient-to-t from-black/90 via-black/40 to-transparent backdrop-blur-3xl z-30 flex gap-3">
+            <div className="flex-none p-5 pt-1 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent z-30 flex gap-3">
                 {isGenerating && onCancel && (
                     <Button
                         onClick={onCancel}
                         variant="destructive"
-                        className="w-14 h-[58px] rounded-[22px] flex items-center justify-center bg-red-500/5 hover:bg-red-500/15 text-red-500 border border-red-500/15 shadow-none transition-all duration-300 active:scale-95"
+                        className="w-14 h-[52px] rounded-xl flex items-center justify-center bg-red-500/5 hover:bg-red-500/15 text-red-500 border border-red-500/15 shadow-none transition-all duration-300 active:scale-95"
                     >
-                        <X className="w-5.5 h-5.5" />
+                        <X className="w-5 h-5" />
                     </Button>
                 )}
                 <Button
                     onClick={handleGenerate}
                     disabled={isGenerating || !prompt}
                     className={cn(
-                        "flex-1 h-[58px] rounded-[22px] text-[13px] font-black tracking-[0.2em] uppercase transition-all duration-500 group relative overflow-hidden",
+                        "flex-1 h-[52px] rounded-xl text-[13px] font-bold tracking-[0.1em] uppercase transition-all duration-300 group relative overflow-hidden",
                         isGenerating || !prompt
-                            ? "bg-white/[0.04] text-zinc-600 cursor-not-allowed shadow-none border border-white/[0.05]"
-                            : "bg-white hover:bg-zinc-100 text-black border-none shadow-[0_20px_40px_rgba(255,255,255,0.12)] hover:shadow-[0_25px_50px_rgba(255,255,255,0.2)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+                            ? "bg-[#111] text-zinc-600 cursor-not-allowed border border-[#222]"
+                            : "btn-gold hover:shadow-[0_0_20px_rgba(197,164,78,0.3)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                     )}
                 >
                     {isGenerating ? (
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 rounded-full border border-indigo-500/20 animate-pulse">
-                                <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
-                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Synthesis</span>
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#c5a44e]/10 rounded-full border border-[#c5a44e]/20 animate-pulse">
+                                <Loader2 className="w-3.5 h-3.5 text-[#c5a44e] animate-spin" />
+                                <span className="text-[10px] font-black text-[#c5a44e] uppercase tracking-widest">Generating</span>
                             </div>
                         </div>
                     ) : (
@@ -1291,11 +1269,9 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                             <Sparkles className={cn("w-4 h-4 transition-all duration-700 group-hover:rotate-12 group-hover:scale-110", isGenerating || !prompt ? "opacity-50" : "text-black")} />
                             <span className="relative top-[0.5px]">Generate</span>
                             {currentCostEstimate > 0 && (
-                                <div className="flex items-center gap-1.5 ml-1.5 pl-2 pr-3 py-1.5 rounded-full bg-black/[0.08] border border-black/5 shadow-inner group-hover:bg-black/[0.12] transition-colors">
-                                    <div className="w-3 h-3 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-sm">
-                                        <Sparkles className="w-2 h-2 text-white fill-white" />
-                                    </div>
-                                    <span className="text-[11px] font-black text-black tabular-nums tracking-widest">{currentCostEstimate}</span>
+                                <div className="flex items-center gap-1.5 ml-1.5 pl-2 pr-3 py-1.5 rounded-full bg-black/20 border border-black/10">
+                                    <Sparkles className="w-2.5 h-2.5 text-black/70" />
+                                    <span className="text-[11px] font-black text-black/80 tabular-nums tracking-widest">{currentCostEstimate}</span>
                                 </div>
                             )}
                         </span>
