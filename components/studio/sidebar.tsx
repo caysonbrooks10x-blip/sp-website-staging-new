@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -8,7 +7,6 @@ import {
   Image as ImageIcon,
   Wand2,
   Film,
-  Clapperboard,
   Layers,
   Sparkles,
   GalleryHorizontalEnd,
@@ -36,6 +34,7 @@ interface SidebarProps {
   onModeChange: (mode: StudioMode) => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  mobileOpen?: boolean;
 }
 
 const NAV_SECTIONS = [
@@ -69,7 +68,7 @@ const BOTTOM_LINKS = [
   { href: "/pricing", label: "Pricing", icon: CreditCard },
 ];
 
-export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onToggleCollapse }: SidebarProps) {
+export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onToggleCollapse, mobileOpen = false }: SidebarProps) {
   const { credits } = useAuth();
   const pathname = usePathname();
 
@@ -77,7 +76,9 @@ export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onT
     <div
       className={cn(
         "h-dvh flex flex-col bg-[#0a0a0a] border-r border-[#1a1a1a] transition-all duration-300 fixed left-0 top-0 z-40 overflow-hidden",
-        collapsed ? "w-[60px]" : "w-[210px]"
+        mobileOpen ? "translate-x-0" : "-translate-x-full",
+        "lg:translate-x-0",
+        collapsed ? "w-[210px] lg:w-[60px]" : "w-[210px]"
       )}
     >
       {/* Header */}

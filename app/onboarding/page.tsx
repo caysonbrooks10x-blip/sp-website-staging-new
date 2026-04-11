@@ -7,6 +7,7 @@ import { ArrowRight, ChevronLeft, Check, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { ASSET_BASE } from "@/lib/assets";
+import { useAuth } from "@/context/auth-context";
 
 
 
@@ -82,6 +83,7 @@ const onboardingSteps = [
 
 export default function OnboardingPage() {
     const router = useRouter();
+    const { user, loading, onboardingCompleted, markOnboardingComplete } = useAuth();
     const [currentStep, setCurrentStep] = useState(0);
     const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
     const [direction, setDirection] = useState(1);
@@ -91,6 +93,17 @@ export default function OnboardingPage() {
 
     
     const progress = ((currentStep + 1) / onboardingSteps.length) * 100;
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.replace("/login?redirect=/onboarding");
+            return;
+        }
+
+        if (!loading && onboardingCompleted) {
+            router.replace("/studio");
+        }
+    }, [loading, user, onboardingCompleted, router]);
 
     const handleOptionSelect = (optionId: string) => {
         if (stepData.multiSelect) {
@@ -104,10 +117,9 @@ export default function OnboardingPage() {
         }
     };
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         if (isLastStep) {
-            
-            console.log("Onboarding complete:", answers);
+            await markOnboardingComplete(answers);
             router.push("/studio");
         } else {
             setDirection(1);

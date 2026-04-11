@@ -18,7 +18,7 @@ import {
     ConfirmationResult
 } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
-import { createUserDoc, INITIAL_TOKEN_BALANCE } from "@/lib/db";
+import { createUserDoc, INITIAL_TOKEN_BALANCE, completeUserOnboarding, ONBOARDING_FLOW_VERSION } from "@/lib/db";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebaseClient";
 import { doc, getDoc } from "firebase/firestore";
@@ -27,6 +27,7 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     credits: number | null;
+    onboardingCompleted: boolean | null;
     signInWithGoogle: () => Promise<void>;
     signInWithEmail: (email: string, pass: string) => Promise<any>;
     signUpWithEmail: (email: string, pass: string, name: string) => Promise<any>;
@@ -36,12 +37,14 @@ interface AuthContextType {
     logout: () => Promise<void>;
     updateCredits: (newCredits: number) => void;
     refreshCredits: () => Promise<void>;
+    markOnboardingComplete: (answers?: Record<string, string | string[]>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
     credits: null,
+    onboardingCompleted: null,
     signInWithGoogle: async () => { },
     signInWithEmail: async () => { throw new Error("Not implemented") },
     signUpWithEmail: async () => { throw new Error("Not implemented") },
@@ -51,6 +54,7 @@ const AuthContext = createContext<AuthContextType>({
     logout: async () => { },
     updateCredits: () => { },
     refreshCredits: async () => { },
+    markOnboardingComplete: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -59,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [credits, setCredits] = useState<number | null>(null);
+    const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const router = useRouter();
 
@@ -69,12 +74,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const userSnap = await getDoc(userRef);
             if (!userSnap.exists()) {
                 setCredits(INITIAL_TOKEN_BALANCE);
+                setOnboardingCompleted(false);
                 return;
             }
-            setCredits(userSnap.data()?.tokenBalance ?? INITIAL_TOKEN_BALANCE);
+            const data = userSnap.data() || {};
+            const tokenBalance = data.tokenBalance ?? INITIAL_TOKEN_BALANCE;
+            const onboardingFlowVersion = data.onboardingFlowVersion ?? 0;
+            const migratedOnboardingCompleted =
+                onboardingFlowVersion < ONBOARDING_FLOW_VERSION
+                    ? true
+                    : data.onboardingCompleted === false && tokenBalance !== INITIAL_TOKEN_BALANCE
+                        ? true
+                        : (data.onboardingCompleted ?? true);
+
+            setCredits(tokenBalance);
+            setOnboardingCompleted(migratedOnboardingCompleted);
         } catch (error) {
             console.warn("Failed to fetch credits from Firestore, using fallback balance.", error);
             setCredits(INITIAL_TOKEN_BALANCE);
+            setOnboardingCompleted(true);
         }
     };
 
@@ -83,10 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
-                await createUserDoc(currentUser);
+                const profile = await createUserDoc(currentUser);
+                setCredits(profile?.tokenBalance ?? INITIAL_TOKEN_BALANCE);
+                setOnboardingCompleted(profile?.onboardingCompleted ?? true);
                 fetchCredits(currentUser.uid);
             } else {
                 setCredits(null);
+                setOnboardingCompleted(null);
             }
             setLoading(false);
         });
@@ -195,11 +216,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const markOnboardingComplete = async (answers?: Record<string, string | string[]>) => {
+        if (!user) return;
+        await completeUserOnboarding(user.uid, answers);
+        setOnboardingCompleted(true);
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
             loading,
             credits,
+            onboardingCompleted,
             signInWithGoogle,
             signInWithEmail,
             signUpWithEmail,
@@ -208,7 +236,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             verifyOtp,
             logout,
             updateCredits,
-            refreshCredits
+            refreshCredits,
+            markOnboardingComplete
         }}>
             {!loading && children}
         </AuthContext.Provider>

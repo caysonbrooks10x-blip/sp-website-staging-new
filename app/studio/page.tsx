@@ -144,7 +144,7 @@ function StudioLayout() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initMode = (searchParams.get("mode") as "image" | "video" | "templates") || "image";
-  const { user } = useAuth();
+  const { user, credits } = useAuth();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [studioMode, setStudioMode] = useState<StudioMode>(() => {
@@ -219,27 +219,6 @@ function StudioLayout() {
     try { localStorage.setItem("studio_aspect_ratio", val); } catch (e) {}
   };
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
-
-  
-  useEffect(() => {
-    
-    const timer = setTimeout(() => {
-      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-        const isRemix = searchParams.get("mode") === "remix";
-        const isDirectJob = !!searchParams.get("jobId");
-
-        
-        if (isRemix && !isDirectJob) {
-          setMobilePanelOpen(true);
-        }
-        
-        else if (!activeGeneration && !isDirectJob && !isGenerating && generations.length === 0) {
-          setMobilePanelOpen(true);
-        }
-      }
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [searchParams, activeGeneration, isGenerating, generations.length]);
 
   
   useEffect(() => {
@@ -821,6 +800,7 @@ function StudioLayout() {
         onModeChange={handleSidebarModeChange}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        mobileOpen={mobilePanelOpen}
       />
 
       {/* Mobile sidebar toggle */}
@@ -837,8 +817,10 @@ function StudioLayout() {
 
       {/* Main Content */}
       <div
-        className="transition-all duration-300 h-dvh overflow-hidden"
-        style={{ marginLeft: sidebarWidth }}
+        className={cn(
+          "transition-all duration-300 h-dvh overflow-hidden",
+          sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[210px]"
+        )}
       >
         {/* Top Bar */}
         <div className="h-14 border-b border-[#1a1a1a] flex items-center justify-between px-6 shrink-0 bg-[#0a0a0a]">
@@ -851,16 +833,16 @@ function StudioLayout() {
             <div className="flex items-center gap-2 bg-[#c5a44e]/10 border border-[#c5a44e]/20 px-3 py-1.5 rounded-lg">
               <Sparkles className="w-3.5 h-3.5 text-[#c5a44e]" />
               <span className="text-sm font-semibold text-[#c5a44e]">
-                {useAuth().credits?.toLocaleString() ?? "..."}
+                {credits?.toLocaleString() ?? "..."}
               </span>
             </div>
           </div>
         </div>
 
         {/* Two-column content */}
-        <div className="flex h-[calc(100dvh-56px)] overflow-hidden">
+        <div className="flex h-[calc(100dvh-56px)] overflow-hidden flex-col lg:flex-row">
           {/* Left: Generation Form */}
-          <div className="w-[480px] xl:w-[520px] shrink-0 h-full flex flex-col border-r border-[#1a1a1a]">
+          <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-[52dvh] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r border-[#1a1a1a]">
             <div className="flex-1 min-h-0">
               <StudioLeftPanel
                 onGenerate={(prompt, settings) => {
@@ -878,7 +860,7 @@ function StudioLayout() {
           </div>
 
           {/* Right: Preview / Canvas */}
-          <div className="flex-1 h-full min-w-0 flex flex-col">
+          <div className="flex-1 h-full min-h-0 min-w-0 flex flex-col">
             <StudioCenterCanvas
               activeGeneration={activeGeneration}
               mode={studioModeToCreationMode(studioMode)}
