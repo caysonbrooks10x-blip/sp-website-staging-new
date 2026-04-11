@@ -38,6 +38,7 @@ const Divider = () => (
 export default function LoginPage() {
     const { user, loading, onboardingCompleted, signInWithGoogle, signInWithEmail, signInWithPhone, verifyOtp, setUpRecaptcha } = useAuth();
     const router = useRouter();
+    const canonicalAuthHost = process.env.NEXT_PUBLIC_AUTH_CANONICAL_HOST?.trim() || "";
 
     const [view, setView] = useState<"selection" | "email" | "phone">("selection");
 
@@ -61,8 +62,19 @@ export default function LoginPage() {
         redirectPath.current = params.get('redirect');
     }, []);
 
-    // Preview auth redirect disabled — each Vercel preview should handle auth on its own domain.
-    // The preview domain must be added to Firebase Auth authorized domains to allow sign-in.
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (!canonicalAuthHost) return;
+
+        const host = window.location.hostname;
+        const isProjectDeploymentHost = host.endsWith("studioproject1s-projects.vercel.app");
+
+        if (isProjectDeploymentHost && host !== canonicalAuthHost) {
+            const target = new URL(window.location.href);
+            target.hostname = canonicalAuthHost;
+            window.location.replace(target.toString());
+        }
+    }, [canonicalAuthHost]);
 
     useEffect(() => {
         if (!loading && user && onboardingCompleted !== null) {
