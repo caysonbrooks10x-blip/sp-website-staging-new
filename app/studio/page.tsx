@@ -19,6 +19,7 @@ import { chooseProvider, type StudioProvider } from "@/lib/provider-routing";
 import { VIDEO_MODELS } from "@/lib/model-config";
 import { persistStudioGeneration } from "@/lib/studio-generations";
 import { normalizeExportPresetIds } from "@/lib/export-pack";
+import { StudioSidebar, type StudioMode } from "@/components/studio/sidebar";
 
 interface NormalizedJobStatus {
   status: "processing" | "completed" | "failed";
@@ -116,11 +117,27 @@ function extensionFromBlob(blob: Blob, fallback = "png") {
 export default function StudioPage() {
   return (
     <ProtectedRoute>
-      <Suspense fallback={<div className="min-h-screen bg-[#050508] flex items-center justify-center"><Loader2 className="w-6 h-6 text-violet-500 animate-spin" /></div>}>
+      <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="w-6 h-6 text-[#c5a44e] animate-spin" /></div>}>
         <StudioLayout />
       </Suspense>
     </ProtectedRoute>
   )
+}
+
+function studioModeToCreationMode(sm: StudioMode): "image" | "video" | "templates" {
+  switch (sm) {
+    case "text-to-image":
+    case "image-to-image":
+      return "image";
+    case "text-to-video":
+    case "image-to-video":
+    case "motion-control":
+      return "video";
+    case "remix":
+      return "image";
+    default:
+      return "image";
+  }
 }
 
 function StudioLayout() {
@@ -129,6 +146,13 @@ function StudioLayout() {
   const initMode = (searchParams.get("mode") as "image" | "video" | "templates") || "image";
   const { user } = useAuth();
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [studioMode, setStudioMode] = useState<StudioMode>(() => {
+    const urlMode = searchParams.get("mode")?.toLowerCase();
+    if (urlMode === "video") return "text-to-video";
+    if (urlMode === "remix") return "remix";
+    return "text-to-image";
+  });
   const [mode] = useState<"image" | "video" | "templates">(initMode);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generations, setGenerations] = useState<GenerationItem[]>([]);
@@ -748,43 +772,40 @@ function StudioLayout() {
   }, [searchParams, router, activeGeneration, isGenerating]);
 
 
-  return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100 font-sans relative selection:bg-cyan-500/40 overflow-hidden">
+  const sidebarWidth = sidebarCollapsed ? 60 : 210;
 
-      {}
+  const handleSidebarModeChange = (newMode: StudioMode) => {
+    setStudioMode(newMode);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-zinc-100 font-sans relative selection:bg-[#c5a44e]/40 overflow-hidden">
+
+      {/* Billing Alert Modal */}
       {showBillingAlert && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xl px-4">
-          <div className="relative rounded-3xl overflow-hidden max-w-[380px] w-full shadow-2xl transform animate-in zoom-in-95 duration-200 border border-white/10">
-            {}
-            <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80"
-              style={{ backgroundImage: `url('${ASSET_BASE}/fdshj.jpg')` }}
-            />
-            {}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
-
-            {}
+          <div className="relative rounded-2xl overflow-hidden max-w-[380px] w-full shadow-2xl transform animate-in zoom-in-95 duration-200 border border-[#c5a44e]/20 bg-[#111]">
             <div className="relative z-10 py-10 px-8 text-center flex flex-col items-center">
-              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10 backdrop-blur-md shadow-2xl">
-                <Sparkles className="w-5 h-5 text-white/80" />
+              <div className="w-12 h-12 bg-[#c5a44e]/10 rounded-full flex items-center justify-center mb-6 border border-[#c5a44e]/20">
+                <Sparkles className="w-5 h-5 text-[#c5a44e]" />
               </div>
 
-              <h2 className="text-xl font-medium text-white mb-2 tracking-wide">Out of Tokens</h2>
-              <p className="text-zinc-400 font-light text-[13px] leading-relaxed mb-8 px-2 tracking-wide">
-                Your remaining balance is empty. Refill your tokens to continue creating.
+              <h2 className="text-xl font-medium text-white mb-2">Out of Credits</h2>
+              <p className="text-zinc-400 text-sm leading-relaxed mb-8 px-2">
+                Your remaining balance is empty. Top up your credits to continue creating.
               </p>
 
               <div className="flex flex-col gap-3 w-full">
                 <Button
                   onClick={() => router.push('/pricing')}
-                  className="w-full bg-white hover:bg-zinc-200 text-black font-medium tracking-wide text-sm h-12 rounded-2xl transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+                  className="w-full btn-gold text-sm h-11 rounded-xl"
                 >
-                  Get More Tokens
+                  Get More Credits
                 </Button>
                 <Button
                   variant="ghost"
                   onClick={() => setShowBillingAlert(false)}
-                  className="w-full text-zinc-500 hover:text-white hover:bg-white/5 tracking-wide h-12 rounded-2xl text-[13px] font-medium transition-colors"
+                  className="w-full text-zinc-500 hover:text-white hover:bg-white/5 h-11 rounded-xl text-sm"
                 >
                   Cancel
                 </Button>
@@ -794,87 +815,89 @@ function StudioLayout() {
         </div>
       )}
 
-      {}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[#020203]" />
+      {/* Sidebar */}
+      <StudioSidebar
+        activeMode={studioMode}
+        onModeChange={handleSidebarModeChange}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
 
-        {}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.45] mix-blend-screen scale-110 blur-[1px] animate-pulse duration-[8000ms]"
-          style={{ backgroundImage: `url('${ASSET_BASE}/studio/studio3.jpeg')` }}
-        />
-
-        {}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08)_0%,transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(6,182,212,0.05)_0%,transparent_40%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(236,72,153,0.05)_0%,transparent_40%)]" />
-
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-[#050505]/80" />
-        <div className="absolute inset-0 backdrop-blur-[100px]" />
+      {/* Mobile sidebar toggle */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobilePanelOpen(!mobilePanelOpen)}
+          className="w-10 h-10 rounded-lg bg-[#111] border border-[#1a1a1a] text-zinc-400 hover:text-white"
+        >
+          <Settings2 className="w-5 h-5" />
+        </Button>
       </div>
 
-      {}
-      <div className="relative z-10 flex flex-col lg:flex-row w-full h-[100dvh] lg:h-[calc(100vh-24px)] pt-[120px] lg:pt-[160px] px-0 lg:px-6 gap-0 lg:gap-6 max-w-[2000px] mx-auto overflow-hidden">
+      {/* Main Content */}
+      <div
+        className="transition-all duration-300 h-dvh overflow-hidden"
+        style={{ marginLeft: sidebarWidth }}
+      >
+        {/* Top Bar */}
+        <div className="h-14 border-b border-[#1a1a1a] flex items-center justify-between px-6 shrink-0 bg-[#0a0a0a]">
+          <div className="flex items-center gap-3">
+            <h1 className="text-sm font-semibold text-zinc-200 capitalize">
+              {studioMode.replace(/-/g, " ")}
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-[#c5a44e]/10 border border-[#c5a44e]/20 px-3 py-1.5 rounded-lg">
+              <Sparkles className="w-3.5 h-3.5 text-[#c5a44e]" />
+              <span className="text-sm font-semibold text-[#c5a44e]">
+                {useAuth().credits?.toLocaleString() ?? "..."}
+              </span>
+            </div>
+          </div>
+        </div>
 
-        {}
-        <div className="lg:hidden h-2" />
-
-        {}
-        <div
-          className={cn(
-            "fixed inset-y-0 left-0 w-[90%] max-w-[380px] lg:relative lg:inset-auto lg:w-[340px] lg:shrink-0 h-[100dvh] lg:h-full flex flex-col z-[100] lg:z-20 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] bg-[#050505]/95 lg:bg-transparent backdrop-blur-3xl shadow-[30px_0_60px_rgba(0,0,0,0.8)] lg:shadow-none p-4 pb-6 lg:p-0 border-r border-white/5 lg:border-none",
-            mobilePanelOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-          )}
-        >
-          {}
-          <div className="lg:hidden flex items-center justify-between mb-4 pt-24 px-2 shrink-0">
-            <span className="text-[11px] font-black tracking-[0.2em] uppercase text-white/50">Studio Canvas Config</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMobilePanelOpen(false)}
-              className="text-white hover:bg-white/10 rounded-full w-9 h-9 flex items-center justify-center shrink-0 bg-white/5 border border-white/10"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+        {/* Two-column content */}
+        <div className="flex h-[calc(100dvh-56px)] overflow-hidden">
+          {/* Left: Generation Form */}
+          <div className="w-[480px] xl:w-[520px] shrink-0 h-full flex flex-col border-r border-[#1a1a1a]">
+            <div className="flex-1 min-h-0">
+              <StudioLeftPanel
+                onGenerate={(prompt, settings) => {
+                  handleGenerate(prompt, settings);
+                  setMobilePanelOpen(false);
+                }}
+                onCancel={handleCancel}
+                isGenerating={isGenerating}
+                mode={studioModeToCreationMode(studioMode)}
+                aspectRatio={aspectRatio}
+                setAspectRatio={setAspectRatio}
+                studioMode={studioMode}
+              />
+            </div>
           </div>
 
-          <div className="studio-panel flex-1 flex flex-col min-h-0 w-full relative">
-            <StudioLeftPanel
-              onGenerate={(prompt, settings) => {
-                handleGenerate(prompt, settings);
-                setMobilePanelOpen(false); 
-              }}
-              onCancel={handleCancel}
+          {/* Right: Preview / Canvas */}
+          <div className="flex-1 h-full min-w-0 flex flex-col">
+            <StudioCenterCanvas
+              activeGeneration={activeGeneration}
+              mode={studioModeToCreationMode(studioMode)}
               isGenerating={isGenerating}
-              mode={mode}
               aspectRatio={aspectRatio}
-              setAspectRatio={setAspectRatio}
+              onOpenPanel={() => setMobilePanelOpen(true)}
             />
           </div>
         </div>
-
-        {}
-        <div
-          className={cn(
-            "lg:hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[95] transition-opacity duration-500",
-            mobilePanelOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          )}
-          onClick={() => setMobilePanelOpen(false)}
-        />
-
-        {}
-        <div className="flex-1 h-full min-w-0 flex flex-col relative z-10">
-          <StudioCenterCanvas
-            activeGeneration={activeGeneration}
-            mode={mode}
-            isGenerating={isGenerating}
-            aspectRatio={aspectRatio}
-            onOpenPanel={() => setMobilePanelOpen(true)}
-          />
-        </div>
-
       </div>
+
+      {/* Mobile overlay */}
+      <div
+        className={cn(
+          "lg:hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[35] transition-opacity duration-500",
+          mobilePanelOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setMobilePanelOpen(false)}
+      />
     </div>
   );
 }
