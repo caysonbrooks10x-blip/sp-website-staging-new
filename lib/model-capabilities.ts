@@ -24,12 +24,20 @@ export interface ModelCapability {
   nMax?: number
   requiresReferenceImage?: boolean
   forbidsReferenceImage?: boolean
+  /** Inclusive upper bound on reference image count. Enforced when
+   *  ValidateRefs.referenceImageCount is provided by the caller. */
+  maxReferenceImages?: number
   ignoresArOnRef?: boolean
   supportsSeed?: boolean
+  /** Pairs/groups of parameter names that cannot co-exist. Example:
+   *  Seedream rejects resolution + aspect_ratio together. */
   mutex?: string[][]
 }
 
 export interface ValidateParams {
+  /** Text prompt. Required for most generation modes; the validator
+   *  rejects empty strings when prompt is passed explicitly. */
+  prompt?: string
   aspect_ratio?: string
   resolution?: string
   duration?: number | string
@@ -47,6 +55,9 @@ export interface ValidateParams {
 export interface ValidateRefs {
   hasReferenceImage?: boolean
   hasReferenceVideo?: boolean
+  /** Concrete reference image count if known. Enforced against
+   *  capability.maxReferenceImages. */
+  referenceImageCount?: number
 }
 
 const COMMON_IMAGE_AR = ["1:1", "3:4", "4:3", "9:16", "16:9", "2:3", "3:2"]
@@ -78,6 +89,16 @@ const nanoBananaCaps: ModelCapability = {
   aspectRatios: [...COMMON_IMAGE_AR, ...EXTREME_AR],
   resolutions: ["0.5K", "1K", "2K", "1080p"],
   nMax: 4,
+  maxReferenceImages: 4,
+}
+
+// Seedream forbids passing both `resolution` and `aspect_ratio` on the
+// same request — the provider only honours one of them. Call-sites
+// must pick one; the validator rejects the combo before dispatch.
+const seedreamCaps: ModelCapability = {
+  ...IMAGE_DEFAULT,
+  mutex: [["resolution", "aspect_ratio"]],
+  maxReferenceImages: 4,
 }
 
 const klingVideoCaps: ModelCapability = {
@@ -119,9 +140,9 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
   "flux-2-flex": IMAGE_DEFAULT,
   "flux-kontext-pro": { ...IMAGE_DEFAULT, requiresReferenceImage: true },
   "flux-kontext-max": { ...IMAGE_DEFAULT, requiresReferenceImage: true },
-  "seedream-4": IMAGE_DEFAULT,
-  "seedream-4.5": IMAGE_DEFAULT,
-  "seedream-5.0-lite": IMAGE_DEFAULT,
+  "seedream-4": seedreamCaps,
+  "seedream-4.5": seedreamCaps,
+  "seedream-5.0-lite": seedreamCaps,
   "z-image": IMAGE_DEFAULT,
   "z-image-turbo": IMAGE_DEFAULT,
   "qwen-image-2.0": IMAGE_DEFAULT,
@@ -224,6 +245,18 @@ export function validateModelParams(
     return { ok: false, errors, warnings }
   }
 
+  // `prompt` is required for every generation mode we currently ship.
+  // We only enforce it when the caller passed the key explicitly so
+  // flows that legitimately omit prompt (e.g. pure image-to-video
+  // reframing) don't fail here — they don't pass the key at all.
+  if (Object.prototype.hasOwnProperty.call(params, "prompt")) {
+    const raw = params.prompt
+    const trimmed = typeof raw === "string" ? raw.trim() : ""
+    if (trimmed.length === 0) {
+      errors.push("Prompt is required and cannot be empty.")
+    }
+  }
+
   const capability = MODEL_CAPABILITIES[modelId]
   if (!capability) {
     // Fix 5: unknown model — still enforce generic sanity checks so a
@@ -296,6 +329,15 @@ export function validateModelParams(
   }
   if (capability.forbidsReferenceImage && refs.hasReferenceImage) {
     errors.push(`${modelId} does not accept a reference image.`)
+  }
+  if (
+    capability.maxReferenceImages !== undefined &&
+    typeof refs.referenceImageCount === "number" &&
+    refs.referenceImageCount > capability.maxReferenceImages
+  ) {
+    errors.push(
+      `${modelId} accepts up to ${capability.maxReferenceImages} reference image${capability.maxReferenceImages === 1 ? "" : "s"} (got ${refs.referenceImageCount}).`,
+    )
   }
 
   if (capability.supportsSeed === false && hasValue(params.seed)) {

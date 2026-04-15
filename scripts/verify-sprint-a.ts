@@ -100,6 +100,36 @@ check("validator: unknown model rejects malformed AR", !unknownBadAr.ok)
 const unknownBadDuration = validateModelParams("made-up-model", { duration: 999 })
 check("validator: unknown model rejects wild duration", !unknownBadDuration.ok)
 
+// ---------- Sprint B · #1 validation gap tests ----------
+
+const emptyPrompt = validateModelParams("nano-banana-2", { prompt: "   ", aspect_ratio: "1:1" })
+check("validator: empty prompt rejected", !emptyPrompt.ok && emptyPrompt.errors.some((e) => e.toLowerCase().includes("prompt")))
+
+const goodPrompt = validateModelParams("nano-banana-2", { prompt: "a cat", aspect_ratio: "1:1" })
+check("validator: non-empty prompt accepted", goodPrompt.ok)
+
+const noPromptKey = validateModelParams("nano-banana-2", { aspect_ratio: "1:1" })
+check("validator: absent prompt key (not passed) is fine", noPromptKey.ok)
+
+const seedreamMutex = validateModelParams("seedream-4", {
+  prompt: "a cat",
+  aspect_ratio: "1:1",
+  resolution: "2K",
+})
+check("validator: seedream rejects resolution+aspect_ratio combo", !seedreamMutex.ok && seedreamMutex.errors.some((e) => e.toLowerCase().includes("mutually exclusive")))
+
+const seedreamArOnly = validateModelParams("seedream-4", { prompt: "a cat", aspect_ratio: "1:1" })
+check("validator: seedream accepts AR alone", seedreamArOnly.ok)
+
+const seedreamResOnly = validateModelParams("seedream-4", { prompt: "a cat", resolution: "2K" })
+check("validator: seedream accepts resolution alone", seedreamResOnly.ok)
+
+const tooManyRefs = validateModelParams("nano-banana-2", {}, { hasReferenceImage: true, referenceImageCount: 9 })
+check("validator: maxReferenceImages=4 rejects 9", !tooManyRefs.ok && tooManyRefs.errors.some((e) => e.includes("reference image")))
+
+const okRefCount = validateModelParams("nano-banana-2", {}, { hasReferenceImage: true, referenceImageCount: 3 })
+check("validator: 3 refs accepted when max=4", okRefCount.ok)
+
 // ---------- retry + fallback ----------
 
 ;(async () => {
