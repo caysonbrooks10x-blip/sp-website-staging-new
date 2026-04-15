@@ -36,6 +36,7 @@ jobs:
         run: |
           npx tsx scripts/verify-env.ts
           npx tsx scripts/verify-logger.ts
+          npx tsx scripts/verify-cost-tracking.ts
           npx tsx scripts/verify-sprint-a.ts
 
       - name: Integration harness (Next.js + mock providers)
