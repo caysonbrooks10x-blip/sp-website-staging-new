@@ -17,6 +17,7 @@
  */
 
 import { isRetryableProviderFailure, type ProviderFallbackPlan, type StudioProvider } from "@/lib/provider-routing"
+import type { Logger } from "@/lib/logger"
 
 /**
  * Fix 4: a fallback attempt only helps when the primary failure is the
@@ -39,6 +40,15 @@ export interface ExecuteOptions {
   baseDelayMs?: number
   maxDelayMs?: number
   onAttempt?: (info: { provider: StudioProvider; attempt: number; usedFallback: boolean }) => void
+  /**
+   * Optional structured logger. When provided, the executor emits an
+   * info event on each success (with duration_ms, attempt count, and
+   * whether fallback was used) and a warn event on each retryable
+   * failure before the backoff sleep. Final terminal failures are
+   * left to the caller to log, since they have more context about
+   * what the caller was trying to accomplish.
+   */
+  logger?: Logger
 }
 
 export interface ExecuteSuccess<T> {
@@ -78,14 +88,32 @@ async function runWithRetry<T>(
 
   let lastError: unknown
   for (let attempt = 1; attempt <= maxRetries + 1; attempt += 1) {
+    const attemptStart = Date.now()
     try {
       opts.onAttempt?.({ provider: call.provider, attempt, usedFallback })
       const result = await call.submit()
+      opts.logger?.info("provider_call_success", {
+        provider: call.provider,
+        model: call.model,
+        attempt,
+        used_fallback: usedFallback,
+        duration_ms: Date.now() - attemptStart,
+      })
       return { result, provider: call.provider, model: call.model, attempt, usedFallback }
     } catch (error) {
       lastError = error
+      const retryable = isRetryableProviderFailure(error)
+      opts.logger?.warn("provider_call_failure", {
+        provider: call.provider,
+        model: call.model,
+        attempt,
+        used_fallback: usedFallback,
+        retryable,
+        duration_ms: Date.now() - attemptStart,
+        error_message: error instanceof Error ? error.message : String(error),
+      })
       if (attempt > maxRetries) break
-      if (!isRetryableProviderFailure(error)) break
+      if (!retryable) break
       const delay = jitter(Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay))
       await sleep(delay)
     }
