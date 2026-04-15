@@ -22,7 +22,15 @@ export type ApimartScript =
 
 export type PoyoScript =
   | { kind: "ok"; taskId: string }
+  | { kind: "fail-n-then-ok"; failN: number; status: number; taskId: string }
   | { kind: "always-fail"; status: number; message: string }
+
+export interface MockRequest {
+  method: string
+  path: string
+  headers: Record<string, string>
+  body: any
+}
 
 export interface MockProvider {
   url: string
@@ -31,6 +39,8 @@ export interface MockProvider {
   setScript: (script: ApimartScript | PoyoScript) => void
   callCount: () => number
   resetCallCount: () => void
+  requestLog: () => MockRequest[]
+  clearLog: () => void
 }
 
 function readJson(req: http.IncomingMessage): Promise<any> {
@@ -60,10 +70,19 @@ export async function startMockApimart(initial: ApimartScript): Promise<MockProv
   let script = initial
   let calls = 0
   let attemptCounter = 0
+  const log: MockRequest[] = []
 
   const server = http.createServer(async (req, res) => {
     calls += 1
     const url = new URL(req.url || "/", "http://localhost")
+    const headers: Record<string, string> = {}
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (typeof v === "string") headers[k] = v
+      else if (Array.isArray(v)) headers[k] = v.join(",")
+    }
+    const bodyPromise = req.method === "POST" ? readJson(req).catch(() => ({})) : Promise.resolve(null)
+    const body = await bodyPromise
+    log.push({ method: req.method || "GET", path: url.pathname, headers, body })
 
     // Task status endpoint: GET /v1/tasks/{id} or /tasks/{id}
     if (req.method === "GET" && /\/tasks\/[^/]+$/.test(url.pathname)) {
@@ -94,10 +113,11 @@ export async function startMockApimart(initial: ApimartScript): Promise<MockProv
       return sendJson(res, 404, { error: "no task" })
     }
 
-    // Image generation endpoint: POST /v1/images/generations
-    if (req.method === "POST" && /\/images\/generations$/.test(url.pathname)) {
-      await readJson(req).catch(() => ({}))
-
+    // Image OR video generation endpoints.
+    if (
+      req.method === "POST" &&
+      (/\/images\/generations$/.test(url.pathname) || /\/videos\/generations$/.test(url.pathname))
+    ) {
       if (script.kind === "ok-direct") {
         return sendJson(res, 200, { code: 0, data: [{ url: script.imageUrl }] })
       }
@@ -138,20 +158,40 @@ export async function startMockApimart(initial: ApimartScript): Promise<MockProv
       calls = 0
       attemptCounter = 0
     },
+    requestLog: () => [...log],
+    clearLog: () => {
+      log.length = 0
+    },
   }
 }
 
 export async function startMockPoyo(initial: PoyoScript): Promise<MockProvider> {
   let script = initial
   let calls = 0
+  let submitAttemptCounter = 0
+  const log: MockRequest[] = []
 
   const server = http.createServer(async (req, res) => {
     calls += 1
     const url = new URL(req.url || "/", "http://localhost")
+    const headers: Record<string, string> = {}
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (typeof v === "string") headers[k] = v
+      else if (Array.isArray(v)) headers[k] = v.join(",")
+    }
+    const bodyPromise = req.method === "POST" ? readJson(req).catch(() => ({})) : Promise.resolve(null)
+    const body = await bodyPromise
+    log.push({ method: req.method || "GET", path: url.pathname, headers, body })
 
     if (req.method === "POST" && /\/api\/generate\/submit$/.test(url.pathname)) {
-      await readJson(req).catch(() => ({}))
       if (script.kind === "ok") {
+        return sendJson(res, 200, { task_id: script.taskId, state: "queued" })
+      }
+      if (script.kind === "fail-n-then-ok") {
+        submitAttemptCounter += 1
+        if (submitAttemptCounter <= script.failN) {
+          return sendJson(res, script.status, { message: `mock retryable failure (attempt ${submitAttemptCounter})` })
+        }
         return sendJson(res, 200, { task_id: script.taskId, state: "queued" })
       }
       if (script.kind === "always-fail") {
@@ -183,10 +223,16 @@ export async function startMockPoyo(initial: PoyoScript): Promise<MockProvider> 
     close: () => new Promise((resolve) => server.close(() => resolve())),
     setScript: (next) => {
       script = next as PoyoScript
+      submitAttemptCounter = 0
     },
     callCount: () => calls,
     resetCallCount: () => {
       calls = 0
+      submitAttemptCounter = 0
+    },
+    requestLog: () => [...log],
+    clearLog: () => {
+      log.length = 0
     },
   }
 }

@@ -276,7 +276,7 @@ async function waitForNext(baseUrl: string, timeoutMs: number): Promise<boolean>
   return false
 }
 
-async function phase2(mockApimart: MockProvider, mockPoyo: MockProvider): Promise<ChildProcess | null> {
+async function phase2(mockApimart: MockProvider, mockPoyo: MockProvider): Promise<{ proc: ChildProcess | null; baseUrl: string; ready: boolean }> {
   console.log("\n=== Phase 2: route-level (Next.js dev + mocks) ===")
 
   const cwd = process.cwd()
@@ -301,7 +301,7 @@ async function phase2(mockApimart: MockProvider, mockPoyo: MockProvider): Promis
   const ready = await waitForNext(baseUrl, 45_000)
   if (!ready) {
     record("Next.js dev ready", false, "timed out waiting for :3100")
-    return nextProc
+    return { proc: nextProc, baseUrl, ready: false }
   }
   record("Next.js dev ready", true)
 
@@ -406,7 +406,213 @@ async function phase2(mockApimart: MockProvider, mockPoyo: MockProvider): Promis
     )
   }
 
-  return nextProc
+  return { proc: nextProc, baseUrl, ready: true }
+}
+
+// -------------------------------------------------------------------
+// Phase 3 — extended route-level scenarios
+// -------------------------------------------------------------------
+
+async function phase3(
+  mockApimart: MockProvider,
+  mockPoyo: MockProvider,
+  baseUrl: string,
+) {
+  console.log("\n=== Phase 3: extended route-level (fallback, idempotency, full 2-step) ===")
+
+  // F/route — fallback chain through live Next.js endpoint. Primary = Next
+  // /api/apimart/images/generations (mock 503). Fallback closure hits mock
+  // Poyo directly (simulating what createStudioJob callable would do).
+  mockApimart.setScript({ kind: "always-503" })
+  mockPoyo.setScript({ kind: "ok", taskId: "poyo_fallback_f" })
+  mockApimart.resetCallCount()
+  mockPoyo.resetCallCount()
+  mockApimart.clearLog()
+  mockPoyo.clearLog()
+  {
+    const primaryCall = buildProviderCall("apimart", "nano-banana-2", async () => {
+      const res = await fetch(`${baseUrl}/api/apimart/images/generations`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model: "nano-banana-2", prompt: "F route fallback" }),
+      })
+      if (!res.ok) throw new Error(`apimart ${res.status} temporarily unavailable via Next route`)
+      return await res.json()
+    })
+    const fallbackCall = buildProviderCall("poyo", "nano-banana-2", async () => {
+      const res = await fetch(`${mockPoyo.url}/api/generate/submit`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: "Bearer mock-poyo" },
+        body: JSON.stringify({ model: "nano-banana-2", inputs: { prompt: "F route fallback" } }),
+      })
+      if (!res.ok) throw new Error(`poyo ${res.status}`)
+      return await res.json()
+    })
+    const exec = await executeWithFallback(primaryCall, fallbackCall, { baseDelayMs: 2, maxDelayMs: 5 })
+    record(
+      "F/route: Next route 503 exhausted → poyo fallback succeeds",
+      exec.usedFallback === true &&
+        exec.provider === "poyo" &&
+        mockApimart.callCount() === 3 &&
+        mockPoyo.callCount() === 1,
+      `primaryCalls=${mockApimart.callCount()} fallback=${mockPoyo.callCount()} usedFallback=${exec.usedFallback}`,
+    )
+  }
+
+  // G/route — idempotency key preserved across retries. Poyo submit returns
+  // 429 twice then 200. The closure bakes a single idempotency_key; all
+  // three mock requests MUST carry the same key.
+  mockPoyo.setScript({ kind: "fail-n-then-ok", failN: 2, status: 429, taskId: "poyo_idempo_g" })
+  mockPoyo.resetCallCount()
+  mockPoyo.clearLog()
+  {
+    const idempotencyKey = `idem_test_${Date.now().toString(36)}`
+    const call = buildProviderCall("poyo", "nano-banana-2", async () => {
+      const res = await fetch(`${mockPoyo.url}/api/generate/submit`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer mock-poyo",
+          "x-idempotency-key": idempotencyKey,
+        },
+        body: JSON.stringify({
+          model: "nano-banana-2",
+          inputs: { prompt: "G idempotency" },
+          idempotency_key: idempotencyKey,
+        }),
+      })
+      if (!res.ok) throw new Error(`poyo ${res.status} rate limit`)
+      return await res.json()
+    })
+    const exec = await executeWithFallback(call, null, { baseDelayMs: 2, maxDelayMs: 5 })
+    const submitRequests = mockPoyo
+      .requestLog()
+      .filter((r) => r.method === "POST" && /\/submit$/.test(r.path))
+    const keys = new Set(submitRequests.map((r) => (r.body as any)?.idempotency_key).filter(Boolean))
+    const headerKeys = new Set(submitRequests.map((r) => r.headers["x-idempotency-key"]).filter(Boolean))
+    record(
+      "G/route: same idempotency_key sent on every retry (body + header)",
+      exec.attempt === 3 &&
+        submitRequests.length === 3 &&
+        keys.size === 1 &&
+        headerKeys.size === 1 &&
+        keys.has(idempotencyKey),
+      `attempts=${exec.attempt} reqs=${submitRequests.length} bodyKeys=${[...keys].join(",")} headerKeys=${[...headerKeys].join(",")}`,
+    )
+  }
+
+  // H/route — full 2-step AR chain through Next routes. Step 1 (image edit)
+  // submit + poll, then step 2 (video gen) submit + poll. Verify the video
+  // submit received the reframed URL, not the original.
+  {
+    const originalRef = "https://mock.test/h-original-1x1.png"
+    const reframedUrl = "https://mock.test/h-reframed-16x9.png"
+    const finalVideoUrl = "https://mock.test/h-video.mp4"
+
+    // Step 1 submit + poll
+    mockApimart.setScript({
+      kind: "ok-task",
+      taskId: "h_step1",
+      pollStatus: "completed",
+      imageUrl: reframedUrl,
+    })
+    mockApimart.resetCallCount()
+    mockApimart.clearLog()
+
+    const stepOneSubmit = await fetchJson(`${baseUrl}/api/apimart/images/generations`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "nano-banana-2-new-edit",
+        prompt: "reframe to 16:9",
+        image_urls: [originalRef],
+        aspect_ratio: "16:9",
+      }),
+    })
+    const stepOneAdapt = adaptApimartSubmission(stepOneSubmit.body, {
+      provider: "apimart",
+      model: "nano-banana-2-new-edit",
+      request_id: "req_h_step1",
+    })
+    const stepOneTaskId = stepOneAdapt.kind === "task" ? stepOneAdapt.taskId : undefined
+    let stepOneReframedUrl: string | undefined
+    if (stepOneTaskId) {
+      const poll = await fetchJson(`${baseUrl}/api/apimart/tasks/${encodeURIComponent(stepOneTaskId)}`)
+      const canonical = adaptApimartStatus(poll.body, {
+        provider: "apimart",
+        model: "nano-banana-2-new-edit",
+        request_id: "req_h_step1",
+      })
+      if (canonical.status === "completed") stepOneReframedUrl = canonical.urls[0]
+    }
+    record(
+      "H/route: step-1 (image edit) returns reframed URL via Next route",
+      stepOneReframedUrl === reframedUrl,
+      `got=${stepOneReframedUrl}`,
+    )
+
+    // Step 2 submit + poll — uses the reframed URL, not the original.
+    mockApimart.setScript({
+      kind: "ok-task",
+      taskId: "h_step2",
+      pollStatus: "completed",
+      imageUrl: finalVideoUrl,
+    })
+    mockApimart.clearLog()
+
+    const stepTwoSubmit = await fetchJson(`${baseUrl}/api/apimart/videos/generations`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "wan2.6-i2v-flash",
+        prompt: "a cat flying",
+        image_url: stepOneReframedUrl,
+        aspect_ratio: "16:9",
+        two_step_applied: true,
+        two_step_cost_usd: 0.025,
+      }),
+    })
+    const stepTwoAdapt = adaptApimartSubmission(stepTwoSubmit.body, {
+      provider: "apimart",
+      model: "wan2.6-i2v-flash",
+      request_id: "req_h_step2",
+    })
+    const stepTwoTaskId = stepTwoAdapt.kind === "task" ? stepTwoAdapt.taskId : undefined
+    let stepTwoFinalUrl: string | undefined
+    if (stepTwoTaskId) {
+      const poll = await fetchJson(`${baseUrl}/api/apimart/tasks/${encodeURIComponent(stepTwoTaskId)}`)
+      const canonical = adaptApimartStatus(poll.body, {
+        provider: "apimart",
+        model: "wan2.6-i2v-flash",
+        request_id: "req_h_step2",
+      })
+      if (canonical.status === "completed") stepTwoFinalUrl = canonical.urls[0]
+    }
+
+    // Check the upstream mock received the reframed URL in the step-2 submit.
+    const stepTwoMockRequest = mockApimart
+      .requestLog()
+      .find((r) => r.method === "POST" && /\/videos\/generations$/.test(r.path))
+    const stepTwoImageUrl = stepTwoMockRequest?.body?.image_url
+    const stepTwoFlag = stepTwoMockRequest?.body?.two_step_applied
+    const stepTwoCost = stepTwoMockRequest?.body?.two_step_cost_usd
+
+    record(
+      "H/route: step-2 (video) received the reframed URL, not original",
+      stepTwoImageUrl === reframedUrl && stepTwoImageUrl !== originalRef,
+      `image_url=${stepTwoImageUrl}`,
+    )
+    record(
+      "H/route: step-2 carries two_step_applied + cost flag",
+      stepTwoFlag === true && stepTwoCost === 0.025,
+      `flag=${stepTwoFlag} cost=${stepTwoCost}`,
+    )
+    record(
+      "H/route: step-2 poll yields final video URL via canonical",
+      stepTwoFinalUrl === finalVideoUrl,
+      `final=${stepTwoFinalUrl}`,
+    )
+  }
 }
 
 // -------------------------------------------------------------------
@@ -422,7 +628,11 @@ async function main() {
   let nextProc: ChildProcess | null = null
   try {
     await phase1(mockApimart, mockPoyo)
-    nextProc = await phase2(mockApimart, mockPoyo)
+    const phase2Result = await phase2(mockApimart, mockPoyo)
+    nextProc = phase2Result.proc
+    if (phase2Result.ready) {
+      await phase3(mockApimart, mockPoyo, phase2Result.baseUrl)
+    }
   } finally {
     if (nextProc) {
       nextProc.kill("SIGTERM")
