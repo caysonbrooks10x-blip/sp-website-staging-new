@@ -33,7 +33,9 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Smoke tests (offline)
-        run: npx tsx scripts/verify-sprint-a.ts
+        run: |
+          npx tsx scripts/verify-env.ts
+          npx tsx scripts/verify-sprint-a.ts
 
       - name: Integration harness (Next.js + mock providers)
         run: npx tsx scripts/integration/run-harness.ts
