@@ -1,0 +1,42 @@
+name: integration-harness
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: integration-harness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  harness:
+    name: Sprint A provider harness
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit
+
+      - name: Smoke tests (offline)
+        run: npx tsx scripts/verify-sprint-a.ts
+
+      - name: Integration harness (Next.js + mock providers)
+        run: npx tsx scripts/integration/run-harness.ts
+        env:
+          CI: "true"
+          NODE_ENV: test

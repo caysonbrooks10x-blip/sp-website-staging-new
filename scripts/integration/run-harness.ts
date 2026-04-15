@@ -649,7 +649,11 @@ async function main() {
     console.log(`${icon} ${r.name}${r.note ? `  [${r.note}]` : ""}`)
   }
   console.log(`\n${passed}/${passed + failed} passed`)
-  if (failed > 0) process.exit(1)
+  // Force exit: `next dev` spawns a tree of esbuild/next-server children that
+  // survive SIGTERM on the npx wrapper and keep the event loop alive. In CI
+  // this hangs the job until the workflow timeout. All results are already
+  // captured in `results` and printed above, so exiting here is safe.
+  process.exit(failed > 0 ? 1 : 0)
 }
 
 main().catch((err) => {
