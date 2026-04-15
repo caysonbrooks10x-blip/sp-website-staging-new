@@ -68,8 +68,9 @@ export default function LoginPage() {
 
         const host = window.location.hostname;
         const isProjectDeploymentHost = host.endsWith("studioproject1s-projects.vercel.app");
+        const isGitPreviewHost = host.includes("-git-");
 
-        if (isProjectDeploymentHost && host !== canonicalAuthHost) {
+        if (isProjectDeploymentHost && host !== canonicalAuthHost && !isGitPreviewHost) {
             const target = new URL(window.location.href);
             target.hostname = canonicalAuthHost;
             window.location.replace(target.toString());

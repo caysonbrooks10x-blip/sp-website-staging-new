@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import type { CommunityPost } from "@/lib/types"
-import { Heart, Info, ChevronUp, ChevronDown, RefreshCw, Film, Download, Maximize2, Pencil, Trash2, AlertTriangle } from "lucide-react"
+import { Heart, Info, ChevronUp, ChevronDown, RefreshCw, Film, Download, Maximize2, Pencil, Trash2, AlertTriangle, Wand2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useAuth } from "@/context/auth-context"
@@ -33,6 +33,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
   const [isRemixing, setIsRemixing] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const hasWorkflowLink = Boolean(post.templatePack || post.templateShareUrl)
 
   const isOwner = user?.uid === post.author.id
 
@@ -130,6 +131,27 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
       router.push(target)
     }
   }, [user, post.assetUrl, router])
+
+  const handleUseWorkflow = useCallback(() => {
+    let target = post.templateShareUrl || (post.templatePack ? `/studio?templatePack=${encodeURIComponent(post.templatePack)}` : null)
+    if (!target) return
+
+    if (target.startsWith("http")) {
+      try {
+        const url = new URL(target)
+        target = `${url.pathname}${url.search}`
+      } catch {
+        // Keep the original target if parsing fails.
+      }
+    }
+
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(target)}`)
+      return
+    }
+
+    router.push(target)
+  }, [post.templatePack, post.templateShareUrl, router, user])
 
   const handleDownload = useCallback(async () => {
     try {
@@ -391,6 +413,16 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
 
                 {}
                 <div className="p-3 pt-2 space-y-2 border-t border-white/5">
+                  {hasWorkflowLink && (
+                    <Button
+                      variant="outline"
+                      className="w-full h-9 rounded-lg border-[#c5a44e]/25 bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f0ddb0] text-[11px]"
+                      onClick={handleUseWorkflow}
+                    >
+                      <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+                      Use Workflow
+                    </Button>
+                  )}
                   <Button
                     disabled={isRemixing}
                     className={cn(

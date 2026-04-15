@@ -15,8 +15,16 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ASSET_BASE } from "@/lib/assets";
-import { chooseProvider, type StudioProvider } from "@/lib/provider-routing";
-import { VIDEO_MODELS } from "@/lib/model-config";
+import {
+  chooseProvider,
+  getProviderFallback,
+  isRetryableProviderFailure,
+  needsTwoStepPipeline,
+  type StudioProvider,
+} from "@/lib/provider-routing";
+import { recordProviderTelemetryEvent } from "@/lib/provider-health";
+import { VIDEO_MODELS, getImageModelConfig, getVideoModelConfig } from "@/lib/model-config";
+import { decideTwoStep, isTwoStepEnabled } from "@/lib/studio-two-step";
 import { persistStudioGeneration } from "@/lib/studio-generations";
 import { normalizeExportPresetIds } from "@/lib/export-pack";
 import { StudioSidebar, type StudioMode } from "@/components/studio/sidebar";
@@ -135,6 +143,8 @@ function studioModeToCreationMode(sm: StudioMode): "image" | "video" | "template
       return "video";
     case "remix":
       return "image";
+    case "workflow-templates":
+      return "templates";
     default:
       return "image";
   }
@@ -144,13 +154,14 @@ function StudioLayout() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initMode = (searchParams.get("mode") as "image" | "video" | "templates") || "image";
-  const { user, credits } = useAuth();
+  const { user } = useAuth();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [studioMode, setStudioMode] = useState<StudioMode>(() => {
     const urlMode = searchParams.get("mode")?.toLowerCase();
     if (urlMode === "video") return "text-to-video";
     if (urlMode === "remix") return "remix";
+    if (urlMode === "templates") return "workflow-templates";
     return "text-to-image";
   });
   const [mode] = useState<"image" | "video" | "templates">(initMode);
@@ -297,9 +308,24 @@ function StudioLayout() {
     localStorage.removeItem("studio_active_generation");
     localStorage.removeItem("studio_active_time");
 
+    let telemetryProvider: StudioProvider | null = null;
+
     try {
       const createStudioJob = httpsCallable(functions, "createStudioJob");
-      const { model, mode: genMode, provider, sourceFile, sourceVideo, sourceFiles, sourceVideos, end_image_file, aspectRatio: _ar, ...dynamicParameters } = settings;
+      const {
+        model,
+        mode: legacyMode,
+        creationMode: explicitCreationMode,
+        provider,
+        sourceFile,
+        sourceVideo,
+        sourceFiles,
+        sourceVideos,
+        end_image_file,
+        aspectRatio: _ar,
+        ...dynamicParameters
+      } = settings;
+      const requestedMode = explicitCreationMode || legacyMode || mode;
 
       const uploadAsset = async (file: File) => {
         const extension = file.name.split('.').pop() || "png";
@@ -350,129 +376,334 @@ function StudioLayout() {
         toast.success('End frame uploaded!', { id: 'gen-toast' });
       }
 
+      const firstImageUrl =
+        typeof dynamicParameters.image_url === "string" && dynamicParameters.image_url.length > 0
+          ? dynamicParameters.image_url
+          : Array.isArray(dynamicParameters.image_urls) && dynamicParameters.image_urls.length > 0
+            ? dynamicParameters.image_urls[0]
+            : undefined;
+      const firstVideoUrl =
+        typeof dynamicParameters.video_url === "string" && dynamicParameters.video_url.length > 0
+          ? dynamicParameters.video_url
+          : Array.isArray(dynamicParameters.video_urls) && dynamicParameters.video_urls.length > 0
+            ? dynamicParameters.video_urls[0]
+            : undefined;
+
+      if (firstImageUrl && !dynamicParameters.image_url) dynamicParameters.image_url = firstImageUrl;
+      if (firstImageUrl && (!Array.isArray(dynamicParameters.image_urls) || dynamicParameters.image_urls.length === 0)) {
+        dynamicParameters.image_urls = [firstImageUrl];
+      }
+      if (firstVideoUrl && !dynamicParameters.video_url) dynamicParameters.video_url = firstVideoUrl;
+      if (firstVideoUrl && (!Array.isArray(dynamicParameters.video_urls) || dynamicParameters.video_urls.length === 0)) {
+        dynamicParameters.video_urls = [firstVideoUrl];
+      }
+
+      if (dynamicParameters.image_url) {
+        dynamicParameters.reference_image_url = dynamicParameters.reference_image_url || dynamicParameters.image_url;
+        dynamicParameters.source_image_url = dynamicParameters.source_image_url || dynamicParameters.image_url;
+        if (requestedMode === "video") {
+          dynamicParameters.start_image_url = dynamicParameters.start_image_url || dynamicParameters.image_url;
+        }
+      }
+      if (dynamicParameters.video_url) {
+        dynamicParameters.reference_video_url = dynamicParameters.reference_video_url || dynamicParameters.video_url;
+        dynamicParameters.source_video_url = dynamicParameters.source_video_url || dynamicParameters.video_url;
+      }
+
       toast.loading('Initiating AI Model creation...', { id: 'gen-toast' });
 
       const count = dynamicParameters.n && typeof dynamicParameters.n === 'number' ? dynamicParameters.n : 1;
-      const usedModel = model || (genMode === 'video' ? "sora-2" : "flux-2-pro");
-      const generationType = inferGenerationType(genMode || mode, usedModel);
+      const usedModel = model || (requestedMode === 'video' ? "sora-2" : "flux-2-pro");
+      const generationType = inferGenerationType(requestedMode, usedModel);
+      const hasImageReference = Boolean(dynamicParameters.image_url || dynamicParameters.image_urls?.length);
+      const imageModelConfig = generationType === "image" ? getImageModelConfig(usedModel) : undefined;
+      const executionModel =
+        generationType === "image" && hasImageReference && imageModelConfig?.editVariant
+          ? imageModelConfig.editVariant
+          : usedModel;
       const resolvedProvider =
         (provider as StudioProvider | undefined) ||
         chooseProvider({
-          mode: genMode === "remix" ? "remix" : generationType,
+          mode: requestedMode === "remix" ? "remix" : generationType,
           model: usedModel,
-          wantsRemix: genMode === "remix" || Boolean(settings.originalCreationId),
+          wantsRemix: requestedMode === "remix" || Boolean(settings.originalCreationId),
           hasReferenceImage: Boolean(
             dynamicParameters.image_url ||
             dynamicParameters.image_urls?.length ||
             dynamicParameters.video_url ||
             dynamicParameters.video_urls?.length
           ),
+          needsCharacterReference: Boolean(settings.needsCharacterReference),
         });
-      const parameters = {
+      telemetryProvider = resolvedProvider;
+      const parameters: Record<string, any> = {
         ...(prompt ? { prompt } : {}),
         ...dynamicParameters,
         n: Number(count),
       };
 
+      // Step 6 (handoff §10): 2-step AR pipeline. Flag-gated; off in prod by
+      // default. When the chosen video model ignores aspect_ratio on a ref
+      // image, reframe the ref via a cheap image-edit step first, then feed
+      // the reframed output into the video job.
+      if (
+        isTwoStepEnabled() &&
+        generationType === "video" &&
+        needsTwoStepPipeline({
+          mode: "video",
+          hasReferenceImage: hasImageReference,
+          modelIgnoresArOnRef: getVideoModelConfig(usedModel)?.ignoresArOnRef,
+        })
+      ) {
+        const refImageUrl =
+          (typeof dynamicParameters.image_url === "string" && dynamicParameters.image_url) ||
+          (Array.isArray(dynamicParameters.image_urls) && dynamicParameters.image_urls[0]) ||
+          undefined;
+        const targetAr = typeof dynamicParameters.aspect_ratio === "string" ? dynamicParameters.aspect_ratio : undefined;
+        if (refImageUrl && targetAr) {
+          const decision = decideTwoStep(
+            { referenceImageUrl: refImageUrl, targetAspectRatio: targetAr, n: count },
+            { twoStepFlag: true, modelIgnoresArOnRef: true },
+          );
+          if (decision.needed) {
+            try {
+              toast.loading(`Reframing reference to ${targetAr} via ${decision.stepOne.model}...`, { id: "gen-toast" });
+              const stepOneResp = await fetch("/api/apimart/images/generations", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  model: decision.stepOne.model,
+                  prompt: decision.stepOne.prompt,
+                  image_urls: [refImageUrl],
+                  aspect_ratio: targetAr,
+                  n: 1,
+                }),
+              });
+              const stepOneJson = await stepOneResp.json();
+              if (!stepOneResp.ok) {
+                throw new Error(stepOneJson?.error || "Step 1 reframe failed");
+              }
+              const stepOneTaskId = stepOneJson?.data?.[0]?.task_id;
+              let reframedUrl: string | undefined;
+              if (!stepOneTaskId && Array.isArray(stepOneJson?.data) && stepOneJson.data[0]?.url) {
+                reframedUrl = stepOneJson.data[0].url;
+              } else if (stepOneTaskId) {
+                const deadline = Date.now() + 180_000;
+                while (Date.now() < deadline) {
+                  await new Promise((r) => setTimeout(r, 3000));
+                  const statusResp = await fetch(`/api/apimart/tasks/${encodeURIComponent(stepOneTaskId)}`);
+                  const statusJson = await statusResp.json();
+                  const task = statusJson?.data ?? statusJson;
+                  const state = task?.status || task?.state;
+                  if (state === "succeeded" || state === "completed" || state === "success") {
+                    const images = task?.result?.images || task?.images;
+                    const flat = Array.isArray(images)
+                      ? images.flatMap((g: any) => (Array.isArray(g?.url) ? g.url : g?.url ? [g.url] : []))
+                      : [];
+                    reframedUrl = flat[0];
+                    break;
+                  }
+                  if (state === "failed" || state === "error") {
+                    throw new Error(task?.error || "Step 1 reframe job failed");
+                  }
+                }
+              }
+              if (!reframedUrl) {
+                throw new Error("Step 1 reframe timed out");
+              }
+              dynamicParameters.image_url = reframedUrl;
+              if (Array.isArray(dynamicParameters.image_urls)) {
+                dynamicParameters.image_urls = [reframedUrl];
+              }
+              parameters.image_url = reframedUrl;
+              if (Array.isArray(parameters.image_urls)) {
+                parameters.image_urls = [reframedUrl];
+              }
+              toast.loading("Reframe complete. Submitting video job...", { id: "gen-toast" });
+            } catch (twoStepError) {
+              console.warn("[two-step] step 1 failed, continuing with original image:", twoStepError);
+              toast.loading("Reframe failed; submitting with original reference...", { id: "gen-toast" });
+            }
+          }
+        }
+      }
+
+      const configuredFallback =
+        settings.needsCharacterReference
+          ? settings.providerFallback
+          : settings.providerFallback || getProviderFallback(usedModel);
+      const liveProviderStatus = settings.providerStatus as "healthy" | "degraded" | "down" | "unknown" | undefined;
+      const isRemixRequest = requestedMode === "remix";
+      const resolveExecutionModelForFallback = (candidateModel: string) => {
+        if (generationType !== "image" || !hasImageReference) return candidateModel;
+        return getImageModelConfig(candidateModel)?.editVariant || candidateModel;
+      };
+
       let jobId = "";
       let taskId: string | undefined;
+      let finalProvider = resolvedProvider;
+      let finalModel = executionModel;
 
-      if (resolvedProvider === "apimart") {
-        const isVideoRemix = genMode === "remix" && generationType === "video";
-        const remixTaskId = settings.originalTaskId || settings.taskId || settings.originalCreationId;
-        const endpoint = isVideoRemix
-          ? `/api/apimart/videos/${encodeURIComponent(remixTaskId || "")}/remix`
-          : generationType === "video"
-            ? "/api/apimart/videos/generations"
-            : "/api/apimart/images/generations";
+      const submitWithProvider = async (
+        submissionProvider: StudioProvider,
+        submissionModel: string
+      ): Promise<{ jobId: string; taskId?: string; directCompletedItem?: GenerationItem }> => {
+        if (submissionProvider === "apimart") {
+          const isVideoRemix = isRemixRequest && generationType === "video";
+          const remixTaskId = settings.originalTaskId || settings.taskId || settings.originalCreationId;
+          const endpoint = isVideoRemix
+            ? `/api/apimart/videos/${encodeURIComponent(remixTaskId || "")}/remix`
+            : generationType === "video"
+              ? "/api/apimart/videos/generations"
+              : "/api/apimart/images/generations";
 
-        if (isVideoRemix && !remixTaskId) {
-          throw new Error("This video cannot be remixed yet because its ApiMart task ID is missing.");
-        }
-
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: usedModel,
-            ...parameters,
-          }),
-        });
-        const submission = await response.json();
-        if (!response.ok) {
-          throw new Error(submission?.error || "ApiMart generation submission failed");
-        }
-
-        if (generationType === "image" && isApiMartDirectImageResponse(submission)) {
-          const directImageJobId = `apimart-img-${Date.now()}`;
-          const responseItems = Array.isArray(submission.data) ? submission.data : [];
-          const uploadedUrls = await Promise.all(
-            responseItems.map(async (entry: any, index: number) => {
-              if (entry?.b64_json) {
-                const outputFormat = submission?.output_format || "png";
-                const mimeType = outputFormat === "jpg" ? "image/jpeg" : `image/${outputFormat}`;
-                return uploadGeneratedAsset(base64ToBlob(entry.b64_json, mimeType), directImageJobId, index, outputFormat === "jpg" ? "jpg" : outputFormat);
-              }
-
-              if (entry?.url) {
-                const assetResponse = await fetch(entry.url);
-                if (!assetResponse.ok) {
-                  throw new Error("ApiMart returned an image URL that could not be downloaded");
-                }
-                return uploadGeneratedAsset(await assetResponse.blob(), directImageJobId, index);
-              }
-
-              throw new Error("ApiMart image response did not include image data");
-            })
-          );
-
-          if (uploadedUrls.length === 0) {
-            throw new Error("ApiMart returned no images");
+          if (isVideoRemix && !remixTaskId) {
+            throw new Error("This video cannot be remixed yet because its ApiMart task ID is missing.");
           }
 
-          jobId = directImageJobId;
-          const completedItem: GenerationItem = {
-            id: jobId,
-            creationId: jobId,
-            creationIds: uploadedUrls.map((_, index) => `${jobId}_${index}`),
-            taskId: undefined,
-            generationPlatform: resolvedProvider,
-            type: "image",
-            prompt,
-            model: usedModel,
-            status: "completed",
-            src: uploadedUrls[0],
-            srcs: uploadedUrls.length > 1 ? uploadedUrls : undefined,
-            settings: {
-              ...settings,
-              n: uploadedUrls.length,
-              provider: resolvedProvider,
-              previewUrl: uploadedUrls[0],
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-          };
+            body: JSON.stringify({
+              model: submissionModel,
+              ...parameters,
+            }),
+          });
+          const submission = await response.json();
+          if (!response.ok) {
+            throw new Error(submission?.error || "ApiMart generation submission failed");
+          }
 
-          setActiveGeneration(completedItem);
-          setGenerations([completedItem]);
-          setIsGenerating(false);
-          toast.success(`Rendered ${uploadedUrls.length} ApiMart image${uploadedUrls.length > 1 ? "s" : ""}.`, { id: "gen-toast" });
-          void persistCompletedGeneration(completedItem);
-          return;
+          if (generationType === "image" && isApiMartDirectImageResponse(submission)) {
+            const directImageJobId = `apimart-img-${Date.now()}`;
+            const responseItems = Array.isArray(submission.data) ? submission.data : [];
+            const uploadedUrls = await Promise.all(
+              responseItems.map(async (entry: any, index: number) => {
+                if (entry?.b64_json) {
+                  const outputFormat = submission?.output_format || "png";
+                  const mimeType = outputFormat === "jpg" ? "image/jpeg" : `image/${outputFormat}`;
+                  return uploadGeneratedAsset(base64ToBlob(entry.b64_json, mimeType), directImageJobId, index, outputFormat === "jpg" ? "jpg" : outputFormat);
+                }
+
+                if (entry?.url) {
+                  const assetResponse = await fetch(entry.url);
+                  if (!assetResponse.ok) {
+                    throw new Error("ApiMart returned an image URL that could not be downloaded");
+                  }
+                  return uploadGeneratedAsset(await assetResponse.blob(), directImageJobId, index);
+                }
+
+                throw new Error("ApiMart image response did not include image data");
+              })
+            );
+
+            if (uploadedUrls.length === 0) {
+              throw new Error("ApiMart returned no images");
+            }
+
+            return {
+              jobId: directImageJobId,
+              directCompletedItem: {
+                id: directImageJobId,
+                creationId: directImageJobId,
+                creationIds: uploadedUrls.map((_, index) => `${directImageJobId}_${index}`),
+                taskId: undefined,
+                generationPlatform: submissionProvider,
+                type: "image",
+                prompt,
+                model: submissionModel,
+                status: "completed",
+                src: uploadedUrls[0],
+                srcs: uploadedUrls.length > 1 ? uploadedUrls : undefined,
+                settings: {
+                  ...settings,
+                  n: uploadedUrls.length,
+                  provider: submissionProvider,
+                  previewUrl: uploadedUrls[0],
+                  fallbackUsed: submissionModel !== usedModel,
+                },
+              },
+            };
+          }
+
+          const nextTaskId = submission?.data?.[0]?.task_id;
+          if (!nextTaskId) {
+            throw new Error("ApiMart did not return a task ID");
+          }
+          return { jobId: nextTaskId, taskId: nextTaskId };
         }
 
-        taskId = submission?.data?.[0]?.task_id;
-        if (!taskId) {
-          throw new Error("ApiMart did not return a task ID");
-        }
-        jobId = taskId;
-      } else {
         const result = await createStudioJob({
-          provider: resolvedProvider,
-          model: usedModel,
+          provider: submissionProvider,
+          model: submissionModel,
           parameters,
         });
-        jobId = (result.data as any).jobId;
+
+        return { jobId: (result.data as any).jobId };
+      };
+
+      const shouldPreemptivelyFallback =
+        resolvedProvider === "apimart" &&
+        Boolean(configuredFallback) &&
+        (liveProviderStatus === "down" || liveProviderStatus === "degraded");
+
+      try {
+        if (shouldPreemptivelyFallback && configuredFallback) {
+          finalProvider = configuredFallback.provider;
+          finalModel = resolveExecutionModelForFallback(configuredFallback.model);
+          recordProviderTelemetryEvent({
+            provider: resolvedProvider,
+            outcome: "fallback",
+            message: settings.providerTelemetryMessage || "Live telemetry triggered a preemptive fallback.",
+          });
+          toast.loading(`Live provider health is ${liveProviderStatus}. Routing through ${finalModel} on ${finalProvider} instead...`, { id: "gen-toast" });
+        }
+
+        const submission = await submitWithProvider(finalProvider, finalModel);
+        jobId = submission.jobId;
+        taskId = submission.taskId;
+        recordProviderTelemetryEvent({ provider: finalProvider, outcome: "queued" });
+        telemetryProvider = finalProvider;
+
+        if (submission.directCompletedItem) {
+          setActiveGeneration(submission.directCompletedItem);
+          setGenerations([submission.directCompletedItem]);
+          setIsGenerating(false);
+          recordProviderTelemetryEvent({ provider: finalProvider, outcome: "success" });
+          toast.success(`Rendered ${(submission.directCompletedItem.srcs || [submission.directCompletedItem.src]).length} ${submission.directCompletedItem.generationPlatform === "apimart" ? "ApiMart" : "Studio"} image${submission.directCompletedItem.srcs && submission.directCompletedItem.srcs.length > 1 ? "s" : ""}.`, { id: "gen-toast" });
+          void persistCompletedGeneration(submission.directCompletedItem);
+          return;
+        }
+      } catch (primaryError) {
+        if (resolvedProvider === "apimart" && configuredFallback && isRetryableProviderFailure(primaryError)) {
+          finalProvider = configuredFallback.provider;
+          finalModel = resolveExecutionModelForFallback(configuredFallback.model);
+          recordProviderTelemetryEvent({
+            provider: resolvedProvider,
+            outcome: "failure",
+            message: primaryError instanceof Error ? primaryError.message : "Provider request failed before fallback.",
+          });
+          toast.loading(`ApiMart is under load. Retrying with ${configuredFallback.model} on ${configuredFallback.provider}...`, { id: "gen-toast" });
+          const fallbackSubmission = await submitWithProvider(finalProvider, finalModel);
+          jobId = fallbackSubmission.jobId;
+          taskId = fallbackSubmission.taskId;
+          recordProviderTelemetryEvent({ provider: finalProvider, outcome: "queued" });
+          telemetryProvider = finalProvider;
+
+          if (fallbackSubmission.directCompletedItem) {
+            setActiveGeneration(fallbackSubmission.directCompletedItem);
+            setGenerations([fallbackSubmission.directCompletedItem]);
+            setIsGenerating(false);
+            recordProviderTelemetryEvent({ provider: finalProvider, outcome: "success" });
+            toast.success(`Fallback completed with ${finalModel}.`, { id: "gen-toast" });
+            void persistCompletedGeneration(fallbackSubmission.directCompletedItem);
+            return;
+          }
+        } else {
+          throw primaryError;
+        }
       }
 
       console.log(`Job queued! ID:`, jobId);
@@ -481,15 +712,17 @@ function StudioLayout() {
       const newItem: GenerationItem = {
         id: jobId,
         taskId: taskId || jobId,
-        generationPlatform: resolvedProvider,
+        generationPlatform: finalProvider,
         type: generationType,
         prompt: prompt,
-        model: usedModel,
+        model: finalModel === executionModel ? usedModel : finalModel,
         status: "queued" as const,
         settings: {
           ...settings,
           n: count,
-          provider: resolvedProvider,
+          provider: finalProvider,
+          fallbackUsed: finalModel !== executionModel,
+          fallbackModel: finalModel !== executionModel ? finalModel : undefined,
           previewUrl: dynamicParameters.image_url || settings.previewUrl,
           taskId: taskId || jobId,
         }
@@ -507,8 +740,22 @@ function StudioLayout() {
       if (appCode === "INSUFFICIENT_TOKENS") {
         setShowBillingAlert(true);
       } else if (appCode === "PROVIDER_ERROR") {
+        if (telemetryProvider) {
+          recordProviderTelemetryEvent({
+            provider: telemetryProvider,
+            outcome: "failure",
+            message: error instanceof Error ? error.message : "Provider error before queueing.",
+          });
+        }
         toast.error("AI Provider is currently at capacity or low on credits. Your tokens have been refunded. Please try again or switch models.", { duration: 6000 });
       } else {
+        if (telemetryProvider) {
+          recordProviderTelemetryEvent({
+            provider: telemetryProvider,
+            outcome: "failure",
+            message: error instanceof Error ? error.message : "Studio generation failed before queueing.",
+          });
+        }
         console.error("Failed to deduct tokens or create job:", error);
         toast.error(`Job failed: ${error?.message || 'Unknown error'}`, { id: 'gen-toast' });
       }
@@ -534,6 +781,7 @@ function StudioLayout() {
       setActiveGeneration(failedItem);
       setGenerations((prev: GenerationItem[]) => prev.map((g) => (g.id === jobId ? failedItem : g)));
       setIsGenerating(false);
+      recordProviderTelemetryEvent({ provider, outcome: "failure", message });
       toast.error(message, { id: "gen-toast" });
     };
 
@@ -622,6 +870,7 @@ function StudioLayout() {
               const cleaned = prev.filter(g => g.id !== jobId);
               return [...completedItems, ...cleaned];
             });
+            recordProviderTelemetryEvent({ provider, outcome: "success" });
             void persistCompletedGeneration(batchItem);
           } else {
             
@@ -638,6 +887,7 @@ function StudioLayout() {
             };
             setActiveGeneration(completedItem);
             setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? completedItem : g));
+            recordProviderTelemetryEvent({ provider, outcome: "success" });
             void persistCompletedGeneration(completedItem);
           }
           setIsGenerating(false);
@@ -653,6 +903,11 @@ function StudioLayout() {
           setActiveGeneration(failedItem);
           setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? failedItem : g));
           setIsGenerating(false);
+          recordProviderTelemetryEvent({
+            provider,
+            outcome: "failure",
+            message: data.error || (data.status === "cancelled" ? "Generation was cancelled." : "Generation failed."),
+          });
         } else {
           console.log("Still processing, polling again in 1.5 seconds...");
 
@@ -751,7 +1006,7 @@ function StudioLayout() {
   }, [searchParams, router, activeGeneration, isGenerating]);
 
 
-  const sidebarWidth = sidebarCollapsed ? 60 : 210;
+  const studioShellTopOffset = "var(--app-nav-height, 96px)";
 
   const handleSidebarModeChange = (newMode: StudioMode) => {
     setStudioMode(newMode);
@@ -801,10 +1056,14 @@ function StudioLayout() {
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         mobileOpen={mobilePanelOpen}
+        topOffset={studioShellTopOffset}
       />
 
       {/* Mobile sidebar toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div
+        className="lg:hidden fixed left-4 z-50"
+        style={{ top: `calc(${studioShellTopOffset} + 16px)` }}
+      >
         <Button
           variant="ghost"
           size="icon"
@@ -818,29 +1077,25 @@ function StudioLayout() {
       {/* Main Content */}
       <div
         className={cn(
-          "transition-all duration-300 h-dvh overflow-hidden",
+          "transition-all duration-300 overflow-hidden",
           sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[210px]"
         )}
+        style={{
+          marginTop: studioShellTopOffset,
+          height: `calc(100dvh - ${studioShellTopOffset})`,
+        }}
       >
         {/* Top Bar */}
-        <div className="h-14 border-b border-[#1a1a1a] flex items-center justify-between px-6 shrink-0 bg-[#0a0a0a]">
+        <div className="h-14 border-b border-[#1a1a1a] flex items-center px-6 shrink-0 bg-[#0a0a0a]">
           <div className="flex items-center gap-3">
             <h1 className="text-sm font-semibold text-zinc-200 capitalize">
               {studioMode.replace(/-/g, " ")}
             </h1>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-[#c5a44e]/10 border border-[#c5a44e]/20 px-3 py-1.5 rounded-lg">
-              <Sparkles className="w-3.5 h-3.5 text-[#c5a44e]" />
-              <span className="text-sm font-semibold text-[#c5a44e]">
-                {credits?.toLocaleString() ?? "..."}
-              </span>
-            </div>
-          </div>
         </div>
 
         {/* Two-column content */}
-        <div className="flex h-[calc(100dvh-56px)] overflow-hidden flex-col lg:flex-row">
+        <div className="flex h-[calc(100%-56px)] overflow-hidden flex-col lg:flex-row">
           {/* Left: Generation Form */}
           <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-[52dvh] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r border-[#1a1a1a]">
             <div className="flex-1 min-h-0">
@@ -855,6 +1110,7 @@ function StudioLayout() {
                 aspectRatio={aspectRatio}
                 setAspectRatio={setAspectRatio}
                 studioMode={studioMode}
+                activeGeneration={activeGeneration}
               />
             </div>
           </div>

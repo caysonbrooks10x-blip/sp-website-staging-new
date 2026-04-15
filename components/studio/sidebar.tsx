@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -27,7 +26,8 @@ export type StudioMode =
   | "text-to-video"
   | "image-to-video"
   | "motion-control"
-  | "remix";
+  | "remix"
+  | "workflow-templates";
 
 interface SidebarProps {
   activeMode: StudioMode;
@@ -35,6 +35,7 @@ interface SidebarProps {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   mobileOpen?: boolean;
+  topOffset?: string;
 }
 
 const NAV_SECTIONS = [
@@ -59,6 +60,12 @@ const NAV_SECTIONS = [
       { id: "remix" as StudioMode, label: "Video Remix", icon: Wand2 },
     ],
   },
+  {
+    label: "WORKFLOWS",
+    items: [
+      { id: "workflow-templates" as StudioMode, label: "Workflow Library", icon: Sparkles },
+    ],
+  },
 ];
 
 const BOTTOM_LINKS = [
@@ -68,30 +75,22 @@ const BOTTOM_LINKS = [
   { href: "/pricing", label: "Pricing", icon: CreditCard },
 ];
 
-export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onToggleCollapse, mobileOpen = false }: SidebarProps) {
+export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onToggleCollapse, mobileOpen = false, topOffset = "var(--app-nav-height, 96px)" }: SidebarProps) {
   const { credits } = useAuth();
   const pathname = usePathname();
 
   return (
     <div
       className={cn(
-        "h-dvh flex flex-col bg-[#0a0a0a] border-r border-[#1a1a1a] transition-all duration-300 fixed left-0 top-0 z-40 overflow-hidden",
+        "flex flex-col bg-[#0a0a0a] border-r border-[#1a1a1a] transition-all duration-300 fixed left-0 z-40 overflow-hidden",
         mobileOpen ? "translate-x-0" : "-translate-x-full",
         "lg:translate-x-0",
         collapsed ? "w-[210px] lg:w-[60px]" : "w-[210px]"
       )}
+      style={{ top: topOffset, height: `calc(100dvh - ${topOffset})` }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 pt-4 pb-2 shrink-0">
-        {!collapsed && (
-          <Link href="/" className="flex items-center gap-2 group">
-            <img
-              src="/brand/studiox-lockup.png"
-              alt="StudioX"
-              className="h-8 w-auto object-contain filter brightness-110 transition-all duration-300 group-hover:brightness-150"
-            />
-          </Link>
-        )}
+      <div className="flex items-center justify-end px-3 pt-4 pb-2 shrink-0">
         <button
           onClick={onToggleCollapse}
           className="p-1.5 hover:bg-white/5 rounded-md transition-colors cursor-pointer select-none text-zinc-500 hover:text-zinc-300"

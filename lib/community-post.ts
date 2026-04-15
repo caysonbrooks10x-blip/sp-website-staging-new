@@ -45,5 +45,8 @@ export function mapCommunityPost(id: string, data: Record<string, any>): Communi
     campaign: (data.campaign || undefined) as CommunityCampaignMeta | undefined,
     generationPlatform: data.generationPlatform || data.platform || data.provider,
     taskId: data.taskId || data.creationId || undefined,
+    templatePack: data.templatePack || undefined,
+    templateShareUrl: data.templateShareUrl || undefined,
+    workflowMode: data.workflowMode || undefined,
   }
 }

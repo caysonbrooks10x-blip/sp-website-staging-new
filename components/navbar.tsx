@@ -31,6 +31,7 @@ export function Navbar() {
   const router = useRouter()
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 })
   const navRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
 
   const [balance, setBalance] = useState<number>(0)
 
@@ -83,6 +84,20 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  useEffect(() => {
+    const updateNavHeight = () => {
+      const height = headerRef.current?.offsetHeight ?? 96
+      document.documentElement.style.setProperty("--app-nav-height", `${height}px`)
+    }
+
+    updateNavHeight()
+    window.addEventListener("resize", updateNavHeight)
+
+    return () => {
+      window.removeEventListener("resize", updateNavHeight)
+    }
+  }, [mobileMenuOpen, pathname, scrolled])
+
   
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -115,6 +130,7 @@ export function Navbar() {
   return (
     <>
       <header
+        ref={headerRef}
         className={cn(
           "fixed top-0 left-0 right-0 z-[100] px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-[0.32,0.72,0,1]",
           isNavVisible ? "translate-y-0" : "-translate-y-32",

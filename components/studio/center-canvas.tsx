@@ -9,6 +9,7 @@ import { MediaRenderer } from "@/components/media-renderer";
 import { ASSET_BASE } from "@/lib/assets";
 import { buildExportPackHref, normalizeExportPresetIds } from "@/lib/export-pack";
 import type { CommunityCampaignMeta } from "@/lib/types";
+import { buildStudioTemplateSharePayload, buildStudioTemplateShareUrl, encodeStudioTemplatePack } from "@/lib/studio-template-sharing";
 
 export interface GenerationItem {
     id: string;
@@ -52,6 +53,12 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         campaign?: CommunityCampaignMeta;
         generationPlatform?: string;
         taskId?: string;
+        defaultTitle?: string;
+        defaultDescription?: string;
+        defaultTags?: string[];
+        templatePack?: string;
+        templateShareUrl?: string;
+        workflowMode?: "image" | "video" | "remix";
     } | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
@@ -137,6 +144,81 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         }
     ) => {
         setPublishTarget({ url, type, prompt, creationId, ...lineage });
+        setShowPublishModal(true);
+    };
+
+    const handlePublishWorkflowSingle = (
+        url: string,
+        creationId: string | undefined,
+        type: "image" | "video"
+    ) => {
+        if (!activeGeneration) return;
+
+        const workflowPayload = buildStudioTemplateSharePayload({
+            name: activeGeneration.settings?.templateName || `${activeGeneration.model || "StudioX"} Workflow`,
+            description: "Reusable workflow published from Studio.",
+            mode:
+                activeGeneration.settings?.creationMode === "remix"
+                    ? "remix"
+                    : type === "video"
+                        ? "video"
+                        : "image",
+            model: activeGeneration.model || activeGeneration.settings?.model,
+            provider: activePlatform,
+            prompt: activeGeneration.settings?.originalPrompt || activeGeneration.prompt,
+            aspectRatio: activeGeneration.settings?.aspectRatio || activeGeneration.settings?.size,
+            resolution: activeGeneration.settings?.resolution,
+            duration: activeGeneration.settings?.duration,
+            imageCount: activeGeneration.settings?.n,
+            remixStrength: activeGeneration.settings?.image_weight
+                ? Math.round(Number(activeGeneration.settings.image_weight) * 100)
+                : activeGeneration.settings?.remixStrength,
+            outputFormat: activeGeneration.settings?.output_format,
+            videoStyle: activeGeneration.settings?.style,
+            videoMode: activeGeneration.settings?.mode,
+            negativePrompt: activeGeneration.settings?.negative_prompt,
+            storyboard: activeGeneration.settings?.storyboard,
+            soundEnabled: activeGeneration.settings?.sound,
+            generateAudio: activeGeneration.settings?.generate_audio,
+            characterOrientation: activeGeneration.settings?.character_orientation,
+            directorGoal: activeGeneration.settings?.director_goal,
+            directorPlatform: activeGeneration.settings?.director_platform,
+            directorStyle: activeGeneration.settings?.director_style,
+            directorBrief: activeGeneration.settings?.campaign_brief,
+            directorVariations: activeGeneration.settings?.director_variations
+                ? Number(activeGeneration.settings.director_variations)
+                : undefined,
+            directorPresetIds: normalizeExportPresetIds(activeGeneration.settings?.campaign_preset_ids || []),
+            autoExportPack: activeGeneration.settings?.auto_export_pack === "1",
+            cameraMovement: activeGeneration.settings?.cameraMovement,
+            effectPreset: activeGeneration.settings?.effectPreset,
+            audioDirection: activeGeneration.settings?.audioDirection,
+            characterLock: activeGeneration.settings?.characterLock,
+            characterPackId: activeGeneration.settings?.characterPackId,
+            characterPackName: activeGeneration.settings?.characterPackName,
+            characterPackNotes: activeGeneration.settings?.characterPackNotes,
+            sharedFrom: "generation",
+        });
+
+        setPublishTarget({
+            url,
+            type,
+            prompt: activeGeneration.prompt,
+            creationId,
+            parentCreationId: activeGeneration.settings?.originalCreationId,
+            rootCreationId: activeGeneration.settings?.rootCreationId,
+            remixDepth: activeGeneration.settings?.remixDepth,
+            sourcePostId: activeGeneration.settings?.sourcePostId,
+            campaign: buildCampaignMeta(),
+            generationPlatform: `${activePlatform}-template`,
+            taskId: activeGeneration.taskId || creationId,
+            defaultTitle: `${workflowPayload.name || "Studio Workflow"} Template`,
+            defaultDescription: `Reusable Studio workflow for ${workflowPayload.prompt}`,
+            defaultTags: ["community", "template", "workflow", activePlatform, type],
+            templatePack: encodeStudioTemplatePack(workflowPayload),
+            templateShareUrl: buildStudioTemplateShareUrl(workflowPayload, typeof window !== "undefined" ? window.location.origin : undefined),
+            workflowMode: workflowPayload.mode,
+        });
         setShowPublishModal(true);
     };
 
@@ -413,6 +495,21 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
+                                                            handlePublishWorkflowSingle(
+                                                                src,
+                                                                activeGeneration.creationIds?.[idx] || activeGeneration.creationId,
+                                                                activeGeneration.type
+                                                            );
+                                                        }}
+                                                        title="Publish Workflow"
+                                                        className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] px-2.5 sm:px-4 h-9.5 sm:h-10 rounded-lg sm:rounded-xl shadow-xl border border-[#c5a44e]/20 flex items-center gap-1.5 transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/tbtn"
+                                                    >
+                                                        <Wand2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover/tbtn:-translate-y-[1px] transition-transform" />
+                                                        <span className="font-bold tracking-tight text-[10px] sm:text-[11px] whitespace-nowrap">Workflow</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
                                                             openClawHub(src, activeGeneration.creationIds?.[idx] || activeGeneration.creationId);
                                                         }}
                                                         title="Send to Claw"
@@ -518,6 +615,18 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     <span className="font-bold tracking-tight text-xs sm:text-sm lg:text-[13px]">Publish</span>
                                                 </button>
                                                 <button
+                                                    onClick={() => handlePublishWorkflowSingle(
+                                                        activeGeneration.src || "",
+                                                        activeGeneration.creationId,
+                                                        activeGeneration.type
+                                                    )}
+                                                    className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] px-4 sm:px-6 lg:px-5 h-10 sm:h-12 lg:h-11 rounded-xl sm:rounded-2xl shadow-xl border border-[#c5a44e]/20 flex items-center gap-1.5 sm:gap-2 pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
+                                                    title="Publish Workflow"
+                                                >
+                                                    <Wand2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
+                                                    <span className="font-bold tracking-tight text-xs sm:text-sm lg:text-[13px]">Workflow</span>
+                                                </button>
+                                                <button
                                                     onClick={() => openClawHub(activeGeneration.src || "", activeGeneration.creationId)}
                                                     className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-2xl h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-2xl border border-white/10 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                     title="Send to Claw"
@@ -571,6 +680,16 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                 )}
                             </div>
                         )}
+                        <div
+                            id="studio-character-packs-slot"
+                            className="mt-6 w-full rounded-[24px] border border-white/[0.06] bg-[#090909]/90 p-4 sm:p-5 shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
+                            style={{ maxWidth: maxWidthStyle }}
+                        />
+                        <div
+                            id="studio-template-deck-slot"
+                            className="mt-6 w-full rounded-[24px] border border-white/[0.06] bg-[#090909]/90 p-4 sm:p-5 shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
+                            style={{ maxWidth: maxWidthStyle }}
+                        />
                     </div>
                 </div>
             </div>

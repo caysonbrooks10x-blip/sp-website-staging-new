@@ -121,4 +121,7 @@ export interface CommunityPost {
   campaign?: CommunityCampaignMeta
   generationPlatform?: "poyo" | "apimart" | string
   taskId?: string
+  templatePack?: string
+  templateShareUrl?: string
+  workflowMode?: "image" | "video" | "remix" | string
 }

@@ -32,6 +32,10 @@ export interface CommunityPublishInput {
   generationPlatform?: string
   taskId?: string
   aspectRatio?: CommunityAspectRatio
+  templatePack?: string
+  templateShareUrl?: string
+  workflowMode?: "image" | "video" | "remix"
+  extraTags?: string[]
 }
 
 function deriveAspectRatio(
@@ -74,6 +78,9 @@ function buildPayload(input: CommunityPublishInput) {
     campaign: input.campaign || null,
     generationPlatform: input.generationPlatform || "poyo",
     taskId: input.taskId || input.creationId || null,
+    templatePack: input.templatePack || null,
+    templateShareUrl: input.templateShareUrl || null,
+    workflowMode: input.workflowMode || null,
   }
 }
 

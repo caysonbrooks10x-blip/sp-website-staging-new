@@ -34,6 +34,12 @@ interface UploadModalProps {
         generationPlatform?: string
         taskId?: string
         aspectRatio?: CommunityAspectRatio
+        defaultTitle?: string
+        defaultDescription?: string
+        defaultTags?: string[]
+        templatePack?: string
+        templateShareUrl?: string
+        workflowMode?: "image" | "video" | "remix"
     }
 }
 
@@ -78,8 +84,8 @@ async function resolveAspectRatioFromSource(
 export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) {
     const [file, setFile] = useState<File | null>(null)
     const [preview, setPreview] = useState<string | null>(initialData?.url || null)
-    const [title, setTitle] = useState("")
-    const [description, setDescription] = useState(initialData?.prompt || "")
+    const [title, setTitle] = useState(initialData?.defaultTitle || "")
+    const [description, setDescription] = useState(initialData?.defaultDescription || initialData?.prompt || "")
     const [isPublic, setIsPublic] = useState(true)
     const [allowRemix, setAllowRemix] = useState(true)
     const [isUploading, setIsUploading] = useState(false)
@@ -150,7 +156,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
             }
 
             const { postId } = await publishCommunityPost({
-                title: title || "StudioX Upload",
+                title: title || initialData?.defaultTitle || "StudioX Upload",
                 prompt: description || "No description provided.",
                 caption: description || "",
                 model: modelOutput,
@@ -161,7 +167,7 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                     avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
                     uid: user.uid
                 },
-                tags: isPublic ? ["community", "upload"] : ["private", "upload"],
+                tags: Array.from(new Set([...(initialData?.defaultTags || []), ...(isPublic ? ["community", "upload"] : ["private", "upload"])])),
                 assetUrl: downloadUrl,
                 thumbnailUrl: downloadUrl,
                 allowRemix,
@@ -174,6 +180,9 @@ export function UploadModal({ isOpen, onClose, initialData }: UploadModalProps) 
                 generationPlatform: initialData?.generationPlatform,
                 taskId: initialData?.taskId,
                 aspectRatio: resolvedAspectRatio,
+                templatePack: initialData?.templatePack,
+                templateShareUrl: initialData?.templateShareUrl,
+                workflowMode: initialData?.workflowMode,
             });
 
             console.log("Successfully published external post!", postId);
