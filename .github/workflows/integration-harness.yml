@@ -39,6 +39,7 @@ jobs:
           npx tsx scripts/verify-cost-tracking.ts
           npx tsx scripts/verify-model-registry.ts
           npx tsx scripts/verify-scheduler.ts
+          npx tsx scripts/verify-rate-limit.ts
           npx tsx scripts/verify-sprint-a.ts
 
       - name: Integration harness (Next.js + mock providers)
