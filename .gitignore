@@ -6,8 +6,5 @@ out
 .env.*
 .DS_Store
 *.swp
-<<<<<<< HEAD
-=======
 .vercel
->>>>>>> 6369408 (feat: initial frontend + fixes)
 tsconfig.tsbuildinfo
