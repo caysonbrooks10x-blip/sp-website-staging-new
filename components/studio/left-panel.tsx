@@ -43,6 +43,7 @@ import {
     getProviderRoutingDecision,
     validateStudioExecution,
 } from "@/lib/provider-routing";
+import { validateModelParams } from "@/lib/model-capabilities";
 import { EXPORT_PACK_PRESETS, normalizeExportPresetIds } from "@/lib/export-pack";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
@@ -1045,6 +1046,33 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             }
             // Wan 2.6 — template is a first-class ApiMart param, not prompt text.
             Object.assign(parameters, buildWan26PayloadExtras(selectedModel.id, effectPreset));
+        }
+
+        const modelValidation = validateModelParams(
+            selectedModel.id,
+            {
+                aspect_ratio: typeof parameters.aspect_ratio === "string" ? parameters.aspect_ratio : aspectRatio,
+                resolution: typeof parameters.resolution === "string" ? parameters.resolution : resolution,
+                duration: typeof parameters.duration === "number" ? parameters.duration : undefined,
+                n: typeof parameters.n === "number" ? parameters.n : undefined,
+                last_frame_image: parameters.end_image_file ? "present" : undefined,
+                mask_url: typeof parameters.mask_url === "string" ? parameters.mask_url : undefined,
+                kling_elements: parameters.kling_elements,
+                template: typeof parameters.template === "string" ? parameters.template : undefined,
+                camera_movement: typeof parameters.camera_movement === "string" ? parameters.camera_movement : undefined,
+                generation_type: typeof parameters.generation_type === "string" ? parameters.generation_type : undefined,
+            },
+            {
+                hasReferenceImage: Boolean(sourceFile || startImageFile || (previewUrl && !previewLooksVideo)),
+                hasReferenceVideo: Boolean(sourceVideo || sourceVideoPreview || (previewUrl && previewLooksVideo)),
+            },
+        );
+        if (!modelValidation.ok) {
+            toast.error(modelValidation.errors[0]);
+            return;
+        }
+        if (modelValidation.warnings.length > 0) {
+            toast.warning(modelValidation.warnings[0]);
         }
 
         const providerDecision = getProviderRoutingDecision({

@@ -16,14 +16,16 @@
  *   Step 2:           the user's selected video model with
  *                     image_urls = [step1_output_url].
  *
- * Shipped behind env flag NEXT_PUBLIC_STUDIO_TWO_STEP=1. When the flag
- * is off, callers should skip this entire module and submit the video
- * job directly — production behavior is unchanged.
+ * Sprint A Step 3: the env flag NEXT_PUBLIC_STUDIO_TWO_STEP is gone.
+ * This pipeline is now AUTO — it runs whenever the chosen video model
+ * ignores aspect_ratio on its reference image AND the reference AR
+ * doesn't already match the target. The caller still has the escape
+ * hatch of setting `alreadyApplied: true` to prevent loops (e.g. when
+ * the reframed image is itself being resubmitted).
  */
 
 import type { StudioProvider } from "@/lib/provider-routing"
 
-export const TWO_STEP_FLAG_ENV = "NEXT_PUBLIC_STUDIO_TWO_STEP"
 export const STEP_ONE_FIXED_COST_USD = 0.025
 
 export type TwoStepPhase =
@@ -54,16 +56,6 @@ export function createTwoStepState(): TwoStepState {
 
 export function advanceTwoStepState(state: TwoStepState, patch: Partial<TwoStepState>): TwoStepState {
   return { ...state, ...patch, updatedAt: Date.now() }
-}
-
-/**
- * True when the client-side 2-step flag is enabled. Reads an injected
- * public env var so the feature is off by default in every environment
- * that doesn't explicitly opt in.
- */
-export function isTwoStepEnabled(envValue?: string | null): boolean {
-  const raw = envValue ?? (typeof process !== "undefined" ? process.env?.NEXT_PUBLIC_STUDIO_TWO_STEP : undefined)
-  return raw === "1" || raw === "true"
 }
 
 const EXTREME_AR = new Set(["1:4", "4:1", "1:8", "8:1"])
@@ -149,17 +141,24 @@ export type TwoStepDecision =
 
 /**
  * Single entry point the caller uses before dispatching a video job.
- * Returns `{ needed: false }` and skips everything if the flag is off,
- * the model doesn't ignore AR, or the reference AR already matches.
+ * Auto-triggered: returns `{ needed: true }` whenever the model
+ * ignores aspect_ratio on its reference image AND the reference AR
+ * doesn't already match the target. Callers pass `alreadyApplied: true`
+ * to short-circuit when they're resubmitting a previously-reframed job.
+ *
+ * When `referenceAspectRatio` is unknown, we conservatively apply the
+ * pipeline anyway — the downside is one $0.025 reframing step that
+ * returns a compatible image; the upside is no silent AR drift.
  */
 export function decideTwoStep(
   input: TwoStepInput,
-  opts: { twoStepFlag?: boolean; modelIgnoresArOnRef?: boolean } = {},
+  opts: { modelIgnoresArOnRef?: boolean; alreadyApplied?: boolean } = {},
 ): TwoStepDecision {
-  const flagOn = opts.twoStepFlag ?? isTwoStepEnabled()
-  if (!flagOn) return { needed: false, reason: "two-step flag disabled" }
+  if (opts.alreadyApplied) return { needed: false, reason: "two-step already applied to this reference" }
   if (!opts.modelIgnoresArOnRef) return { needed: false, reason: "model respects aspect_ratio on reference" }
-  if (!referenceArMismatchesTarget(input.referenceAspectRatio, input.targetAspectRatio)) {
+  if (!input.referenceImageUrl) return { needed: false, reason: "no reference image to reframe" }
+  if (!input.targetAspectRatio) return { needed: false, reason: "no target aspect ratio supplied" }
+  if (input.referenceAspectRatio && !referenceArMismatchesTarget(input.referenceAspectRatio, input.targetAspectRatio)) {
     return { needed: false, reason: "reference AR already matches target" }
   }
 

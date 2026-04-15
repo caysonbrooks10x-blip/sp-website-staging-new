@@ -470,9 +470,10 @@ export function getProviderFallback(model?: string) {
 /**
  * Quick predicate exported for the 2-step AR pipeline (handoff §10).
  * Returns true when the request would benefit from a reframing image
- * edit before video submission. Caller still has to gate on the
- * NEXT_PUBLIC_STUDIO_TWO_STEP flag and confirm AR mismatch via
- * lib/studio-two-step.ts — this only answers the model-level question.
+ * edit before video submission. Caller still has to confirm AR mismatch
+ * via decideTwoStep in lib/studio-two-step.ts — this only answers the
+ * model-level question. (The env flag was removed in Sprint A Phase 1;
+ * the pipeline is now auto-triggered.)
  */
 export function needsTwoStepPipeline(input: {
   mode: "image" | "video" | "remix"

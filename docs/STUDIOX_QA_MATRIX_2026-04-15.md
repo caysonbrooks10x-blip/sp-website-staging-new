@@ -7,7 +7,7 @@
 - `lib/poyo.ts` (direct Poyo client)
 - `lib/model-config.ts` (29 new models added in Step 3, `ignoresArOnRef` flag in Step 6)
 - `lib/studio-enhancements.ts` (Wan 2.6 templates + Hailuo 2.3 camera tokens)
-- `lib/studio-two-step.ts` (2-step AR pipeline behind `NEXT_PUBLIC_STUDIO_TWO_STEP=1`)
+- `lib/studio-two-step.ts` (2-step AR pipeline — auto-triggered, no flag since Sprint A)
 - `app/studio/page.tsx` (handleGenerate wires gates + 2-step branch)
 - `components/studio/left-panel.tsx` (model-aware UI controls)
 
@@ -31,8 +31,9 @@ as "TBD — verify on a real run."
    tab — `/api/apimart/...` vs `createStudioJob` Firebase callable),
    **observed cost** (Poyo dashboard credits × $0.005 OR ApiMart
    dashboard line item), and **Pass/Fail**.
-4. For 2-step rows: also set `NEXT_PUBLIC_STUDIO_TWO_STEP=1` in
-   `.env.local` and restart `npm run dev`.
+4. For 2-step rows: pipeline auto-triggers when model ignores AR on
+   the reference image AND reference AR differs from target AR. No env
+   flag required since Sprint A Phase 1.
 
 ---
 
@@ -199,9 +200,9 @@ inline prose). Inspect via DevTools network tab on
 
 ---
 
-## Section E — 2-Step AR Pipeline (flag on)
+## Section E — 2-Step AR Pipeline (auto)
 
-Set `NEXT_PUBLIC_STUDIO_TWO_STEP=1`. For each row, pick the listed
+Pipeline auto-triggers — no flag needed. For each row, pick the listed
 model with the listed reference image AR + target AR. Verify:
 1. Toast shows "Reframing reference to {AR} via {model}..."
 2. Network tab shows POST to `/api/apimart/images/generations` first,

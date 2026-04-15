@@ -3,9 +3,8 @@ import {
   ApiMartRequestError,
   queryApiMartTaskStatus,
   submitApiMartImageGeneration,
-  type ApiMartDirectImageResponse,
-  type ApiMartSubmissionResponse,
 } from "@/lib/apimart"
+import { adaptApimartStatus, adaptApimartSubmission, newRequestId } from "@/lib/provider-response"
 
 export const runtime = "nodejs"
 
@@ -16,18 +15,6 @@ interface ExtractBody {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-function firstTaskId(result: ApiMartSubmissionResponse) {
-  return Array.isArray(result?.data) ? result.data[0]?.task_id : undefined
-}
-
-function firstDirectUrl(result: ApiMartDirectImageResponse) {
-  if (!Array.isArray(result?.data)) return undefined
-  for (const entry of result.data) {
-    if (entry?.url) return entry.url
-  }
-  return undefined
 }
 
 export async function POST(request: Request) {
@@ -47,6 +34,9 @@ export async function POST(request: Request) {
       "Extract a clean neutral character reference portrait from the input image. Preserve face shape, skin tone, hair, and wardrobe identity. Remove distracting background. Keep studio lighting and centered framing for future consistency runs." +
       notesClause
 
+    const requestId = newRequestId()
+    const ctx = { provider: "apimart", model: "nano-banana-2-new", request_id: requestId }
+
     const submitted = await submitApiMartImageGeneration({
       model: "nano-banana-2-new",
       prompt,
@@ -57,55 +47,57 @@ export async function POST(request: Request) {
       n: 1,
     })
 
-    if ("created" in submitted) {
-      const directUrl = firstDirectUrl(submitted)
-      if (!directUrl) {
+    const submission = adaptApimartSubmission(submitted, ctx)
+
+    if (submission.kind === "direct") {
+      const url = submission.canonical.urls[0]
+      if (!url) {
         return NextResponse.json(
           { error: "ApiMart direct extraction response did not include a URL." },
           { status: 502 }
         )
       }
-
       return NextResponse.json({
         status: "completed",
         provider: "apimart",
         model: "nano-banana-2-new",
-        extractedImageUrl: directUrl,
+        request_id: requestId,
+        extractedImageUrl: url,
       })
     }
 
-    const taskId = firstTaskId(submitted)
+    const taskId = submission.taskId
     if (!taskId) {
       return NextResponse.json({ error: "ApiMart did not return an extraction task ID." }, { status: 502 })
     }
 
     const maxAttempts = 40
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const status = await queryApiMartTaskStatus(taskId, "en")
-      const task = status?.data
-      const taskState = task?.status
+      const raw = await queryApiMartTaskStatus(taskId, "en")
+      const canonical = adaptApimartStatus(raw, ctx)
 
-      if (taskState === "failed" || taskState === "cancelled") {
-        const message = task?.error?.message || task?.error?.type || "Character extraction failed."
-        return NextResponse.json({ error: message, taskId }, { status: 502 })
+      if (canonical.status === "failed") {
+        return NextResponse.json(
+          { error: canonical.error || "Character extraction failed.", taskId, request_id: requestId },
+          { status: 502 }
+        )
       }
 
-      if (taskState === "completed") {
-        const imageGroups = Array.isArray(task?.result?.images) ? task.result.images : []
-        const extractedImageUrl = imageGroups[0]?.url?.[0]
-        if (!extractedImageUrl) {
+      if (canonical.status === "completed") {
+        const url = canonical.urls[0]
+        if (!url) {
           return NextResponse.json(
-            { error: "Character extraction completed but no image URL was returned.", taskId },
+            { error: "Character extraction completed but no image URL was returned.", taskId, request_id: requestId },
             { status: 502 }
           )
         }
-
         return NextResponse.json({
           status: "completed",
           provider: "apimart",
           model: "nano-banana-2-new",
           taskId,
-          extractedImageUrl,
+          request_id: requestId,
+          extractedImageUrl: url,
         })
       }
 
@@ -118,6 +110,7 @@ export async function POST(request: Request) {
         provider: "apimart",
         model: "nano-banana-2-new",
         taskId,
+        request_id: requestId,
         message: "Extraction is still processing. Retry shortly.",
       },
       { status: 202 }

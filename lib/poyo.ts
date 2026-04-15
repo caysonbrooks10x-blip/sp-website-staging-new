@@ -14,7 +14,7 @@
  * `callback_url` and skip polling.
  */
 
-const POYO_BASE_URL = "https://api.poyo.ai"
+const POYO_BASE_URL = process.env.POYO_BASE_URL?.trim() || "https://api.poyo.ai"
 const DEFAULT_TIMEOUT_MS = 30_000
 const MAX_SAFE_RETRIES = 5
 const RETRYABLE_STATUS_CODES = new Set([408, 409, 425, 429, 500, 502, 503, 504])

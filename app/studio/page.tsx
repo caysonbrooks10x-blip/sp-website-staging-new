@@ -18,13 +18,14 @@ import { ASSET_BASE } from "@/lib/assets";
 import {
   chooseProvider,
   getProviderFallback,
-  isRetryableProviderFailure,
   needsTwoStepPipeline,
   type StudioProvider,
 } from "@/lib/provider-routing";
 import { recordProviderTelemetryEvent } from "@/lib/provider-health";
 import { VIDEO_MODELS, getImageModelConfig, getVideoModelConfig } from "@/lib/model-config";
-import { decideTwoStep, isTwoStepEnabled } from "@/lib/studio-two-step";
+import { decideTwoStep, STEP_ONE_FIXED_COST_USD } from "@/lib/studio-two-step";
+import { adaptApimartStatus, adaptApimartSubmission, newRequestId, type CanonicalJobStatus } from "@/lib/provider-response";
+import { executeWithFallback, buildProviderCall } from "@/lib/provider-execution";
 import { persistStudioGeneration } from "@/lib/studio-generations";
 import { normalizeExportPresetIds } from "@/lib/export-pack";
 import { StudioSidebar, type StudioMode } from "@/components/studio/sidebar";
@@ -52,51 +53,39 @@ function inferGenerationType(mode: string, model: string): "image" | "video" {
   return VIDEO_MODEL_IDS.has(model) ? "video" : "image";
 }
 
-function normalizeApiMartStatus(payload: any): NormalizedJobStatus {
-  const task = payload?.data ?? {};
-  const imageUrls = Array.isArray(task?.result?.images)
-    ? task.result.images.flatMap((group: any) =>
-        Array.isArray(group?.url) ? group.url.filter((url: unknown) => typeof url === "string" && url.length > 0) : []
-      )
-    : [];
-  const videoEntries = Array.isArray(task?.result?.videos) ? task.result.videos : [];
-  const videoUrls = videoEntries
-    .map((entry: any) => entry?.url)
-    .filter((url: unknown) => typeof url === "string" && url.length > 0);
-  const directUrls = Array.isArray(task?.result?.url)
-    ? task.result.url.filter((url: unknown) => typeof url === "string" && url.length > 0)
-    : typeof task?.result?.url === "string"
-      ? [task.result.url]
-      : [];
-  const urls = [...imageUrls, ...videoUrls, ...directUrls];
-
-  const rawStatus = typeof task?.status === "string" ? task.status : "pending";
-  const status =
-    rawStatus === "completed"
+/**
+ * UI-side projection of CanonicalJobStatus into the legacy field names the
+ * polling loop already reads. The canonical adapter is the only thing that
+ * touches the raw ApiMart payload — this function just remaps fields.
+ */
+function canonicalToLegacyView(canonical: CanonicalJobStatus, payload: any): NormalizedJobStatus {
+  const uiStatus =
+    canonical.status === "completed"
       ? "completed"
-      : rawStatus === "failed" || rawStatus === "cancelled"
+      : canonical.status === "failed"
         ? "failed"
         : "processing";
-  const totalCount = Math.max(urls.length, 1);
-
+  const totalCount = Math.max(canonical.urls.length, 1);
   return {
-    status,
-    progress:
-      typeof task?.progress === "number"
-        ? task.progress
-        : status === "completed"
-          ? 100
-          : rawStatus === "processing"
-            ? 50
-            : 10,
-    completedCount: status === "completed" ? totalCount : 0,
+    status: uiStatus,
+    progress: canonical.progress,
+    completedCount: uiStatus === "completed" ? totalCount : 0,
     totalCount,
-    outputUrl: urls[0],
-    outputUrls: urls.length > 0 ? urls : undefined,
-    error: task?.error?.message || task?.error?.type,
-    taskId: task?.id,
-    thumbnailUrl: videoEntries[0]?.thumbnail_url || task?.result?.thumbnail_url,
+    outputUrl: canonical.urls[0],
+    outputUrls: canonical.urls.length > 0 ? canonical.urls : undefined,
+    error: canonical.error || undefined,
+    taskId: payload?.data?.id ?? canonical.request_id,
+    thumbnailUrl: canonical.thumbnail_url,
   };
+}
+
+function normalizeApiMartStatus(payload: any, ctx?: { provider?: string; model?: string; request_id?: string }): NormalizedJobStatus {
+  const canonical = adaptApimartStatus(payload, {
+    provider: ctx?.provider ?? "apimart",
+    model: ctx?.model ?? "unknown",
+    request_id: ctx?.request_id ?? "ui-poll",
+  });
+  return canonicalToLegacyView(canonical, payload);
 }
 
 function isApiMartDirectImageResponse(payload: any) {
@@ -442,13 +431,13 @@ function StudioLayout() {
         n: Number(count),
       };
 
-      // Step 6 (handoff §10): 2-step AR pipeline. Flag-gated; off in prod by
-      // default. When the chosen video model ignores aspect_ratio on a ref
-      // image, reframe the ref via a cheap image-edit step first, then feed
-      // the reframed output into the video job.
+      // Sprint A Step 3: AUTO 2-step AR pipeline. Runs whenever the chosen
+      // video model ignores aspect_ratio on its reference image. The
+      // `parameters.two_step_applied` marker is the single source of truth
+      // for the intra-call + cross-resubmission loop guard.
       if (
-        isTwoStepEnabled() &&
         generationType === "video" &&
+        !parameters.two_step_applied &&
         needsTwoStepPipeline({
           mode: "video",
           hasReferenceImage: hasImageReference,
@@ -460,10 +449,13 @@ function StudioLayout() {
           (Array.isArray(dynamicParameters.image_urls) && dynamicParameters.image_urls[0]) ||
           undefined;
         const targetAr = typeof dynamicParameters.aspect_ratio === "string" ? dynamicParameters.aspect_ratio : undefined;
+        const referenceAr = typeof dynamicParameters.reference_aspect_ratio === "string"
+          ? dynamicParameters.reference_aspect_ratio
+          : undefined;
         if (refImageUrl && targetAr) {
           const decision = decideTwoStep(
-            { referenceImageUrl: refImageUrl, targetAspectRatio: targetAr, n: count },
-            { twoStepFlag: true, modelIgnoresArOnRef: true },
+            { referenceImageUrl: refImageUrl, targetAspectRatio: targetAr, referenceAspectRatio: referenceAr, n: count },
+            { modelIgnoresArOnRef: true, alreadyApplied: Boolean(parameters.two_step_applied) },
           );
           if (decision.needed) {
             try {
@@ -483,28 +475,32 @@ function StudioLayout() {
               if (!stepOneResp.ok) {
                 throw new Error(stepOneJson?.error || "Step 1 reframe failed");
               }
-              const stepOneTaskId = stepOneJson?.data?.[0]?.task_id;
+              const stepOneRequestId = newRequestId();
+              const submission = adaptApimartSubmission(stepOneJson, {
+                provider: decision.stepOne.provider,
+                model: decision.stepOne.model,
+                request_id: stepOneRequestId,
+              });
               let reframedUrl: string | undefined;
-              if (!stepOneTaskId && Array.isArray(stepOneJson?.data) && stepOneJson.data[0]?.url) {
-                reframedUrl = stepOneJson.data[0].url;
-              } else if (stepOneTaskId) {
+              if (submission.kind === "direct") {
+                reframedUrl = submission.canonical.urls[0];
+              } else if (submission.taskId) {
                 const deadline = Date.now() + 180_000;
                 while (Date.now() < deadline) {
                   await new Promise((r) => setTimeout(r, 3000));
-                  const statusResp = await fetch(`/api/apimart/tasks/${encodeURIComponent(stepOneTaskId)}`);
+                  const statusResp = await fetch(`/api/apimart/tasks/${encodeURIComponent(submission.taskId)}`);
                   const statusJson = await statusResp.json();
-                  const task = statusJson?.data ?? statusJson;
-                  const state = task?.status || task?.state;
-                  if (state === "succeeded" || state === "completed" || state === "success") {
-                    const images = task?.result?.images || task?.images;
-                    const flat = Array.isArray(images)
-                      ? images.flatMap((g: any) => (Array.isArray(g?.url) ? g.url : g?.url ? [g.url] : []))
-                      : [];
-                    reframedUrl = flat[0];
+                  const canonical = adaptApimartStatus(statusJson, {
+                    provider: decision.stepOne.provider,
+                    model: decision.stepOne.model,
+                    request_id: stepOneRequestId,
+                  });
+                  if (canonical.status === "completed") {
+                    reframedUrl = canonical.urls[0];
                     break;
                   }
-                  if (state === "failed" || state === "error") {
-                    throw new Error(task?.error || "Step 1 reframe job failed");
+                  if (canonical.status === "failed") {
+                    throw new Error(canonical.error || "Step 1 reframe job failed");
                   }
                 }
               }
@@ -516,13 +512,21 @@ function StudioLayout() {
                 dynamicParameters.image_urls = [reframedUrl];
               }
               parameters.image_url = reframedUrl;
+              parameters.two_step_applied = true;
+              parameters.two_step_cost_usd = STEP_ONE_FIXED_COST_USD;
               if (Array.isArray(parameters.image_urls)) {
                 parameters.image_urls = [reframedUrl];
               }
-              toast.loading("Reframe complete. Submitting video job...", { id: "gen-toast" });
+              toast.loading(`Reframe complete (+$${STEP_ONE_FIXED_COST_USD.toFixed(3)}). Submitting video job...`, { id: "gen-toast" });
             } catch (twoStepError) {
-              console.warn("[two-step] step 1 failed, continuing with original image:", twoStepError);
-              toast.loading("Reframe failed; submitting with original reference...", { id: "gen-toast" });
+              // Fix 1: do not silently submit with wrong AR. User asked for a
+              // specific target AR; if we can't deliver it, surface the error
+              // and abort rather than producing a mismatched result.
+              const msg = twoStepError instanceof Error ? twoStepError.message : "Step 1 reframe failed";
+              console.error("[two-step] step 1 failed, aborting:", twoStepError);
+              toast.error(`Could not reframe reference to ${targetAr}: ${msg}. Try a different reference or target AR.`, { id: "gen-toast", duration: 8000 });
+              setIsGenerating(false);
+              return;
             }
           }
         }
@@ -644,66 +648,75 @@ function StudioLayout() {
         return { jobId: (result.data as any).jobId };
       };
 
-      const shouldPreemptivelyFallback =
+      // Fix 3: no longer swap finalProvider preemptively based on live
+      // telemetry. Stale/flaky health signals were causing us to skip the
+      // primary retry budget entirely. executeWithFallback will burn
+      // through retries fast if primary is genuinely down and then
+      // cut to the fallback — so telemetry just informs the toast.
+      const telemetryFlagsPrimaryUnhealthy =
         resolvedProvider === "apimart" &&
         Boolean(configuredFallback) &&
         (liveProviderStatus === "down" || liveProviderStatus === "degraded");
 
-      try {
-        if (shouldPreemptivelyFallback && configuredFallback) {
-          finalProvider = configuredFallback.provider;
-          finalModel = resolveExecutionModelForFallback(configuredFallback.model);
-          recordProviderTelemetryEvent({
-            provider: resolvedProvider,
-            outcome: "fallback",
-            message: settings.providerTelemetryMessage || "Live telemetry triggered a preemptive fallback.",
-          });
-          toast.loading(`Live provider health is ${liveProviderStatus}. Routing through ${finalModel} on ${finalProvider} instead...`, { id: "gen-toast" });
-        }
+      if (telemetryFlagsPrimaryUnhealthy) {
+        toast.loading(`Live telemetry shows ${resolvedProvider} is ${liveProviderStatus}. Trying primary first; fallback ready.`, { id: "gen-toast" });
+      }
 
-        const submission = await submitWithProvider(finalProvider, finalModel);
-        jobId = submission.jobId;
-        taskId = submission.taskId;
-        recordProviderTelemetryEvent({ provider: finalProvider, outcome: "queued" });
-        telemetryProvider = finalProvider;
+      const primaryCall = buildProviderCall(
+        finalProvider,
+        finalModel,
+        () => submitWithProvider(finalProvider, finalModel),
+      );
+      const fallbackCall =
+        configuredFallback && configuredFallback.provider !== finalProvider
+          ? buildProviderCall(
+              configuredFallback.provider,
+              resolveExecutionModelForFallback(configuredFallback.model),
+              () =>
+                submitWithProvider(
+                  configuredFallback.provider,
+                  resolveExecutionModelForFallback(configuredFallback.model),
+                ),
+            )
+          : null;
 
-        if (submission.directCompletedItem) {
-          setActiveGeneration(submission.directCompletedItem);
-          setGenerations([submission.directCompletedItem]);
-          setIsGenerating(false);
-          recordProviderTelemetryEvent({ provider: finalProvider, outcome: "success" });
-          toast.success(`Rendered ${(submission.directCompletedItem.srcs || [submission.directCompletedItem.src]).length} ${submission.directCompletedItem.generationPlatform === "apimart" ? "ApiMart" : "Studio"} image${submission.directCompletedItem.srcs && submission.directCompletedItem.srcs.length > 1 ? "s" : ""}.`, { id: "gen-toast" });
-          void persistCompletedGeneration(submission.directCompletedItem);
-          return;
-        }
-      } catch (primaryError) {
-        if (resolvedProvider === "apimart" && configuredFallback && isRetryableProviderFailure(primaryError)) {
-          finalProvider = configuredFallback.provider;
-          finalModel = resolveExecutionModelForFallback(configuredFallback.model);
-          recordProviderTelemetryEvent({
-            provider: resolvedProvider,
-            outcome: "failure",
-            message: primaryError instanceof Error ? primaryError.message : "Provider request failed before fallback.",
-          });
-          toast.loading(`ApiMart is under load. Retrying with ${configuredFallback.model} on ${configuredFallback.provider}...`, { id: "gen-toast" });
-          const fallbackSubmission = await submitWithProvider(finalProvider, finalModel);
-          jobId = fallbackSubmission.jobId;
-          taskId = fallbackSubmission.taskId;
-          recordProviderTelemetryEvent({ provider: finalProvider, outcome: "queued" });
-          telemetryProvider = finalProvider;
-
-          if (fallbackSubmission.directCompletedItem) {
-            setActiveGeneration(fallbackSubmission.directCompletedItem);
-            setGenerations([fallbackSubmission.directCompletedItem]);
-            setIsGenerating(false);
-            recordProviderTelemetryEvent({ provider: finalProvider, outcome: "success" });
-            toast.success(`Fallback completed with ${finalModel}.`, { id: "gen-toast" });
-            void persistCompletedGeneration(fallbackSubmission.directCompletedItem);
-            return;
+      const execution = await executeWithFallback(primaryCall, fallbackCall, {
+        onAttempt: ({ provider, attempt, usedFallback }) => {
+          if (attempt === 1 && !usedFallback) return;
+          if (usedFallback) {
+            recordProviderTelemetryEvent({
+              provider: resolvedProvider,
+              outcome: "fallback",
+              message: `Primary provider exhausted; falling back to ${provider}.`,
+            });
+            toast.loading(`Primary unavailable. Retrying on ${provider}...`, { id: "gen-toast" });
+          } else {
+            toast.loading(`Retrying ${provider} (attempt ${attempt})...`, { id: "gen-toast" });
           }
-        } else {
-          throw primaryError;
-        }
+        },
+      });
+
+      finalProvider = execution.provider;
+      finalModel = execution.model;
+      const submission = execution.result;
+      jobId = submission.jobId;
+      taskId = submission.taskId;
+      recordProviderTelemetryEvent({ provider: finalProvider, outcome: "queued" });
+      telemetryProvider = finalProvider;
+
+      if (submission.directCompletedItem) {
+        setActiveGeneration(submission.directCompletedItem);
+        setGenerations([submission.directCompletedItem]);
+        setIsGenerating(false);
+        recordProviderTelemetryEvent({ provider: finalProvider, outcome: "success" });
+        toast.success(
+          execution.usedFallback
+            ? `Fallback completed with ${finalModel}.`
+            : `Rendered ${(submission.directCompletedItem.srcs || [submission.directCompletedItem.src]).length} ${submission.directCompletedItem.generationPlatform === "apimart" ? "ApiMart" : "Studio"} image${submission.directCompletedItem.srcs && submission.directCompletedItem.srcs.length > 1 ? "s" : ""}.`,
+          { id: "gen-toast" },
+        );
+        void persistCompletedGeneration(submission.directCompletedItem);
+        return;
       }
 
       console.log(`Job queued! ID:`, jobId);

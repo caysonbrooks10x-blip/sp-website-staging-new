@@ -1,4 +1,4 @@
-const APIMART_BASE_URL = "https://api.apimart.ai/v1"
+const APIMART_BASE_URL = process.env.APIMART_BASE_URL?.trim() || "https://api.apimart.ai/v1"
 const DEFAULT_TIMEOUT_MS = 30_000
 const MAX_SAFE_RETRIES = 5
 const RETRYABLE_STATUS_CODES = new Set([408, 409, 425, 429, 500, 502, 503, 504])
