@@ -1,5 +1,3 @@
-import type { StudioTemplateRecord } from "@/lib/studio-templates"
-
 export interface StudioTemplateSharePayload {
   version: 1
   name?: string
@@ -38,13 +36,40 @@ export interface StudioTemplateSharePayload {
   sharedFrom?: "saved-template" | "workflow-template" | "generation"
 }
 
-type TemplateLike = Partial<StudioTemplateRecord> & {
+type TemplateLike = {
   mode?: "image" | "video" | "remix"
   model?: string
   prompt?: string
   provider?: string
   name?: string
   description?: string
+  aspectRatio?: string
+  resolution?: string
+  duration?: number
+  imageCount?: number
+  remixStrength?: number
+  outputFormat?: string
+  videoStyle?: string
+  videoMode?: string
+  negativePrompt?: string
+  storyboard?: boolean
+  soundEnabled?: boolean
+  generateAudio?: boolean
+  characterOrientation?: string
+  directorGoal?: string
+  directorPlatform?: string
+  directorStyle?: string
+  directorBrief?: string
+  directorVariations?: number
+  directorPresetIds?: string[]
+  autoExportPack?: boolean
+  cameraMovement?: string
+  effectPreset?: string
+  audioDirection?: string
+  characterLock?: boolean
+  characterPackId?: string
+  characterPackName?: string
+  characterPackNotes?: string
   sharedFrom?: StudioTemplateSharePayload["sharedFrom"]
 }
 

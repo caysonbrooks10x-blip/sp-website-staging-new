@@ -26,8 +26,7 @@ export type StudioMode =
   | "text-to-video"
   | "image-to-video"
   | "motion-control"
-  | "remix"
-  | "workflow-templates";
+  | "remix";
 
 interface SidebarProps {
   activeMode: StudioMode;
@@ -58,12 +57,6 @@ const NAV_SECTIONS = [
     label: "REMIX",
     items: [
       { id: "remix" as StudioMode, label: "Video Remix", icon: Wand2 },
-    ],
-  },
-  {
-    label: "WORKFLOWS",
-    items: [
-      { id: "workflow-templates" as StudioMode, label: "Workflow Library", icon: Sparkles },
     ],
   },
 ];

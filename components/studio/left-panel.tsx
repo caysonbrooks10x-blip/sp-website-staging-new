@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +16,6 @@ import {
     Frame,
     X,
     Loader2,
-    Link2,
-    Search,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -46,13 +43,6 @@ import { validateModelParams } from "@/lib/model-capabilities";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 import {
-    deleteStudioTemplate,
-    listStudioTemplates,
-    saveStudioTemplate,
-    type StudioTemplateRecord,
-} from "@/lib/studio-templates";
-import { STUDIO_TEMPLATE_LIBRARY, type StudioTemplatePreset } from "@/lib/studio-template-presets";
-import {
     applyStudioPromptEnhancements,
     AUDIO_DIRECTION_PRESETS,
     buildWan26PayloadExtras,
@@ -62,11 +52,6 @@ import {
     isWan26Model,
     WAN_EFFECT_PRESETS,
 } from "@/lib/studio-enhancements";
-import {
-    buildStudioTemplateSharePayload,
-    buildStudioTemplateShareUrl,
-    decodeStudioTemplatePack,
-} from "@/lib/studio-template-sharing";
 import {
     getSessionProviderHealth,
     mergeProviderHealth,
@@ -79,7 +64,7 @@ interface StudioLeftPanelProps {
     onGenerate: (prompt: string, settings: any) => void;
     onCancel?: () => void;
     isGenerating: boolean;
-    mode?: "image" | "video" | "templates" | "remix" | string;
+    mode?: "image" | "video" | "remix" | string;
     aspectRatio: string;
     setAspectRatio: (val: string) => void;
     studioMode?: StudioMode;
@@ -131,22 +116,6 @@ function estimateTaskCredits(input: {
         duration: input.duration || videoConfig.defaultDuration,
         generateAudio: Boolean(input.generateAudio),
     });
-}
-
-async function copyTextToClipboard(value: string) {
-    if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-        return;
-    }
-
-    const textarea = document.createElement("textarea");
-    textarea.value = value;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
 }
 
 export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration }: StudioLeftPanelProps) {
@@ -223,14 +192,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         }
         return AI_IMAGE_MODELS[0];
     });
-    const [savedTemplates, setSavedTemplates] = useState<StudioTemplateRecord[]>([]);
-    const [templateName, setTemplateName] = useState("");
-    const [templateCategoryFilter, setTemplateCategoryFilter] = useState<"all" | StudioTemplatePreset["category"]>("all");
-    const [templateSearchQuery, setTemplateSearchQuery] = useState("");
-    const [templatesLoading, setTemplatesLoading] = useState(false);
-    const [templateDeckMountNode, setTemplateDeckMountNode] = useState<HTMLElement | null>(null);
     const [liveProviderHealth, setLiveProviderHealth] = useState<ProviderHealthSnapshot | null>(null);
-    const importedTemplateRef = useRef<string | null>(null);
     const [cameraMovement, setCameraMovement] = useState<string>("none");
     const [effectPreset, setEffectPreset] = useState<string>("none");
     const [audioDirection, setAudioDirection] = useState<string>("none");
@@ -318,9 +280,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             case "remix":
                 if (creationMode !== "remix") handleModeSwitch("remix");
                 break;
-            case "workflow-templates":
-                if (creationMode !== "templates") handleModeSwitch("templates");
-                break;
         }
     }, [studioMode]);
 
@@ -362,204 +321,10 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         setCreationMode(newMode);
         if (newMode === 'video' || (newMode === 'remix' && remixType === 'video')) {
             setSelectedModel(AI_VIDEO_MODELS[0]);
-        } else if (newMode === 'image' || newMode === 'templates' || (newMode === 'remix' && remixType === 'image')) {
+        } else if (newMode === 'image' || (newMode === 'remix' && remixType === 'image')) {
             setSelectedModel(AI_IMAGE_MODELS[0]);
         }
     };
-
-    const buildCurrentTemplateShareInput = () => ({
-        name: templateName.trim() || `${selectedModel.name} Workflow`,
-        description: `Shared from ${creationMode} mode`,
-        mode: creationMode === "templates" ? (cfg?.type === "video" ? "video" : "image") : (creationMode as "image" | "video" | "remix"),
-        model: selectedModel.id,
-        provider: chooseProvider({
-            mode: creationMode === "remix" ? "remix" : cfg?.type === "video" ? "video" : "image",
-            model: selectedModel.id,
-            wantsRemix: creationMode === "remix" || Boolean(creationId),
-            hasReferenceImage: Boolean(sourceFile || startImageFile || previewUrl),
-            needsCharacterReference: Boolean(characterLock && hasCharacterReferenceContext),
-            liveHealth: liveProviderHealth?.status,
-        }),
-        prompt,
-        aspectRatio,
-        resolution,
-        duration,
-        imageCount,
-        remixStrength,
-        outputFormat,
-        videoStyle,
-        videoMode,
-        negativePrompt,
-        storyboard,
-        soundEnabled,
-        generateAudio,
-        characterOrientation,
-        cameraMovement,
-        effectPreset,
-        audioDirection,
-        characterLock,
-    });
-
-    const copyTemplateLink = async (
-        template: {
-            mode?: "image" | "video" | "remix";
-            model?: string;
-            prompt?: string;
-            name?: string;
-            description?: string;
-            provider?: string;
-            source?: string;
-            aspectRatio?: string;
-            resolution?: string;
-            duration?: number;
-            imageCount?: number;
-            remixStrength?: number;
-            outputFormat?: string;
-            videoStyle?: string;
-            videoMode?: string;
-            negativePrompt?: string;
-            storyboard?: boolean;
-            soundEnabled?: boolean;
-            generateAudio?: boolean;
-            characterOrientation?: string;
-            cameraMovement?: string;
-            effectPreset?: string;
-            audioDirection?: string;
-            characterLock?: boolean;
-        }
-    ) => {
-        try {
-            const { source, ...shareableTemplate } = template;
-            const shareUrl = buildStudioTemplateShareUrl(
-                buildStudioTemplateSharePayload({
-                    ...shareableTemplate,
-                    mode: template.mode || "image",
-                    model: template.model,
-                    prompt: template.prompt,
-                    sharedFrom: source === "saved" ? "saved-template" : "workflow-template",
-                }),
-                window.location.origin
-            );
-            await copyTextToClipboard(shareUrl);
-            toast.success("Workflow link copied. Opening it will import this Studio setup instantly.");
-        } catch (error) {
-            console.error("Failed to copy template link:", error);
-            toast.error("Could not generate a share link for this workflow.");
-        }
-    };
-
-    const applyTemplateConfig = (
-        template: (Partial<StudioTemplateRecord> & Partial<StudioTemplatePreset> & { name?: string }) | (Partial<StudioTemplateRecord> & { provider?: string })
-    ) => {
-        const nextMode = template.mode || "image";
-        setTemplateName(template.name || "");
-        setCreationMode(nextMode);
-        setPrompt(template.prompt || "");
-        if (template.aspectRatio) setAspectRatio(template.aspectRatio);
-        if (template.resolution) setResolution(template.resolution);
-        if (typeof template.duration === "number") setDuration(template.duration);
-        if (typeof template.imageCount === "number") setImageCount(template.imageCount);
-        if (typeof template.remixStrength === "number") setRemixStrength(template.remixStrength);
-        if (template.outputFormat) setOutputFormat(template.outputFormat);
-        if (template.videoStyle) setVideoStyle(template.videoStyle);
-        if (template.videoMode) setVideoMode(template.videoMode);
-        if (typeof template.storyboard === "boolean") setStoryboard(template.storyboard);
-        if (typeof template.soundEnabled === "boolean") setSoundEnabled(template.soundEnabled);
-        if (typeof template.generateAudio === "boolean") setGenerateAudio(template.generateAudio);
-        if (template.negativePrompt !== undefined) setNegativePrompt(template.negativePrompt || "");
-        if (template.characterOrientation) setCharacterOrientation(template.characterOrientation);
-        if (template.cameraMovement) setCameraMovement(template.cameraMovement);
-        if (template.effectPreset) setEffectPreset(template.effectPreset);
-        if (template.audioDirection) setAudioDirection(template.audioDirection);
-        if (typeof template.characterLock === "boolean") setCharacterLock(template.characterLock);
-
-        const nextModelId = template.model;
-        if (nextModelId) {
-            const found =
-                AI_IMAGE_MODELS.find((model) => model.id === nextModelId) ||
-                AI_VIDEO_MODELS.find((model) => model.id === nextModelId);
-            if (found) setSelectedModel(found);
-        }
-    };
-
-    const handleSaveCurrentTemplate = async () => {
-        if (!user?.uid) {
-            toast.error("Log in first so Studio can save templates to your account.");
-            return;
-        }
-
-        if (!prompt.trim()) {
-            toast.error("Add a prompt before saving a template.");
-            return;
-        }
-
-        const saved = await saveStudioTemplate(user.uid, {
-            name: templateName.trim() || `${selectedModel.name} Template`,
-            description: `Saved from ${creationMode} mode`,
-            mode: creationMode === "templates" ? (cfg?.type === "video" ? "video" : "image") : (creationMode as "image" | "video" | "remix"),
-            model: selectedModel.id,
-            provider: chooseProvider({
-                mode: creationMode === "remix" ? "remix" : cfg?.type === "video" ? "video" : "image",
-                model: selectedModel.id,
-                wantsRemix: creationMode === "remix" || Boolean(creationId),
-                hasReferenceImage: Boolean(sourceFile || startImageFile || previewUrl),
-                needsCharacterReference: Boolean(characterLock && hasCharacterReferenceContext),
-                liveHealth: liveProviderHealth?.status,
-            }),
-            prompt,
-            aspectRatio,
-            resolution,
-            duration,
-            imageCount,
-            remixStrength,
-            outputFormat,
-            videoStyle,
-            videoMode,
-            negativePrompt,
-            storyboard,
-            soundEnabled,
-            generateAudio,
-            characterOrientation,
-            cameraMovement,
-            effectPreset,
-            audioDirection,
-            characterLock,
-            source: "saved",
-        });
-
-        setSavedTemplates((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
-        setTemplateName(saved.name);
-        toast.success(`Saved template: ${saved.name}`);
-    };
-
-    const handleDeleteTemplate = async (templateId: string) => {
-        if (!user?.uid) return;
-        await deleteStudioTemplate(user.uid, templateId);
-        setSavedTemplates((current) => current.filter((item) => item.id !== templateId));
-        toast.success("Template removed.");
-    };
-
-    useEffect(() => {
-        if (!user?.uid) {
-            setSavedTemplates([]);
-            return;
-        }
-
-        let cancelled = false;
-        setTemplatesLoading(true);
-
-        listStudioTemplates(user.uid)
-            .then((items) => {
-                if (!cancelled) setSavedTemplates(items);
-            })
-            .finally(() => {
-                if (!cancelled) setTemplatesLoading(false);
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [user?.uid]);
 
     useEffect(() => {
         let mounted = true;
@@ -603,21 +368,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         };
     }, [cfg?.type, creationId, creationMode, previewUrl, searchParams, selectedModel.id, sourceFile, startImageFile, characterLock, hasCharacterReferenceContext]);
 
-    useEffect(() => {
-        const pack = searchParams?.get("templatePack");
-        if (!pack || importedTemplateRef.current === pack) return;
-
-        importedTemplateRef.current = pack;
-        const decoded = decodeStudioTemplatePack(pack);
-        if (!decoded) {
-            toast.error("That workflow link could not be imported.");
-            return;
-        }
-
-        applyTemplateConfig(decoded);
-        toast.success(`Imported workflow${decoded.name ? `: ${decoded.name}` : ""}`);
-    }, [searchParams]);
-
     const handleGenerate = () => {
         let parameters: any = {};
         const previewLooksVideo =
@@ -626,7 +376,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             previewUrl.toLowerCase().includes(".webm") ||
             previewUrl.toLowerCase().includes(".mov");
         const validation = validateStudioExecution({
-            mode: creationMode === "templates" ? (cfg?.type === "video" ? "video" : "image") : (creationMode as "image" | "video" | "remix"),
+            mode: creationMode as "image" | "video" | "remix",
             prompt,
             hasReferenceImage: Boolean(sourceFile || startImageFile || (previewUrl && !previewLooksVideo)),
             hasReferenceVideo: Boolean(sourceVideo || sourceVideoPreview || (previewUrl && previewLooksVideo)),
@@ -676,7 +426,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             parameters.end_image_file = endImageFile;
         }
 
-        if ((creationMode === "image" || creationMode === "templates") && cfg?.type === "image") {
+        if (creationMode === "image" && cfg?.type === "image") {
             const ic = cfg as ImageModelConfig;
             parameters.prompt = effectivePrompt;
             parameters.size = aspectRatio;
@@ -701,7 +451,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 if (ic.supportsOutputFormat) parameters.output_format = outputFormat;
             }
         }
-        else if ((creationMode === "video" || creationMode === "templates") && cfg?.type === "video") {
+        else if (creationMode === "video" && cfg?.type === "video") {
             const vc = cfg as VideoModelConfig;
             if (vc.supportsPrompt) parameters.prompt = effectivePrompt;
             if (vc.aspectRatioOptions) parameters.aspect_ratio = aspectRatio;
@@ -771,14 +521,9 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             },
         });
 
-        const resolvedCreationMode =
-            creationMode === "templates"
-                ? (cfg?.type === "video" ? "video" : "image")
-                : creationMode;
-
         onGenerate(effectivePrompt, {
-            mode: resolvedCreationMode,
-            creationMode: resolvedCreationMode,
+            mode: creationMode,
+            creationMode,
             model: selectedModel.id,
             originalCreationId: creationId || undefined,
             rootCreationId: rootCreationId || creationId || undefined,
@@ -795,7 +540,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             providerNotes: providerDecision.notes,
             providerFallback: providerDecision.fallback,
             needsCharacterReference: Boolean(characterLock && hasCharacterReferenceContext),
-            templateName: templateName.trim() || undefined,
             originalPrompt: prompt,
             sourceFile: sourceFile || undefined,
             sourceVideo: sourceVideo || undefined,
@@ -876,19 +620,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         [creationMode, remixType]
     );
 
-    const workflowTemplateLibrary = useMemo(
-        () =>
-            STUDIO_TEMPLATE_LIBRARY.filter((template) => {
-                const categoryMatches = templateCategoryFilter === "all" || template.category === templateCategoryFilter;
-                if (!categoryMatches) return false;
-                const query = templateSearchQuery.trim().toLowerCase();
-                if (!query) return true;
-                const haystack = `${template.name} ${template.description} ${template.category}`.toLowerCase();
-                return haystack.includes(query);
-            }),
-        [templateCategoryFilter, templateSearchQuery]
-    );
-
     const showImageUpload = isImageMode ? imgCfg!.supportsReferenceImage : (isVideoMode ? vidCfg!.supportsReferenceImage : false);
     const showVideoUpload = isVideoMode && vidCfg?.supportsReferenceVideo;
     const showPrompt = isVideoMode ? vidCfg!.supportsPrompt : true;
@@ -954,191 +685,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         generateAudio,
     });
 
-    useEffect(() => {
-        const syncMountNode = () => {
-            setTemplateDeckMountNode(document.getElementById("studio-template-deck-slot"));
-        };
-        syncMountNode();
-        const observer = new MutationObserver(syncMountNode);
-        observer.observe(document.body, { childList: true, subtree: true });
-        return () => observer.disconnect();
-    }, []);
-
-    const templateDeckCard = (
-        <div className="space-y-3 rounded-2xl border border-[#1d1d1d] bg-[#0f0f0f] p-4">
-            <div className="flex items-center justify-between gap-3">
-                <label className="text-[10px] font-bold text-zinc-300 tracking-[0.15em] uppercase flex items-center gap-2">
-                    <Wand2 className="w-3.5 h-3.5" /> Template Deck
-                </label>
-                <div className="flex items-center gap-2">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={async () => copyTemplateLink(buildCurrentTemplateShareInput())}
-                        className="h-8 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-300 hover:bg-white/[0.06]"
-                    >
-                        <Link2 className="mr-1.5 h-3.5 w-3.5" />
-                        Copy Link
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={handleSaveCurrentTemplate}
-                        className="h-8 rounded-lg border border-[#c5a44e]/20 bg-[#c5a44e]/10 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#c5a44e] hover:bg-[#c5a44e]/15"
-                    >
-                        Save Current
-                    </Button>
-                </div>
-            </div>
-
-            <Input
-                value={templateName}
-                onChange={(event) => setTemplateName(event.target.value)}
-                placeholder="Name this setup for later reuse"
-                className="h-10 rounded-xl border-[#222] bg-[#111] text-sm text-zinc-200 placeholder:text-zinc-600 focus-visible:border-[#c5a44e]/40 focus-visible:ring-[#c5a44e]/10"
-            />
-
-            <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
-                <Input
-                    value={templateSearchQuery}
-                    onChange={(event) => setTemplateSearchQuery(event.target.value)}
-                    placeholder="Search templates"
-                    className="h-10 rounded-xl border-[#222] bg-[#111] pl-9 text-sm text-zinc-200 placeholder:text-zinc-600 focus-visible:border-[#c5a44e]/40 focus-visible:ring-[#c5a44e]/10"
-                />
-            </div>
-
-            <div className="space-y-2">
-                <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Workflow Templates</span>
-                    <span className="text-[10px] text-zinc-600">{workflowTemplateLibrary.length} shown</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                    {([
-                        { id: "all", label: "All" },
-                        { id: "workflow", label: "Core" },
-                        { id: "commerce", label: "Commerce" },
-                        { id: "cinema", label: "Motion" },
-                        { id: "style", label: "Style" },
-                    ] as const).map((option) => (
-                        <button
-                            key={option.id}
-                            type="button"
-                            onClick={() => setTemplateCategoryFilter(option.id)}
-                            className={cn(
-                                "rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] transition-colors",
-                                templateCategoryFilter === option.id
-                                    ? "border-[#c5a44e]/40 bg-[#c5a44e]/10 text-[#c5a44e]"
-                                    : "border-[#2a2a2a] bg-[#121212] text-zinc-500 hover:text-zinc-200"
-                            )}
-                        >
-                            {option.label}
-                        </button>
-                    ))}
-                </div>
-                <div className="grid grid-cols-1 gap-2">
-                    {workflowTemplateLibrary.map((template) => (
-                        <div
-                            key={template.id}
-                            className="flex items-start gap-2 rounded-xl border border-[#222] bg-[#111] px-3 py-3 transition-all hover:border-[#c5a44e]/35 hover:bg-[#151515]"
-                        >
-                            <button
-                                type="button"
-                                onClick={() => applyTemplateConfig(template)}
-                                className="min-w-0 flex-1 text-left"
-                            >
-                                <div className="flex items-center justify-between gap-3">
-                                    <div>
-                                        <p className="text-[12px] font-semibold text-zinc-200">{template.name}</p>
-                                        <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">{template.description}</p>
-                                    </div>
-                                    <div className="flex shrink-0 items-center gap-1.5">
-                                        <span className="rounded-full border border-zinc-600/40 bg-zinc-800/50 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-zinc-300">
-                                            ~{estimateTaskCredits({
-                                                modelId: template.model,
-                                                mode: template.mode,
-                                                resolution: template.resolution,
-                                                duration: template.duration,
-                                                imageCount: template.imageCount,
-                                                generateAudio: template.generateAudio,
-                                            })} cr
-                                        </span>
-                                        <span className="rounded-full border border-[#c5a44e]/25 bg-[#c5a44e]/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[#c5a44e]">
-                                            {template.category}
-                                        </span>
-                                    </div>
-                                </div>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => copyTemplateLink(template)}
-                                className="rounded-lg border border-white/10 px-2 py-2 text-zinc-400 transition-colors hover:text-white"
-                                title="Copy workflow link"
-                            >
-                                <Link2 className="h-3.5 w-3.5" />
-                            </button>
-                        </div>
-                    ))}
-                    {workflowTemplateLibrary.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-[#222] bg-[#111] px-3 py-4 text-[11px] leading-relaxed text-zinc-500">
-                            No templates in this category yet.
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Saved Templates</span>
-                    <span className="text-[10px] text-zinc-600">
-                        {templatesLoading ? "Loading" : `${savedTemplates.length} saved`}
-                    </span>
-                </div>
-                <div className="space-y-2">
-                    {savedTemplates.slice(0, 4).map((template) => (
-                        <div
-                            key={template.id}
-                            className="flex items-start justify-between gap-3 rounded-xl border border-[#222] bg-[#111] px-3 py-3"
-                        >
-                            <button
-                                type="button"
-                                onClick={() => applyTemplateConfig(template)}
-                                className="min-w-0 flex-1 text-left"
-                            >
-                                <p className="truncate text-[12px] font-semibold text-zinc-200">{template.name}</p>
-                                <p className="mt-1 text-[11px] text-zinc-500">
-                                    {template.model} • {template.mode}
-                                </p>
-                            </button>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => copyTemplateLink(template)}
-                                    className="rounded-lg border border-white/10 px-2 py-2 text-zinc-400 transition-colors hover:text-white"
-                                    title="Copy workflow link"
-                                >
-                                    <Link2 className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleDeleteTemplate(template.id)}
-                                    className="rounded-lg border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-zinc-500 transition-colors hover:text-white"
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                    {!templatesLoading && savedTemplates.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-[#222] bg-[#111] px-3 py-4 text-[11px] leading-relaxed text-zinc-500">
-                            Save any Studio configuration here and it becomes reusable for you across sessions. Shared workflow links will reopen Studio with the exact same setup.
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-
     return (
         <>
         <div className="w-full h-full flex flex-col glass-card-gold relative z-20 text-zinc-100 overflow-hidden rounded-none border-0">
@@ -1152,7 +698,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                     <div className="p-5 pb-12 flex flex-col gap-5 w-full">
 
                         {/* Model Selector */}
-                        {(creationMode === 'image' || creationMode === 'video' || creationMode === 'remix' || creationMode === 'templates') && (
+                        {(creationMode === 'image' || creationMode === 'video' || creationMode === 'remix') && (
                             <div className="space-y-3 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
                                 <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen} modal={false}>
@@ -1227,11 +773,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                             </div>
                         )}
 
-                        <div className="space-y-4 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                            {!templateDeckMountNode && templateDeckCard}
-                        </div>
-
-                        {}
                         {showPrompt && (
                             <div className="space-y-2.5 shrink-0">
                                 <label className="text-[10px] font-medium text-zinc-500 tracking-[0.2em] uppercase flex items-center justify-between px-1">
@@ -1683,7 +1224,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 </Button>
             </div>
         </div>
-        {templateDeckMountNode ? createPortal(templateDeckCard, templateDeckMountNode) : null}
         </>
     );
 }

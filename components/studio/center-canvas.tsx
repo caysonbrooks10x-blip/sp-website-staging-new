@@ -624,11 +624,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                 )}
                             </div>
                         )}
-                        <div
-                            id="studio-template-deck-slot"
-                            className="mt-6 w-full rounded-[24px] border border-white/[0.06] bg-[#090909]/90 p-4 sm:p-5 shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
-                            style={{ maxWidth: maxWidthStyle }}
-                        />
                     </div>
                 </div>
             </div>

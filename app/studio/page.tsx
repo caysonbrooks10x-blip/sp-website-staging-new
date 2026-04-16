@@ -47,7 +47,7 @@ const VIDEO_MODEL_IDS = new Set(Object.keys(VIDEO_MODELS));
 
 function inferGenerationType(mode: string, model: string): "image" | "video" {
   if (mode === "video") return "video";
-  if (mode === "templates" && VIDEO_MODEL_IDS.has(model)) return "video";
+
   if (mode === "remix" && VIDEO_MODEL_IDS.has(model)) return "video";
   return VIDEO_MODEL_IDS.has(model) ? "video" : "image";
 }
@@ -120,7 +120,7 @@ export default function StudioPage() {
   )
 }
 
-function studioModeToCreationMode(sm: StudioMode): "image" | "video" | "templates" {
+function studioModeToCreationMode(sm: StudioMode): "image" | "video" {
   switch (sm) {
     case "text-to-image":
     case "image-to-image":
@@ -131,8 +131,6 @@ function studioModeToCreationMode(sm: StudioMode): "image" | "video" | "template
       return "video";
     case "remix":
       return "image";
-    case "workflow-templates":
-      return "templates";
     default:
       return "image";
   }
@@ -141,7 +139,7 @@ function studioModeToCreationMode(sm: StudioMode): "image" | "video" | "template
 function StudioLayout() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initMode = (searchParams.get("mode") as "image" | "video" | "templates") || "image";
+  const initMode = (searchParams.get("mode") as "image" | "video") || "image";
   const { user } = useAuth();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -149,10 +147,10 @@ function StudioLayout() {
     const urlMode = searchParams.get("mode")?.toLowerCase();
     if (urlMode === "video") return "text-to-video";
     if (urlMode === "remix") return "remix";
-    if (urlMode === "templates") return "workflow-templates";
+
     return "text-to-image";
   });
-  const [mode] = useState<"image" | "video" | "templates">(initMode);
+  const [mode] = useState<"image" | "video">(initMode);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generations, setGenerations] = useState<GenerationItem[]>([]);
   const [activeGeneration, setActiveGeneration] = useState<GenerationItem | null>(null);
