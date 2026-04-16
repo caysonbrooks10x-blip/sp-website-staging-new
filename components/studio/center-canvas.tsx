@@ -327,6 +327,23 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         maxWidthStyle = "min(1200px, 98%, calc((100vh - 120px) * 16 / 9))";
     }
 
+    // Empty state: scale up the card so it fills more of the canvas on large screens
+    if (!activeGeneration) {
+        if (currentRatio === "9:16" || currentRatio === "16:21") {
+            maxWidthStyle = "min(500px, 90%, calc((100vh - 160px) * 9 / 16))";
+        } else if (currentRatio === "2:3" || currentRatio === "3:4") {
+            maxWidthStyle = "min(600px, 90%, calc((100vh - 140px) * 2 / 3))";
+        } else if (currentRatio === "1:1") {
+            maxWidthStyle = "min(800px, 98%, calc(100vh - 120px))";
+        } else if (currentRatio === "4:3" || currentRatio === "3:2") {
+            maxWidthStyle = "min(1000px, 98%, calc((100vh - 120px) * 4 / 3))";
+        } else if (currentRatio === "21:9") {
+            maxWidthStyle = "min(1600px, 98%, calc((100vh - 120px) * 21 / 9))";
+        } else {
+            maxWidthStyle = "min(1400px, 98%, calc((100vh - 120px) * 16 / 9))";
+        }
+    }
+
     const getGridClass = (count: number) => {
         if (count === 1) return "grid-cols-1 max-w-[1000px]";
         if (count === 2) return "grid-cols-1 md:grid-cols-2 max-w-[1400px] gap-12 md:gap-16 pb-32";
@@ -517,7 +534,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                 <div className="absolute inset-0 z-10 pointer-events-none rounded-[24px] sm:rounded-[32px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_0_40px_rgba(255,255,255,0.02)]" />
                                 <div className="absolute inset-0 z-10 transition-all duration-700 ease-out flex items-center justify-center">
                                     {!activeGeneration ? (
-                                        <div className="flex flex-col items-center gap-6 sm:gap-8 p-6 sm:p-8 max-w-lg w-full pointer-events-auto">
+                                        <div className="flex flex-col items-center gap-6 sm:gap-8 p-6 sm:p-8 max-w-2xl w-full pointer-events-auto">
                                             <div className="flex flex-col items-center gap-3">
                                                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center">
                                                     <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white/60" />
@@ -526,8 +543,8 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                             </div>
 
                                             {/* Prompt suggestions */}
-                                            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                {(mode === "video" ? VIDEO_SUGGESTIONS : IMAGE_SUGGESTIONS).slice(0, 4).map((suggestion) => (
+                                            <div className="w-full grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2">
+                                                {(mode === "video" ? VIDEO_SUGGESTIONS : IMAGE_SUGGESTIONS).map((suggestion) => (
                                                     <button
                                                         key={suggestion}
                                                         type="button"
