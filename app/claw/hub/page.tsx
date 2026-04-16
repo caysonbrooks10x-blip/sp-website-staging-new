@@ -30,8 +30,9 @@ import { ASSET_BASE } from "@/lib/assets";
 import { fetchClawState, type ClawRecentJob, type ClawScheduledJob } from "@/lib/claw-state";
 import { listPersistedStudioGenerations, type PersistedStudioGeneration } from "@/lib/studio-generations";
 import {
+  buildClawWorkflowStartParam,
   buildClawWorkflowStudioHref,
-  buildClawWorkflowTelegramHref,
+  buildClawWorkflowTelegramCommand,
   CLAW_WORKFLOWS,
   CLAW_WORKFLOW_SECTIONS,
   type ClawWorkflowDefinition,
@@ -49,6 +50,7 @@ import {
   clawWorkflowEnterClass,
 } from "@/components/claw/claw-primitives";
 import { ClawSubNav } from "@/components/claw/claw-subnav";
+import { TelegramPromptDialog } from "@/components/claw/telegram-prompt-dialog";
 
 /* ─── constants ─── */
 
@@ -128,6 +130,16 @@ export default function ClawHubPage() {
   const [scheduledJobs, setScheduledJobs] = useState<ScheduledJob[]>([]);
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [generationCount, setGenerationCount] = useState<number>(0);
+  const [telegramDialogConfig, setTelegramDialogConfig] = useState<{
+    title: string;
+    description?: string;
+    startParam: string;
+    telegramCommand?: string;
+    defaultPrompt?: string;
+    promptPlaceholder?: string;
+    requiresPrompt?: boolean;
+    actionLabel?: string;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -310,19 +322,73 @@ export default function ClawHubPage() {
         {/* ── Quick Actions → Telegram Bot ── */}
         <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: "🖼️", label: "Image Gen", desc: "Generate any image from text", href: buildTelegramBotStartUrl("image"), action: "/image [prompt]" },
-            { icon: "🎬", label: "Video Gen", desc: "Create cinematic AI videos", href: buildTelegramBotStartUrl("video"), action: "/video [prompt]" },
-            { icon: "⏱️", label: "Schedule", desc: "Automate recurring jobs", href: buildTelegramBotStartUrl("schedule"), action: "/schedule every 1h ..." },
-            { icon: "💰", label: "Credits", desc: `${creditBalance > 0 ? creditBalance + " available" : "Check balance"}`, href: buildTelegramBotStartUrl("credits"), action: "/credits" },
+            {
+              icon: "🖼️",
+              label: "Image Gen",
+              desc: "Generate any image from text",
+              action: "/image [prompt]",
+              dialog: {
+                title: "Image Gen in Telegram",
+                description: "Write your image prompt below. We'll copy it to your clipboard and open the bot so you can paste it as your first message.",
+                startParam: "image",
+                telegramCommand: "/image",
+                promptPlaceholder: "A cinematic neon-lit alley after rain, shot on 35mm, moody lighting",
+                actionLabel: "Send to Telegram",
+                requiresPrompt: true,
+              },
+            },
+            {
+              icon: "🎬",
+              label: "Video Gen",
+              desc: "Create cinematic AI videos",
+              action: "/video [prompt]",
+              dialog: {
+                title: "Video Gen in Telegram",
+                description: "Describe the video you want. We'll copy it to your clipboard and open the bot so you can paste it as your first message.",
+                startParam: "video",
+                telegramCommand: "/video",
+                promptPlaceholder: "Slow cinematic orbit around a luxury perfume bottle on black velvet, dramatic rim light",
+                actionLabel: "Send to Telegram",
+                requiresPrompt: true,
+              },
+            },
+            {
+              icon: "⏱️",
+              label: "Schedule",
+              desc: "Automate recurring jobs",
+              action: "/schedule every 1h …",
+              dialog: {
+                title: "Schedule a recurring job",
+                description: "Write the schedule brief below (what to generate and how often). We'll copy it to your clipboard and open the bot.",
+                startParam: "schedule",
+                telegramCommand: "/schedule",
+                promptPlaceholder: "every 1h generate a minimalist product shot of a ceramic mug on a wooden table",
+                actionLabel: "Open in Telegram",
+                requiresPrompt: true,
+              },
+            },
+            {
+              icon: "💰",
+              label: "Credits",
+              desc: creditBalance > 0 ? `${creditBalance} available` : "Check balance",
+              action: "/credits",
+              dialog: {
+                title: "Check credits in Telegram",
+                description: "Open the bot and it'll report your current credit balance.",
+                startParam: "credits",
+                telegramCommand: "/credits",
+                actionLabel: "Open Telegram",
+                requiresPrompt: false,
+              },
+            },
           ].map((item) => (
-            <a
+            <button
               key={item.label}
-              href={item.href}
-              target="_blank"
-              rel="noreferrer"
+              type="button"
+              onClick={() => setTelegramDialogConfig(item.dialog)}
               className={cn(
                 clawCardClass,
-                "group relative flex flex-col gap-3 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-500/25 hover:shadow-[0_20px_56px_-22px_rgba(0,0,0,0.55),0_0_0_1px_rgba(45,212,191,0.12)]"
+                "group relative flex flex-col gap-3 p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-500/25 hover:shadow-[0_20px_56px_-22px_rgba(0,0,0,0.55),0_0_0_1px_rgba(45,212,191,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/40"
               )}
             >
               <div className="flex items-center justify-between">
@@ -336,7 +402,7 @@ export default function ClawHubPage() {
               <code className="mt-auto rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 text-[10px] font-medium text-zinc-500 ring-1 ring-inset ring-white/[0.03]">
                 {item.action}
               </code>
-            </a>
+            </button>
           ))}
         </section>
 
@@ -508,7 +574,12 @@ export default function ClawHubPage() {
               {flatWorkflowsSorted.length > 0 ? (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {flatWorkflowsSorted.map((w, i) => (
-                    <WorkflowCard key={w.id} workflow={w} staggerIndex={i} />
+                    <WorkflowCard
+                      key={w.id}
+                      workflow={w}
+                      staggerIndex={i}
+                      onOpenTelegram={setTelegramDialogConfig}
+                    />
                   ))}
                 </div>
               ) : (
@@ -524,7 +595,12 @@ export default function ClawHubPage() {
                   <WorkflowSectionIntro sectionId="commerce" icon={Package2} count={commerceWorkflows.length} tone="emerald" />
                   <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {commerceWorkflows.map((w, i) => (
-                      <WorkflowCard key={w.id} workflow={w} staggerIndex={i} />
+                      <WorkflowCard
+                        key={w.id}
+                        workflow={w}
+                        staggerIndex={i}
+                        onOpenTelegram={setTelegramDialogConfig}
+                      />
                     ))}
                   </div>
                 </div>
@@ -535,7 +611,12 @@ export default function ClawHubPage() {
                   <WorkflowSectionIntro sectionId="core" icon={Compass} count={coreWorkflows.length} tone="teal" />
                   <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {coreWorkflows.map((w, i) => (
-                      <WorkflowCard key={w.id} workflow={w} staggerIndex={i} />
+                      <WorkflowCard
+                        key={w.id}
+                        workflow={w}
+                        staggerIndex={i}
+                        onOpenTelegram={setTelegramDialogConfig}
+                      />
                     ))}
                   </div>
                 </div>
@@ -546,7 +627,12 @@ export default function ClawHubPage() {
                   <WorkflowSectionIntro sectionId="motion" icon={Video} count={motionWorkflows.length} tone="amber" />
                   <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {motionWorkflows.map((w, i) => (
-                      <WorkflowCard key={w.id} workflow={w} staggerIndex={i} />
+                      <WorkflowCard
+                        key={w.id}
+                        workflow={w}
+                        staggerIndex={i}
+                        onOpenTelegram={setTelegramDialogConfig}
+                      />
                     ))}
                   </div>
                 </div>
@@ -558,6 +644,21 @@ export default function ClawHubPage() {
           </div>
         </section>
       </div>
+
+      <TelegramPromptDialog
+        open={telegramDialogConfig !== null}
+        onOpenChange={(open) => {
+          if (!open) setTelegramDialogConfig(null);
+        }}
+        title={telegramDialogConfig?.title ?? ""}
+        description={telegramDialogConfig?.description}
+        startParam={telegramDialogConfig?.startParam ?? ""}
+        telegramCommand={telegramDialogConfig?.telegramCommand}
+        defaultPrompt={telegramDialogConfig?.defaultPrompt}
+        promptPlaceholder={telegramDialogConfig?.promptPlaceholder}
+        requiresPrompt={telegramDialogConfig?.requiresPrompt ?? true}
+        actionLabel={telegramDialogConfig?.actionLabel}
+      />
     </div>
   );
 }
@@ -809,10 +910,28 @@ function WorkflowSectionIntro({
   );
 }
 
-function WorkflowCard({ workflow, staggerIndex }: { workflow: ClawWorkflowDefinition; staggerIndex: number }) {
+interface TelegramDialogConfig {
+  title: string;
+  description?: string;
+  startParam: string;
+  telegramCommand?: string;
+  defaultPrompt?: string;
+  promptPlaceholder?: string;
+  requiresPrompt?: boolean;
+  actionLabel?: string;
+}
+
+function WorkflowCard({
+  workflow,
+  staggerIndex,
+  onOpenTelegram,
+}: {
+  workflow: ClawWorkflowDefinition;
+  staggerIndex: number;
+  onOpenTelegram: (config: TelegramDialogConfig) => void;
+}) {
   const sectionMeta = WORKFLOW_SECTION_META[workflow.section];
   const studioHref = buildClawWorkflowStudioHref(workflow);
-  const telegramHref = buildClawWorkflowTelegramHref(workflow);
   const backdrop = WORKFLOW_BACKDROP_MAP[workflow.id] || `${ASSET_BASE}/capabilities/capabilities3.png`;
   const mediaBadge =
     workflow.mediaType === "video"
@@ -885,15 +1004,27 @@ function WorkflowCard({ workflow, staggerIndex }: { workflow: ClawWorkflowDefini
             </Link>
           </Button>
           <Button
-            asChild
+            type="button"
             size="sm"
             variant="outline"
+            onClick={() =>
+              onOpenTelegram({
+                title: `${workflow.title} in Telegram`,
+                description: workflow.summary,
+                startParam: buildClawWorkflowStartParam(workflow),
+                telegramCommand: buildClawWorkflowTelegramCommand(workflow),
+                defaultPrompt: workflow.studioPrompt,
+                promptPlaceholder: "Describe what you want to create…",
+                requiresPrompt: true,
+                actionLabel: "Send to Telegram",
+              })
+            }
             className="h-10 w-full rounded-xl border-white/[0.14] bg-black/50 text-xs font-semibold tracking-wide text-zinc-100 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition duration-300 hover:border-teal-500/30 hover:bg-teal-950/30"
           >
-            <a href={telegramHref} target="_blank" rel="noreferrer" className="inline-flex w-full items-center justify-center gap-2">
+            <span className="inline-flex w-full items-center justify-center gap-2">
               Telegram
               <ArrowUpRight className="h-3.5 w-3.5 opacity-55" />
-            </a>
+            </span>
           </Button>
         </div>
       </div>

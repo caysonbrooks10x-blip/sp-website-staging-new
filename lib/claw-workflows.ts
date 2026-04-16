@@ -366,20 +366,17 @@ export function buildClawWorkflowStudioHref(workflow: ClawWorkflowDefinition) {
   return `/studio?${params.toString()}`
 }
 
-export function buildClawWorkflowTelegramHref(workflow: ClawWorkflowDefinition) {
+export function buildClawWorkflowStartParam(workflow: ClawWorkflowDefinition) {
   const botWorkflowId = workflow.botWorkflowId || workflow.id
-  const startParam =
-    workflow.id === "fast-concept-board"
-      ? "image"
-      : workflow.id === "style-variation-burst"
-        ? "remix"
-        : workflow.id === "creator-launch-pack"
-          ? "director"
-          : workflow.id === "before-after-reveal-reel"
-            ? "video"
-            : `commerce_${botWorkflowId}`
+  if (workflow.id === "fast-concept-board") return "image"
+  if (workflow.id === "style-variation-burst") return "remix"
+  if (workflow.id === "creator-launch-pack") return "director"
+  if (workflow.id === "before-after-reveal-reel") return "video"
+  return `commerce_${botWorkflowId}`
+}
 
-  return buildTelegramBotStartUrl(startParam)
+export function buildClawWorkflowTelegramHref(workflow: ClawWorkflowDefinition) {
+  return buildTelegramBotStartUrl(buildClawWorkflowStartParam(workflow))
 }
 
 export function buildClawWorkflowTelegramCommand(workflow: ClawWorkflowDefinition) {
