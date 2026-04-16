@@ -326,14 +326,6 @@ export default function PostDetailPage() {
             taskId: post.taskId || post.creationId || "",
             generationPlatform: post.generationPlatform || "",
             remixType: post.type,
-            campaignDirected: post.campaign?.directed ? "1" : "",
-            campaignGoal: post.campaign?.goal || "",
-            campaignPlatform: post.campaign?.platform || "",
-            campaignStyle: post.campaign?.style || "",
-            campaignVariationCount: post.campaign?.variationCount ? String(post.campaign.variationCount) : "",
-            campaignBrief: post.campaign?.brief || post.prompt || "",
-            campaignPresetIds: post.campaign?.presetIds?.join(",") || "",
-            autoExportPack: post.campaign?.directed ? "1" : "",
         })
         return `/studio?${params.toString()}`
     })()

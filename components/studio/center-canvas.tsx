@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Bot, Download, Loader2, Maximize2, Package, Share, Sparkles, Wand2, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadModal } from "@/components/upload-modal";
 import { MediaRenderer } from "@/components/media-renderer";
 import { ASSET_BASE } from "@/lib/assets";
-import { buildExportPackHref, normalizeExportPresetIds } from "@/lib/export-pack";
+import { buildExportPackHref } from "@/lib/export-pack";
 import type { CommunityCampaignMeta } from "@/lib/types";
 import { buildStudioTemplateSharePayload, buildStudioTemplateShareUrl, encodeStudioTemplatePack } from "@/lib/studio-template-sharing";
 
@@ -62,7 +62,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
     } | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
-    const autoExportDoneRef = useRef<string | null>(null);
     const activePlatform = activeGeneration?.generationPlatform || activeGeneration?.settings?.provider || "poyo";
 
     const getFileExtension = (url: string, type: string): string => {
@@ -181,22 +180,10 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
             soundEnabled: activeGeneration.settings?.sound,
             generateAudio: activeGeneration.settings?.generate_audio,
             characterOrientation: activeGeneration.settings?.character_orientation,
-            directorGoal: activeGeneration.settings?.director_goal,
-            directorPlatform: activeGeneration.settings?.director_platform,
-            directorStyle: activeGeneration.settings?.director_style,
-            directorBrief: activeGeneration.settings?.campaign_brief,
-            directorVariations: activeGeneration.settings?.director_variations
-                ? Number(activeGeneration.settings.director_variations)
-                : undefined,
-            directorPresetIds: normalizeExportPresetIds(activeGeneration.settings?.campaign_preset_ids || []),
-            autoExportPack: activeGeneration.settings?.auto_export_pack === "1",
             cameraMovement: activeGeneration.settings?.cameraMovement,
             effectPreset: activeGeneration.settings?.effectPreset,
             audioDirection: activeGeneration.settings?.audioDirection,
             characterLock: activeGeneration.settings?.characterLock,
-            characterPackId: activeGeneration.settings?.characterPackId,
-            characterPackName: activeGeneration.settings?.characterPackName,
-            characterPackNotes: activeGeneration.settings?.characterPackNotes,
             sharedFrom: "generation",
         });
 
@@ -224,34 +211,8 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
 
     const buildCampaignMeta = (): CommunityCampaignMeta | undefined => {
         const campaign = activeGeneration?.settings?.campaign;
-        const presetIds = normalizeExportPresetIds(
-            activeGeneration?.settings?.campaign_preset_ids || campaign?.presetIds || []
-        );
-        if (campaign) {
-            return {
-                ...campaign,
-                presetIds: campaign.presetIds || (presetIds.length > 0 ? presetIds : undefined),
-            };
-        }
-
-        const goal = activeGeneration?.settings?.director_goal;
-        const platform = activeGeneration?.settings?.director_platform;
-        const style = activeGeneration?.settings?.director_style;
-        const variationCount = activeGeneration?.settings?.director_variations;
-
-        if (!goal && !platform && !style && !variationCount) {
-            return undefined;
-        }
-
-        return {
-            directed: true,
-            goal,
-            platform,
-            style,
-            variationCount: variationCount ? Number(variationCount) : undefined,
-            brief: activeGeneration?.settings?.campaign_brief || activeGeneration?.prompt,
-            presetIds: presetIds.length > 0 ? presetIds : undefined,
-        };
+        if (!campaign) return undefined;
+        return { ...campaign };
     };
 
     const openExportPack = (url: string, type: "image" | "video", creationId?: string) => {
@@ -305,23 +266,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         if (activePlatform) params.set("generationPlatform", activePlatform);
         window.location.href = `/claw/hub?${params.toString()}`;
     };
-
-    useEffect(() => {
-        if (!activeGeneration || activeGeneration.status !== "completed") return;
-        if (activeGeneration.settings?.auto_export_pack !== "1") return;
-        if (autoExportDoneRef.current === activeGeneration.id) return;
-
-        const primarySource = activeGeneration.src || activeGeneration.srcs?.[0];
-        if (!primarySource) return;
-
-        autoExportDoneRef.current = activeGeneration.id;
-        if (activeGeneration.srcs && activeGeneration.srcs.length > 1) {
-            openBatchExportPack(activeGeneration.srcs, activeGeneration.creationIds);
-            return;
-        }
-
-        openExportPack(primarySource, activeGeneration.type, activeGeneration.creationId);
-    }, [activeGeneration]);
 
     const getAspectRatioClass = (ratio: string) => {
         switch (ratio) {
@@ -680,11 +624,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                 )}
                             </div>
                         )}
-                        <div
-                            id="studio-character-packs-slot"
-                            className="mt-6 w-full rounded-[24px] border border-white/[0.06] bg-[#090909]/90 p-4 sm:p-5 shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
-                            style={{ maxWidth: maxWidthStyle }}
-                        />
                         <div
                             id="studio-template-deck-slot"
                             className="mt-6 w-full rounded-[24px] border border-white/[0.06] bg-[#090909]/90 p-4 sm:p-5 shadow-[0_30px_60px_rgba(0,0,0,0.6)]"

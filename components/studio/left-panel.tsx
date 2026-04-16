@@ -18,7 +18,6 @@ import {
     X,
     Loader2,
     Link2,
-    Fingerprint,
     Search,
 } from "lucide-react";
 import {
@@ -44,7 +43,6 @@ import {
     validateStudioExecution,
 } from "@/lib/provider-routing";
 import { validateModelParams } from "@/lib/model-capabilities";
-import { EXPORT_PACK_PRESETS, normalizeExportPresetIds } from "@/lib/export-pack";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 import {
@@ -53,12 +51,6 @@ import {
     saveStudioTemplate,
     type StudioTemplateRecord,
 } from "@/lib/studio-templates";
-import {
-    deleteStudioCharacterPack,
-    listStudioCharacterPacks,
-    saveStudioCharacterPack,
-    type StudioCharacterPackRecord,
-} from "@/lib/studio-character-packs";
 import { STUDIO_TEMPLATE_LIBRARY, type StudioTemplatePreset } from "@/lib/studio-template-presets";
 import {
     applyStudioPromptEnhancements,
@@ -80,9 +72,6 @@ import {
     mergeProviderHealth,
     type ProviderHealthSnapshot,
 } from "@/lib/provider-health";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebaseClient";
-
 import type { StudioMode } from "@/components/studio/sidebar";
 import type { GenerationItem } from "@/components/studio/center-canvas";
 
@@ -170,14 +159,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
     const urlRemixType = searchParams?.get("remixType")?.toLowerCase() || "image";
     const urlTaskId = searchParams?.get("taskId") || "";
     const urlGenerationPlatform = searchParams?.get("generationPlatform") || "";
-    const urlCampaignGoal = searchParams?.get("campaignGoal") || "";
-    const urlCampaignPlatform = searchParams?.get("campaignPlatform") || "";
-    const urlCampaignStyle = searchParams?.get("campaignStyle") || "";
-    const urlCampaignVariationCount = searchParams?.get("campaignVariationCount") || "";
-    const urlCampaignBrief = searchParams?.get("campaignBrief") || "";
-    const urlCampaignDirected = searchParams?.get("campaignDirected") || "";
-    const urlCampaignPresetIds = searchParams?.get("campaignPresetIds") || "";
-    const urlAutoExportPack = searchParams?.get("autoExportPack") || "";
 
     const urlCreationId = searchParams?.get("creationId") || "";
     const urlRootCreationId = searchParams?.get("rootCreationId") || "";
@@ -230,22 +211,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
     const [negativePrompt, setNegativePrompt] = useState<string>("");
     const [videoMode, setVideoMode] = useState<string>("normal");
     const [characterOrientation, setCharacterOrientation] = useState<string>("image");
-    const [directorModeEnabled, setDirectorModeEnabled] = useState<boolean>(() =>
-        urlCampaignDirected === "1" ||
-        Boolean(urlCampaignGoal || urlCampaignPlatform || urlCampaignStyle || urlCampaignVariationCount || urlCampaignBrief || urlCampaignPresetIds)
-    );
-    const [directorGoal, setDirectorGoal] = useState<string>(urlCampaignGoal);
-    const [directorPlatform, setDirectorPlatform] = useState<string>(urlCampaignPlatform || "instagram");
-    const [directorStyle, setDirectorStyle] = useState<string>(urlCampaignStyle || "Cinematic");
-    const [directorBrief, setDirectorBrief] = useState<string>(urlCampaignBrief || "");
-    const [directorVariations, setDirectorVariations] = useState<number>(() => {
-        const parsed = Number.parseInt(urlCampaignVariationCount, 10);
-        return Number.isNaN(parsed) ? 4 : Math.min(8, Math.max(1, parsed));
-    });
-    const [directorPresetIds, setDirectorPresetIds] = useState<string[]>(() =>
-        normalizeExportPresetIds(urlCampaignPresetIds)
-    );
-    const [autoExportPack, setAutoExportPack] = useState<boolean>(urlAutoExportPack === "1");
 
     const [selectedModel, setSelectedModel] = useState(() => {
         if (urlMode === 'video' || (urlMode === 'remix' && urlRemixType === 'video')) return AI_VIDEO_MODELS[0];
@@ -264,15 +229,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
     const [templateSearchQuery, setTemplateSearchQuery] = useState("");
     const [templatesLoading, setTemplatesLoading] = useState(false);
     const [templateDeckMountNode, setTemplateDeckMountNode] = useState<HTMLElement | null>(null);
-    const [characterPacksMountNode, setCharacterPacksMountNode] = useState<HTMLElement | null>(null);
-    const [characterPacks, setCharacterPacks] = useState<StudioCharacterPackRecord[]>([]);
-    const [characterPacksLoading, setCharacterPacksLoading] = useState(false);
-    const [characterPackName, setCharacterPackName] = useState("");
-    const [characterPackNotes, setCharacterPackNotes] = useState("");
-    const [activeCharacterPackId, setActiveCharacterPackId] = useState<string>("");
-    const [isExtractingCharacter, setIsExtractingCharacter] = useState(false);
-    const [characterExtractionTaskId, setCharacterExtractionTaskId] = useState<string>("");
-    const [characterExtractionMessage, setCharacterExtractionMessage] = useState<string>("");
     const [liveProviderHealth, setLiveProviderHealth] = useState<ProviderHealthSnapshot | null>(null);
     const importedTemplateRef = useRef<string | null>(null);
     const [cameraMovement, setCameraMovement] = useState<string>("none");
@@ -281,7 +237,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
     const [characterLock, setCharacterLock] = useState<boolean>(false);
 
     const hasCharacterReferenceContext = Boolean(
-        activeCharacterPackId || sourceFile || startImageFile || sourceVideo || sourceVideoPreview || previewUrl
+        sourceFile || startImageFile || sourceVideo || sourceVideoPreview || previewUrl
     );
 
     const cfg = getConfig(selectedModel.id);
@@ -334,41 +290,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         const res = searchParams?.get("resolution");
         if (res && res !== resolution) {
             setResolution(res);
-        }
-        const directed = searchParams?.get("campaignDirected");
-        if (directed === "1") {
-            setDirectorModeEnabled(true);
-        }
-        const goal = searchParams?.get("campaignGoal");
-        if (goal !== null) {
-            setDirectorGoal(goal);
-        }
-        const platform = searchParams?.get("campaignPlatform");
-        if (platform !== null && platform.length > 0) {
-            setDirectorPlatform(platform);
-        }
-        const style = searchParams?.get("campaignStyle");
-        if (style !== null && style.length > 0) {
-            setDirectorStyle(style);
-        }
-        const brief = searchParams?.get("campaignBrief");
-        if (brief !== null) {
-            setDirectorBrief(brief);
-        }
-        const variationText = searchParams?.get("campaignVariationCount");
-        if (variationText !== null && variationText.length > 0) {
-            const parsedVariation = Number.parseInt(variationText, 10);
-            if (!Number.isNaN(parsedVariation)) {
-                setDirectorVariations(Math.min(8, Math.max(1, parsedVariation)));
-            }
-        }
-        const presetIds = searchParams?.get("campaignPresetIds");
-        if (presetIds !== null) {
-            setDirectorPresetIds(normalizeExportPresetIds(presetIds));
-        }
-        const autoExportParam = searchParams?.get("autoExportPack");
-        if (autoExportParam !== null) {
-            setAutoExportPack(autoExportParam === "1");
         }
     }, [searchParams]);
 
@@ -473,20 +394,10 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         soundEnabled,
         generateAudio,
         characterOrientation,
-        directorGoal,
-        directorPlatform,
-        directorStyle,
-        directorBrief,
-        directorVariations,
-        directorPresetIds,
-        autoExportPack,
         cameraMovement,
         effectPreset,
         audioDirection,
         characterLock,
-        characterPackId: activeCharacterPackId || undefined,
-        characterPackName: characterPackName || undefined,
-        characterPackNotes: characterPackNotes || undefined,
     });
 
     const copyTemplateLink = async (
@@ -511,20 +422,10 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             soundEnabled?: boolean;
             generateAudio?: boolean;
             characterOrientation?: string;
-            directorGoal?: string;
-            directorPlatform?: string;
-            directorStyle?: string;
-            directorBrief?: string;
-            directorVariations?: number;
-            directorPresetIds?: string[];
-            autoExportPack?: boolean;
             cameraMovement?: string;
             effectPreset?: string;
             audioDirection?: string;
             characterLock?: boolean;
-            characterPackId?: string;
-            characterPackName?: string;
-            characterPackNotes?: string;
         }
     ) => {
         try {
@@ -545,15 +446,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             console.error("Failed to copy template link:", error);
             toast.error("Could not generate a share link for this workflow.");
         }
-    };
-
-    const uploadReferenceAsset = async (file: File) => {
-        if (!user?.uid) throw new Error("Log in first so Studio can save reference packs to your account.");
-        const extension = file.name.split(".").pop() || "png";
-        const storagePath = `studio-character-packs/${user.uid}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extension}`;
-        const storageRef = ref(storage, storagePath);
-        const uploadResult = await uploadBytesResumable(storageRef, file);
-        return getDownloadURL(uploadResult.ref);
     };
 
     const applyTemplateConfig = (
@@ -580,9 +472,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         if (template.effectPreset) setEffectPreset(template.effectPreset);
         if (template.audioDirection) setAudioDirection(template.audioDirection);
         if (typeof template.characterLock === "boolean") setCharacterLock(template.characterLock);
-        setActiveCharacterPackId(template.characterPackId || "");
-        setCharacterPackName(template.characterPackName || "");
-        setCharacterPackNotes(template.characterPackNotes || "");
 
         const nextModelId = template.model;
         if (nextModelId) {
@@ -591,38 +480,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 AI_VIDEO_MODELS.find((model) => model.id === nextModelId);
             if (found) setSelectedModel(found);
         }
-
-        const wantsDirectorMode =
-            Boolean(template.directorGoal || template.directorPlatform || template.directorStyle || template.directorBrief) ||
-            Boolean(template.directorPresetIds?.length) ||
-            Boolean(template.autoExportPack);
-
-        setDirectorModeEnabled(wantsDirectorMode);
-        setDirectorGoal(template.directorGoal || "");
-        setDirectorPlatform(template.directorPlatform || "instagram");
-        setDirectorStyle(template.directorStyle || "Cinematic");
-        setDirectorBrief(template.directorBrief || "");
-        if (typeof template.directorVariations === "number") {
-            setDirectorVariations(Math.min(8, Math.max(1, template.directorVariations)));
-        }
-        setDirectorPresetIds(template.directorPresetIds || []);
-        setAutoExportPack(Boolean(template.autoExportPack));
-    };
-
-    const applyCharacterPack = (pack: StudioCharacterPackRecord) => {
-        setActiveCharacterPackId(pack.id);
-        setCharacterPackName(pack.name);
-        setCharacterPackNotes(pack.notes || "");
-        setCharacterLock(true);
-        setSourceFile(null);
-        setSourceVideo(null);
-        setStartImageFile(null);
-        setEndImageFile(null);
-        setStartImagePreview("");
-        setEndImagePreview("");
-        setSourceVideoPreview(pack.referenceVideoUrl || "");
-        setPreviewUrl(pack.referenceImageUrl || pack.referenceVideoUrl || "");
-        toast.success(`Character pack "${pack.name}" is now driving the identity pipeline.`);
     };
 
     const handleSaveCurrentTemplate = async () => {
@@ -663,21 +520,10 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             soundEnabled,
             generateAudio,
             characterOrientation,
-            directorModeEnabled,
-            directorGoal,
-            directorPlatform,
-            directorStyle,
-            directorBrief,
-            directorVariations,
-            directorPresetIds,
-            autoExportPack,
             cameraMovement,
             effectPreset,
             audioDirection,
             characterLock,
-            characterPackId: activeCharacterPackId || undefined,
-            characterPackName: characterPackName || undefined,
-            characterPackNotes: characterPackNotes || undefined,
             source: "saved",
         });
 
@@ -686,63 +532,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         toast.success(`Saved template: ${saved.name}`);
     };
 
-    const handleSaveCharacterPack = async () => {
-        if (!user?.uid) {
-            toast.error("Log in first so Studio can save reference packs to your account.");
-            return;
-        }
-
-        const currentReferenceImage =
-            sourceFile && sourceFile.type.startsWith("image/")
-                ? await uploadReferenceAsset(sourceFile)
-                : startImageFile
-                    ? await uploadReferenceAsset(startImageFile)
-                    : previewUrl && !previewUrl.toLowerCase().includes(".mp4") && !previewUrl.toLowerCase().includes(".webm") && !previewUrl.toLowerCase().includes(".mov")
-                        ? previewUrl
-                        : activeGeneration?.type === "image"
-                            ? activeGeneration.src
-                            : undefined;
-
-        const currentReferenceVideo =
-            sourceVideo
-                ? await uploadReferenceAsset(sourceVideo)
-                : sourceVideoPreview || (activeGeneration?.type === "video" ? activeGeneration.src : undefined);
-
-        if (!currentReferenceImage && !currentReferenceVideo) {
-            toast.error("Attach or generate a reference image or video first so Studio can save the character pack.");
-            return;
-        }
-
-        const saved = await saveStudioCharacterPack(user.uid, {
-            name: characterPackName.trim() || `${selectedModel.name} Character Pack`,
-            notes: characterPackNotes.trim() || undefined,
-            referenceImageUrl: currentReferenceImage,
-            referenceVideoUrl: currentReferenceVideo,
-            thumbnailUrl: currentReferenceImage || currentReferenceVideo,
-            sourceType: currentReferenceVideo && !currentReferenceImage ? "video" : "image",
-        });
-
-        setCharacterPacks((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
-        applyCharacterPack(saved);
-    };
-
     const handleDeleteTemplate = async (templateId: string) => {
         if (!user?.uid) return;
         await deleteStudioTemplate(user.uid, templateId);
         setSavedTemplates((current) => current.filter((item) => item.id !== templateId));
         toast.success("Template removed.");
-    };
-
-    const handleDeleteCharacterPack = async (packId: string) => {
-        if (!user?.uid) return;
-        await deleteStudioCharacterPack(user.uid, packId);
-        setCharacterPacks((current) => current.filter((item) => item.id !== packId));
-        if (activeCharacterPackId === packId) {
-            setActiveCharacterPackId("");
-            setCharacterPackName("");
-            setCharacterPackNotes("");
-        }
-        toast.success("Character pack removed.");
     };
 
     useEffect(() => {
@@ -760,28 +554,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             })
             .finally(() => {
                 if (!cancelled) setTemplatesLoading(false);
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [user?.uid]);
-
-    useEffect(() => {
-        if (!user?.uid) {
-            setCharacterPacks([]);
-            return;
-        }
-
-        let cancelled = false;
-        setCharacterPacksLoading(true);
-
-        listStudioCharacterPacks(user.uid)
-            .then((items) => {
-                if (!cancelled) setCharacterPacks(items);
-            })
-            .finally(() => {
-                if (!cancelled) setCharacterPacksLoading(false);
             });
 
         return () => {
@@ -831,79 +603,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         };
     }, [cfg?.type, creationId, creationMode, previewUrl, searchParams, selectedModel.id, sourceFile, startImageFile, characterLock, hasCharacterReferenceContext]);
 
-    const resolveCharacterExtractionSource = async () => {
-        if (sourceFile && sourceFile.type.startsWith("image/")) {
-            return uploadReferenceAsset(sourceFile);
-        }
-        if (startImageFile) {
-            return uploadReferenceAsset(startImageFile);
-        }
-        if (previewUrl && !previewUrl.startsWith("blob:") && !previewUrl.toLowerCase().includes(".mp4") && !previewUrl.toLowerCase().includes(".webm") && !previewUrl.toLowerCase().includes(".mov")) {
-            return previewUrl;
-        }
-        if (activeGeneration?.type === "image" && activeGeneration.src) {
-            return activeGeneration.src;
-        }
-        return null;
-    };
-
-    const handleExtractCharacterReference = async () => {
-        if (!user?.uid) {
-            toast.error("Log in first so Studio can save extracted character packs.");
-            return;
-        }
-
-        const sourceImageUrl = await resolveCharacterExtractionSource();
-        if (!sourceImageUrl) {
-            toast.error("Attach or generate an image first, then run character extraction.");
-            return;
-        }
-
-        try {
-            setIsExtractingCharacter(true);
-            setCharacterExtractionTaskId("");
-            setCharacterExtractionMessage("Starting extraction...");
-
-            const response = await fetch("/api/apimart/character/extract", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    imageUrl: sourceImageUrl,
-                    notes: characterPackNotes || undefined,
-                }),
-            });
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data?.error || "Character extraction failed.");
-            }
-
-            if (data?.taskId) {
-                setCharacterExtractionTaskId(data.taskId);
-            }
-
-            const extractedImageUrl = data?.extractedImageUrl || sourceImageUrl;
-            const saved = await saveStudioCharacterPack(user.uid, {
-                name: characterPackName.trim() || `${selectedModel.name} Character Pack`,
-                notes: characterPackNotes.trim() || "Auto-extracted with ApiMart identity pipeline.",
-                referenceImageUrl: extractedImageUrl,
-                thumbnailUrl: extractedImageUrl,
-                sourceType: "image",
-            });
-
-            setCharacterPacks((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
-            applyCharacterPack(saved);
-            setCharacterExtractionMessage("Extraction complete.");
-            toast.success(`Character reference extracted and saved: ${saved.name}`);
-        } catch (error) {
-            console.error("Character extraction failed:", error);
-            setCharacterExtractionMessage("");
-            toast.error(error instanceof Error ? error.message : "Character extraction failed.");
-        } finally {
-            setIsExtractingCharacter(false);
-        }
-    };
-
     useEffect(() => {
         const pack = searchParams?.get("templatePack");
         if (!pack || importedTemplateRef.current === pack) return;
@@ -948,20 +647,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             toast.warning(validation.warnings[0]);
         }
 
-        const urlPresetIds = normalizeExportPresetIds(urlCampaignPresetIds);
-        const activeDirectorPresets = directorPresetIds.length > 0 ? directorPresetIds : urlPresetIds;
-        const shouldUseDirectorMode =
-            directorModeEnabled ||
-            urlCampaignDirected === "1" ||
-            Boolean(urlCampaignGoal || urlCampaignPlatform || urlCampaignStyle || urlCampaignVariationCount || urlCampaignBrief || activeDirectorPresets.length);
-        const resolvedDirectorGoal = directorGoal || urlCampaignGoal || "";
-        const resolvedDirectorPlatform = directorPlatform || urlCampaignPlatform || "";
-        const resolvedDirectorStyle = directorStyle || urlCampaignStyle || "";
-        const resolvedDirectorBrief = directorBrief || urlCampaignBrief || prompt;
-        const parsedUrlVariations = Number.parseInt(urlCampaignVariationCount, 10);
-        const fallbackVariationCount = Number.isNaN(parsedUrlVariations) ? 4 : parsedUrlVariations;
-        const resolvedDirectorVariations = Math.min(8, Math.max(1, directorVariations || fallbackVariationCount));
-        const resolvedAutoExportPack = autoExportPack || urlAutoExportPack === "1";
         const effectivePrompt = applyStudioPromptEnhancements({
             prompt,
             model: selectedModel.id,
@@ -969,8 +654,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             effectPreset,
             audioDirection: generateAudio ? audioDirection : undefined,
             characterLock,
-            characterReferenceName: characterPackName || undefined,
-            characterReferenceNotes: characterPackNotes || undefined,
         });
 
         if (sourceFile) {
@@ -998,17 +681,13 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             parameters.prompt = effectivePrompt;
             parameters.size = aspectRatio;
             if (ic.supportsN) {
-                const directorN = Math.min(ic.maxN, resolvedDirectorVariations);
-                parameters.n = shouldUseDirectorMode ? directorN : imageCount;
+                parameters.n = imageCount;
             }
             if (ic.supportsResolution) parameters.resolution = resolution;
             if (ic.supportsOutputFormat) parameters.output_format = outputFormat;
         }
         else if (creationMode === "remix") {
-            const remixModelConfig = cfg?.type === "image" ? (cfg as ImageModelConfig) : null;
-            const remixMaxN = remixModelConfig?.supportsN ? remixModelConfig.maxN : 8;
-            const remixDirectorN = Math.min(remixMaxN, resolvedDirectorVariations);
-            parameters.n = shouldUseDirectorMode ? remixDirectorN : imageCount;
+            parameters.n = imageCount;
             parameters.prompt = effectivePrompt;
             parameters.image_weight = remixStrength / 100;
             parameters.size = aspectRatio;
@@ -1118,16 +797,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             needsCharacterReference: Boolean(characterLock && hasCharacterReferenceContext),
             templateName: templateName.trim() || undefined,
             originalPrompt: prompt,
-            campaign_brief: shouldUseDirectorMode ? (resolvedDirectorBrief || undefined) : undefined,
-            campaign_directed: shouldUseDirectorMode ? "1" : undefined,
-            campaign_preset_ids: shouldUseDirectorMode && activeDirectorPresets.length > 0
-                ? activeDirectorPresets.join(",")
-                : undefined,
-            auto_export_pack: shouldUseDirectorMode && resolvedAutoExportPack ? "1" : undefined,
-            director_goal: shouldUseDirectorMode ? (resolvedDirectorGoal || undefined) : undefined,
-            director_platform: shouldUseDirectorMode ? (resolvedDirectorPlatform || undefined) : undefined,
-            director_style: shouldUseDirectorMode ? (resolvedDirectorStyle || undefined) : undefined,
-            director_variations: shouldUseDirectorMode ? String(resolvedDirectorVariations) : undefined,
             sourceFile: sourceFile || undefined,
             sourceVideo: sourceVideo || undefined,
             aspectRatio,
@@ -1135,9 +804,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             effectPreset: effectPreset !== "none" ? effectPreset : undefined,
             audioDirection: generateAudio && audioDirection !== "none" ? audioDirection : undefined,
             characterLock: characterLock || undefined,
-            characterPackId: activeCharacterPackId || undefined,
-            characterPackName: characterPackName || undefined,
-            characterPackNotes: characterPackNotes || undefined,
             ...parameters
         });
 
@@ -1289,15 +955,8 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
     });
 
     useEffect(() => {
-        if (directorVariations > maxN) {
-            setDirectorVariations(maxN);
-        }
-    }, [directorVariations, maxN]);
-
-    useEffect(() => {
         const syncMountNode = () => {
             setTemplateDeckMountNode(document.getElementById("studio-template-deck-slot"));
-            setCharacterPacksMountNode(document.getElementById("studio-character-packs-slot"));
         };
         syncMountNode();
         const observer = new MutationObserver(syncMountNode);
@@ -1480,102 +1139,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         </div>
     );
 
-    const characterPacksCard = (
-        <div className="space-y-3 rounded-2xl border border-[#1d1d1d] bg-[#0f0f0f] p-4">
-            <div className="flex items-center justify-between gap-3">
-                <label className="text-[10px] font-bold text-zinc-300 tracking-[0.15em] uppercase flex items-center gap-2">
-                    <Fingerprint className="w-3.5 h-3.5" /> Character Reference Packs
-                </label>
-                <div className="flex items-center gap-2">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={handleExtractCharacterReference}
-                        disabled={isExtractingCharacter}
-                        className="h-8 rounded-lg border border-[#c5a44e]/20 bg-[#c5a44e]/10 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#c5a44e] hover:bg-[#c5a44e]/15 disabled:opacity-60"
-                    >
-                        {isExtractingCharacter ? "Extracting..." : "Extract"}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={handleSaveCharacterPack}
-                        className="h-8 rounded-lg border border-[#c5a44e]/20 bg-[#c5a44e]/10 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#c5a44e] hover:bg-[#c5a44e]/15"
-                    >
-                        Save Pack
-                    </Button>
-                </div>
-            </div>
-
-            <Input
-                value={characterPackName}
-                onChange={(event) => setCharacterPackName(event.target.value)}
-                placeholder="Name this character identity pack"
-                className="h-10 rounded-xl border-[#222] bg-[#111] text-sm text-zinc-200 placeholder:text-zinc-600 focus-visible:border-[#c5a44e]/40 focus-visible:ring-[#c5a44e]/10"
-            />
-            <Textarea
-                value={characterPackNotes}
-                onChange={(event) => setCharacterPackNotes(event.target.value)}
-                placeholder="Identity notes: facial shape, wardrobe, vibe, pose cues..."
-                className="min-h-[78px] rounded-xl border-[#222] bg-[#111] text-sm text-zinc-200 placeholder:text-zinc-600 focus-visible:border-[#c5a44e]/40 focus-visible:ring-[#c5a44e]/10"
-            />
-            <p className="px-1 text-[11px] leading-relaxed text-zinc-500">
-                Save the current reference image, start frame, remix source, or latest finished result as a reusable character anchor. Studio will reapply it with identity notes and character lock.
-            </p>
-            {(characterExtractionMessage || characterExtractionTaskId) && (
-                <div className="rounded-xl border border-[#2a2a2a] bg-[#111] px-3 py-2.5 text-[11px] leading-relaxed text-zinc-400">
-                    {characterExtractionMessage && <p>{characterExtractionMessage}</p>}
-                    {characterExtractionTaskId && <p className="mt-1 text-zinc-500">Task ID: {characterExtractionTaskId}</p>}
-                </div>
-            )}
-
-            <div className="space-y-2">
-                <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Saved Packs</span>
-                    <span className="text-[10px] text-zinc-600">
-                        {characterPacksLoading ? "Loading" : `${characterPacks.length} saved`}
-                    </span>
-                </div>
-                <div className="space-y-2">
-                    {characterPacks.slice(0, 4).map((pack) => (
-                        <div key={pack.id} className="flex items-start justify-between gap-3 rounded-xl border border-[#222] bg-[#111] px-3 py-3">
-                            <button
-                                type="button"
-                                onClick={() => applyCharacterPack(pack)}
-                                className="min-w-0 flex-1 text-left"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <p className="truncate text-[12px] font-semibold text-zinc-200">{pack.name}</p>
-                                    {activeCharacterPackId === pack.id && (
-                                        <span className="rounded-full border border-[#c5a44e]/25 bg-[#c5a44e]/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[#c5a44e]">
-                                            Active
-                                        </span>
-                                    )}
-                                </div>
-                                <p className="mt-1 text-[11px] text-zinc-500">
-                                    {pack.sourceType} reference{pack.notes ? ` • ${pack.notes}` : ""}
-                                </p>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleDeleteCharacterPack(pack.id)}
-                                className="rounded-lg border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-zinc-500 transition-colors hover:text-white"
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    ))}
-                    {!characterPacksLoading && characterPacks.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-[#222] bg-[#111] px-3 py-4 text-[11px] leading-relaxed text-zinc-500">
-                            Character packs turn one strong reference into a reusable identity system for future videos, remixes, and cinematic continuity passes.
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-
-
     return (
         <>
         <div className="w-full h-full flex flex-col glass-card-gold relative z-20 text-zinc-100 overflow-hidden rounded-none border-0">
@@ -1666,7 +1229,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
 
                         <div className="space-y-4 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
                             {!templateDeckMountNode && templateDeckCard}
-                            {!characterPacksMountNode && characterPacksCard}
                         </div>
 
                         {}
@@ -1738,115 +1300,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 </div>
                             </div>
                         )}
-
-                        {}
-                        <div className="space-y-2.5 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                            <label className="text-[10px] font-medium text-zinc-500 tracking-[0.2em] uppercase flex items-center gap-2 px-1">
-                                <Sparkles className="w-3.5 h-3.5 text-zinc-600" /> Director Mode
-                            </label>
-                            <div className="rounded-xl border border-[#222] bg-[#111] p-4 space-y-4">
-                                <button
-                                    onClick={() => setDirectorModeEnabled((prev) => !prev)}
-                                    className="w-full flex items-center justify-between rounded-xl border border-[#222] bg-[#0e0e0e] px-3 py-2.5 hover:border-[#333] transition-colors"
-                                >
-                                    <div className="text-left">
-                                        <p className="text-[12px] font-semibold text-zinc-100">Campaign Director</p>
-                                        <p className="text-[10px] text-zinc-500">Guides generation + export pack strategy</p>
-                                    </div>
-                                    <div className={cn("w-10 h-5.5 rounded-full transition-all duration-300 relative", directorModeEnabled ? "bg-[#c5a44e]" : "bg-zinc-700")}>
-                                        <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-xl", directorModeEnabled ? "left-[19px]" : "left-[3px]")} />
-                                    </div>
-                                </button>
-
-                                {directorModeEnabled && (
-                                    <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <input
-                                                value={directorGoal}
-                                                onChange={(event) => setDirectorGoal(event.target.value)}
-                                                placeholder="Goal (e.g. launch teaser)"
-                                                className="h-11 rounded-xl border border-[#222] bg-[#0e0e0e] px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a44e]/40"
-                                            />
-                                            <input
-                                                value={directorPlatform}
-                                                onChange={(event) => setDirectorPlatform(event.target.value)}
-                                                placeholder="Primary platform"
-                                                className="h-11 rounded-xl border border-[#222] bg-[#0e0e0e] px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a44e]/40"
-                                            />
-                                        </div>
-                                        <input
-                                            value={directorStyle}
-                                            onChange={(event) => setDirectorStyle(event.target.value)}
-                                            placeholder="Style direction"
-                                            className="h-11 w-full rounded-xl border border-[#222] bg-[#0e0e0e] px-3 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a44e]/40"
-                                        />
-                                        <textarea
-                                            value={directorBrief}
-                                            onChange={(event) => setDirectorBrief(event.target.value)}
-                                            placeholder="Campaign brief (optional)"
-                                            className="min-h-[74px] w-full rounded-xl border border-[#222] bg-[#0e0e0e] px-3 py-2.5 text-[12px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a44e]/40 resize-none"
-                                        />
-
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between text-[10px] text-zinc-500 uppercase tracking-[0.16em]">
-                                                <span>Director Variations</span>
-                                                <span className="text-zinc-300">{directorVariations}</span>
-                                            </div>
-                                            <Slider
-                                                min={1}
-                                                max={8}
-                                                step={1}
-                                                value={[directorVariations]}
-                                                onValueChange={(value) => setDirectorVariations(value[0] || 1)}
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] text-zinc-500 uppercase tracking-[0.16em]">Export Presets</p>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {EXPORT_PACK_PRESETS.map((preset) => {
-                                                    const isActive = directorPresetIds.includes(preset.id)
-                                                    return (
-                                                        <button
-                                                            key={preset.id}
-                                                            onClick={() =>
-                                                                setDirectorPresetIds((prev) =>
-                                                                    prev.includes(preset.id)
-                                                                        ? prev.filter((id) => id !== preset.id)
-                                                                        : [...prev, preset.id]
-                                                                )
-                                                            }
-                                                            className={cn(
-                                                                "rounded-xl border px-2.5 py-2 text-left transition-colors",
-                                                                isActive
-                                                                    ? "border-[#c5a44e]/40 bg-[#c5a44e]/10 text-[#c5a44e]"
-                                                                    : "border-[#222] bg-[#0e0e0e] text-zinc-300 hover:border-[#333]"
-                                                            )}
-                                                        >
-                                                            <p className="text-[11px] font-semibold leading-tight">{preset.label}</p>
-                                                            <p className="mt-0.5 text-[10px] text-zinc-500">{preset.width}x{preset.height}</p>
-                                                        </button>
-                                                    )
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => setAutoExportPack((prev) => !prev)}
-                                            className="w-full flex items-center justify-between rounded-xl border border-[#222] bg-[#0e0e0e] px-3 py-2.5 hover:border-[#333] transition-colors"
-                                        >
-                                            <div className="text-left">
-                                                <p className="text-[12px] font-semibold text-zinc-100">Auto Export Pack</p>
-                                                <p className="text-[10px] text-zinc-500">Open export pack immediately after completion</p>
-                                            </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-300 relative", autoExportPack ? "bg-[#c5a44e]" : "bg-zinc-700")}>
-                                                <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-xl", autoExportPack ? "left-[19px]" : "left-[3px]")} />
-                                            </div>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
 
                         {}
                         {hasAspectRatio && (
@@ -2230,7 +1683,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 </Button>
             </div>
         </div>
-        {characterPacksMountNode ? createPortal(characterPacksCard, characterPacksMountNode) : null}
         {templateDeckMountNode ? createPortal(templateDeckCard, templateDeckMountNode) : null}
         </>
     );

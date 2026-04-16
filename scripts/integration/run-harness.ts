@@ -8,7 +8,7 @@
  *     semantics — not just in-memory functions.
  *   Phase 2 (route-level): boots Next.js dev, repoints it at the mock
  *     providers via APIMART_BASE_URL/POYO_BASE_URL, and exercises
- *     /api/apimart/* + /api/apimart/character/extract.
+ *     /api/apimart/*.
  *     Proves the Next routes honour the canonical adapter contract and
  *     propagate request_id + error semantics.
  *
@@ -329,20 +329,6 @@ async function phase2(mockApimart: MockProvider, mockPoyo: MockProvider): Promis
     )
   }
 
-  // Scenario B/route: character extract rejects missing imageUrl (server-side validation).
-  {
-    const { status, body } = await fetchJson(`${baseUrl}/api/apimart/character/extract`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({}),
-    })
-    record(
-      "B/route: character/extract without imageUrl → 400 + error",
-      status === 400 && typeof body?.error === "string" && body.error.toLowerCase().includes("imageurl"),
-      `status=${status} error=${body?.error}`,
-    )
-  }
-
   // Scenario A-bis/route: task-submission response → canonical task kind.
   mockApimart.setScript({
     kind: "ok-task",
@@ -379,30 +365,6 @@ async function phase2(mockApimart: MockProvider, mockPoyo: MockProvider): Promis
       "A-bis/route: poll through /api/apimart/tasks/:id → canonical completed",
       poll.status === 200 && canonical.status === "completed" && canonical.urls[0] === "https://mock.test/route-poll.png",
       `status=${poll.status} canonical.status=${canonical.status}`,
-    )
-  }
-
-  // Scenario E/route: character/extract full submit+poll via canonical adapters.
-  mockApimart.setScript({
-    kind: "ok-task",
-    taskId: "route_extract",
-    pollStatus: "completed",
-    imageUrl: "https://mock.test/route-extract.png",
-  })
-  {
-    const { status, body } = await fetchJson(`${baseUrl}/api/apimart/character/extract`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ imageUrl: "https://mock.test/source.png" }),
-    })
-    record(
-      "E/route: character/extract submits+polls through canonical path → extractedImageUrl",
-      status === 200 &&
-        body?.status === "completed" &&
-        body?.extractedImageUrl === "https://mock.test/route-extract.png" &&
-        typeof body?.request_id === "string" &&
-        body.request_id.startsWith("req_"),
-      `status=${status} extracted=${body?.extractedImageUrl} reqid=${body?.request_id}`,
     )
   }
 

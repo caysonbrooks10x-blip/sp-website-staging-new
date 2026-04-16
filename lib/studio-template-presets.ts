@@ -40,13 +40,6 @@ const workflowBackedPresets: StudioTemplatePreset[] = CLAW_WORKFLOWS.map((workfl
   prompt: workflow.studioPrompt,
   aspectRatio: workflow.aspectRatio,
   resolution: workflow.resolution,
-  directorGoal: workflow.directorGoal,
-  directorPlatform: workflow.directorPlatform,
-  directorStyle: workflow.directorStyle,
-  directorBrief: workflow.directorBrief,
-  directorVariations: workflow.directorVariations,
-  directorPresetIds: workflow.campaignPresetIds,
-  autoExportPack: workflow.autoExportPack,
 }))
 
 const customPresets: StudioTemplatePreset[] = [
@@ -102,13 +95,7 @@ const customPresets: StudioTemplatePreset[] = [
     prompt: "Create premium product campaign stills with accurate geometry, high-end commercial lighting, a confident hero composition, and space for brand messaging.",
     aspectRatio: "4:5",
     resolution: "2K",
-    directorGoal: "Product launch",
-    directorPlatform: "instagram",
-    directorStyle: "Luxury product photography",
-    directorBrief: "Produce polished product stills for launch creatives and landing pages.",
-    directorVariations: 4,
-    directorPresetIds: ["instagram-post", "instagram-story", "x-landscape"],
-    autoExportPack: true,
+    imageCount: 4,
   },
 ]
 

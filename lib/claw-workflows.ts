@@ -25,13 +25,6 @@ export interface ClawWorkflowDefinition {
   telegramStatus: "planned" | "designed"
   telegramFlow: string[]
   studioPrompt: string
-  directorGoal?: string
-  directorPlatform?: string
-  directorStyle?: string
-  directorBrief?: string
-  directorVariations?: number
-  campaignPresetIds?: string[]
-  autoExportPack?: boolean
 }
 
 export const CLAW_WORKFLOW_SECTIONS: Array<{
@@ -109,10 +102,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Using the uploaded image as the base composition, generate four polished variations with distinct premium styling directions, stronger lighting, cleaner commercial framing, and improved material detail.",
-    directorGoal: "Style exploration",
-    directorPlatform: "instagram",
-    directorStyle: "Premium editorial",
-    directorVariations: 4,
   },
   {
     id: "creator-launch-pack",
@@ -141,13 +130,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Create a cohesive creator campaign pack from this reference. Keep the subject consistent while generating premium social-first visuals with clear focal hierarchy and polished brand styling.",
-    directorGoal: "Creator launch",
-    directorPlatform: "instagram",
-    directorStyle: "High-end social campaign",
-    directorBrief: "Produce a hero asset, platform-ready square post, and story-safe visual system with premium polish.",
-    directorVariations: 4,
-    campaignPresetIds: ["instagram-post", "instagram-story", "x-landscape"],
-    autoExportPack: true,
   },
   {
     id: "product-mockup-generator",
@@ -176,13 +158,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Turn this product image into a premium commerce mockup set. Preserve the exact product identity, label integrity, proportions, and materials while generating polished studio and lifestyle product visuals with high-end advertising quality.",
-    directorGoal: "Product launch",
-    directorPlatform: "instagram",
-    directorStyle: "Luxury product photography",
-    directorBrief: "Keep the product geometry accurate. Produce premium, conversion-oriented visuals for ads and landing pages.",
-    directorVariations: 4,
-    campaignPresetIds: ["instagram-post", "instagram-story", "x-landscape"],
-    autoExportPack: true,
   },
   {
     id: "background-scene-swap",
@@ -210,9 +185,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Restage this product into a polished commerce environment. Keep the product exact, photoreal, and brand-safe while replacing the background and supporting props with a premium scene that feels intentionally art directed.",
-    directorGoal: "Catalog refresh",
-    directorPlatform: "shopify",
-    directorStyle: "Clean commercial staging",
   },
   {
     id: "product-campaign-pack",
@@ -241,13 +213,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Build a product campaign pack from this uploaded item. Create multiple channel-shaped outputs with consistent branding, strong hierarchy, polished product focus, and premium advertising composition.",
-    directorGoal: "Product campaign pack",
-    directorPlatform: "instagram",
-    directorStyle: "Premium commerce campaign",
-    directorBrief: "Deliver hero, square, story, and clean catalog variations from one core product image.",
-    directorVariations: 4,
-    campaignPresetIds: ["instagram-post", "instagram-story", "x-landscape", "linkedin-post"],
-    autoExportPack: true,
   },
   {
     id: "multi-variant-ad-generation",
@@ -275,10 +240,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Generate four ad concepts from this base asset. Each concept should feel commercially viable and distinct: minimal luxury, energetic performance marketing, premium dark campaign, and a seasonal promotional variant.",
-    directorGoal: "Ad variant testing",
-    directorPlatform: "meta ads",
-    directorStyle: "Performance creative",
-    directorVariations: 4,
   },
   {
     id: "costume-change-studio",
@@ -307,10 +268,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Change the clothing and styling of the person in this image while preserving identity, pose, body proportions, camera angle, and overall realism. Prioritize garment quality, believable fabric behavior, and polished editorial presentation.",
-    directorGoal: "Wardrobe transformation",
-    directorPlatform: "instagram",
-    directorStyle: "Fashion editorial",
-    directorVariations: 4,
   },
   {
     id: "merch-try-on-lookbook",
@@ -338,9 +295,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Create a merch and apparel styling preview from this image. Preserve the person's identity and body shape while rendering believable branded apparel, clean garment details, and commercial fashion presentation.",
-    directorGoal: "Merch styling preview",
-    directorPlatform: "shopify",
-    directorStyle: "Modern fashion catalog",
   },
   {
     id: "product-motion-teaser",
@@ -368,9 +322,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Animate this product image into a premium short-form teaser with elegant camera motion, controlled lighting shifts, and commercial polish. Keep branding and product geometry stable and avoid surreal distortion.",
-    directorGoal: "Product motion teaser",
-    directorPlatform: "instagram reels",
-    directorStyle: "Premium commercial motion",
   },
   {
     id: "before-after-reveal-reel",
@@ -398,9 +349,6 @@ export const CLAW_WORKFLOWS: ClawWorkflowDefinition[] = [
     ],
     studioPrompt:
       "Create a polished before-and-after transformation reel between the provided start and end visuals. Keep motion clean, premium, and commercially readable with strong transition timing and no chaotic artifacts.",
-    directorGoal: "Transformation content",
-    directorPlatform: "instagram reels",
-    directorStyle: "Clean cinematic transition",
   },
 ]
 
@@ -414,16 +362,6 @@ export function buildClawWorkflowStudioHref(workflow: ClawWorkflowDefinition) {
 
   if (workflow.resolution) params.set("resolution", workflow.resolution)
   if (workflow.remixType) params.set("remixType", workflow.remixType)
-  if (workflow.directorGoal) params.set("campaignGoal", workflow.directorGoal)
-  if (workflow.directorPlatform) params.set("campaignPlatform", workflow.directorPlatform)
-  if (workflow.directorStyle) params.set("campaignStyle", workflow.directorStyle)
-  if (workflow.directorBrief) params.set("campaignBrief", workflow.directorBrief)
-  if (workflow.directorVariations) params.set("campaignVariationCount", String(workflow.directorVariations))
-  if (workflow.campaignPresetIds && workflow.campaignPresetIds.length > 0) {
-    params.set("campaignPresetIds", workflow.campaignPresetIds.join(","))
-    params.set("campaignDirected", "1")
-  }
-  if (workflow.autoExportPack) params.set("autoExportPack", "1")
 
   return `/studio?${params.toString()}`
 }

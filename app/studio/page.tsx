@@ -27,7 +27,6 @@ import { decideTwoStep, STEP_ONE_FIXED_COST_USD } from "@/lib/studio-two-step";
 import { adaptApimartStatus, adaptApimartSubmission, newRequestId, type CanonicalJobStatus } from "@/lib/provider-response";
 import { executeWithFallback, buildProviderCall } from "@/lib/provider-execution";
 import { persistStudioGeneration } from "@/lib/studio-generations";
-import { normalizeExportPresetIds } from "@/lib/export-pack";
 import { StudioSidebar, type StudioMode } from "@/components/studio/sidebar";
 
 interface NormalizedJobStatus {
@@ -232,34 +231,11 @@ function StudioLayout() {
     return () => ctx.revert();
   }, []);
 
-  const buildCampaignMeta = (prompt: string, settings: any) => {
-    const presetIds = normalizeExportPresetIds(settings?.campaign_preset_ids || settings?.campaign?.presetIds || []);
+  const buildCampaignMeta = (_prompt: string, settings: any) => {
     if (settings?.campaign) {
-      return {
-        ...settings.campaign,
-        presetIds: settings.campaign.presetIds || presetIds,
-      };
+      return { ...settings.campaign };
     }
-
-    const goal = settings?.director_goal || undefined;
-    const platform = settings?.director_platform || undefined;
-    const style = settings?.director_style || undefined;
-    const variationCount = settings?.director_variations ? Number(settings.director_variations) : undefined;
-    const directed = settings?.campaign_directed === "1" || Boolean(goal || platform || style);
-
-    if (!directed && !goal && !platform && !style && !variationCount) {
-      return null;
-    }
-
-    return {
-      directed,
-      goal,
-      platform,
-      style,
-      variationCount,
-      brief: settings?.campaign_brief || prompt,
-      presetIds: presetIds.length > 0 ? presetIds : undefined,
-    };
+    return null;
   };
 
   const persistCompletedGeneration = async (item: GenerationItem) => {
