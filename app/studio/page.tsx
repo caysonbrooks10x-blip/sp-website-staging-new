@@ -143,6 +143,7 @@ function StudioLayout() {
   const { user } = useAuth();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [suggestionPrompt, setSuggestionPrompt] = useState("");
   const [studioMode, setStudioMode] = useState<StudioMode>(() => {
     const urlMode = searchParams.get("mode")?.toLowerCase();
     if (urlMode === "video") return "text-to-video";
@@ -1073,16 +1074,14 @@ function StudioLayout() {
         }}
       >
         {/* Top Bar */}
-        <div className="h-14 border-b border-[#1a1a1a] flex items-center px-6 shrink-0 bg-[#0a0a0a]">
-          <div className="flex items-center gap-3">
-            <h1 className="text-sm font-semibold text-zinc-200 capitalize">
-              {studioMode.replace(/-/g, " ")}
-            </h1>
-          </div>
+        <div className="h-10 border-b border-[#1a1a1a] flex items-center px-6 shrink-0 bg-[#0a0a0a]">
+          <h1 className="text-xs font-semibold text-zinc-400 capitalize tracking-wide">
+            {studioMode.replace(/-/g, " ")}
+          </h1>
         </div>
 
         {/* Two-column content */}
-        <div className="flex h-[calc(100%-56px)] overflow-hidden flex-col lg:flex-row">
+        <div className="flex h-[calc(100%-40px)] overflow-hidden flex-col lg:flex-row">
           {/* Left: Generation Form */}
           <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-[52dvh] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r border-[#1a1a1a]">
             <div className="flex-1 min-h-0">
@@ -1098,6 +1097,7 @@ function StudioLayout() {
                 setAspectRatio={setAspectRatio}
                 studioMode={studioMode}
                 activeGeneration={activeGeneration}
+                externalPrompt={suggestionPrompt}
               />
             </div>
           </div>
@@ -1110,6 +1110,7 @@ function StudioLayout() {
               isGenerating={isGenerating}
               aspectRatio={aspectRatio}
               onOpenPanel={() => setMobilePanelOpen(true)}
+              onSuggestionClick={(p) => setSuggestionPrompt(p)}
             />
           </div>
         </div>

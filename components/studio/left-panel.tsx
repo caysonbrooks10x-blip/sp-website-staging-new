@@ -69,6 +69,7 @@ interface StudioLeftPanelProps {
     setAspectRatio: (val: string) => void;
     studioMode?: StudioMode;
     activeGeneration?: GenerationItem | null;
+    externalPrompt?: string;
 }
 
 interface ModelItem {
@@ -118,7 +119,7 @@ function estimateTaskCredits(input: {
     });
 }
 
-export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration }: StudioLeftPanelProps) {
+export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt }: StudioLeftPanelProps) {
     const searchParams = useSearchParams();
     const { user } = useAuth();
 
@@ -139,6 +140,9 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         if (typeof window !== 'undefined') return localStorage.getItem("studio_last_prompt") || "";
         return "";
     });
+    useEffect(() => {
+        if (externalPrompt) setPrompt(externalPrompt);
+    }, [externalPrompt]);
     const [previewUrl, setPreviewUrl] = useState(urlPreview);
     const [creationId, setCreationId] = useState(urlCreationId);
     const [rootCreationId, setRootCreationId] = useState(urlRootCreationId);
@@ -788,8 +792,14 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     <Textarea
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                                                e.preventDefault();
+                                                handleGenerate();
+                                            }
+                                        }}
                                         placeholder="Direct your artistic vision..."
-                                        className="resize-none min-h-[110px] lg:min-h-[100px] bg-transparent border-none text-white placeholder:text-zinc-700 focus-visible:ring-0 px-5 py-5 text-[14px] lg:text-[13px] font-medium leading-[1.6] tracking-wide"
+                                        className="resize-none min-h-[140px] lg:min-h-[150px] bg-transparent border-none text-white placeholder:text-zinc-700 focus-visible:ring-0 px-5 py-5 text-[14px] lg:text-[13px] font-medium leading-[1.6] tracking-wide"
                                     />
 
                                     {showImageUpload && previewUrl && (
@@ -867,11 +877,10 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                             </div>
                         )}
 
-                        {}
                         {(hasDuration || showResolution || isMultiOutputImage || showSoundToggle || showMultiShotsToggle || showFixedLensToggle || showGenAudioToggle || showPromptOptimizerToggle || showStyleSelector || showStoryboardToggle || showNegativePrompt || showOutputFormat || showModeSelector || showCharOrientationSelector || showStartImage || showEndImage || showVideoUpload || showCameraMovement || showEffectPreset || showCharacterLock || showAudioDirection) && (
                             <div className="space-y-2.5 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 <label className="text-[10px] font-medium text-zinc-500 tracking-[0.2em] uppercase flex items-center gap-2 px-1">
-                                    <Settings2 className="w-3.5 h-3.5 text-zinc-600" /> Advanced Settings
+                                    <Settings2 className="w-3.5 h-3.5 text-zinc-600" /> Settings
                                 </label>
                                 <div className="flex flex-col gap-2">
                                     {(creationMode === "image" || creationMode === "remix") && (
@@ -1187,8 +1196,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 </div>
             </div>
 
-            {}
-            <div className="flex-none p-5 pt-1 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent z-30 flex gap-3">
+            <div className="flex-none p-4 pt-3 border-t border-[#1a1a1a] bg-[#0a0a0a] z-30 flex gap-3">
                 {isGenerating && onCancel && (
                     <Button
                         onClick={onCancel}

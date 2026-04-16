@@ -33,13 +33,38 @@ export interface GenerationItem {
 
 interface StudioCenterCanvasProps {
     activeGeneration: GenerationItem | null;
-    mode: "image" | "video" | "templates";
+    mode: "image" | "video";
     isGenerating: boolean;
     aspectRatio: string;
     onOpenPanel?: () => void;
+    onSuggestionClick?: (prompt: string) => void;
 }
 
-export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspectRatio, onOpenPanel }: StudioCenterCanvasProps) {
+const IMAGE_SUGGESTIONS = [
+    "A cyberpunk cityscape at golden hour, neon reflections on wet streets",
+    "Portrait in renaissance oil painting style, dramatic chiaroscuro lighting",
+    "Minimalist product shot on marble surface, soft studio lighting",
+    "Surreal underwater garden with bioluminescent coral and jellyfish",
+    "Abstract geometric art, metallic gold and deep navy, clean lines",
+    "Cozy Japanese café interior, warm afternoon light through paper screens",
+];
+
+const VIDEO_SUGGESTIONS = [
+    "Slow cinematic orbit around a luxury perfume bottle on black velvet",
+    "Dancer in slow motion under a single dramatic spotlight",
+    "Aerial drone shot gliding over misty mountain ridges at sunrise",
+    "Time-lapse of city streets from day to night, light trails streaking",
+    "Ocean waves crashing in ultra slow motion, backlit by golden sun",
+    "Smoke tendrils rising and curling through a beam of light",
+];
+
+const MODE_TIPS: Record<string, string> = {
+    "image": "Describe lighting, mood, style, and composition — specificity drives quality",
+    "video": "Start with a strong opening frame. Mention camera movement for cinematic results",
+    "remix": "Upload a reference and describe what you want changed — the model preserves the core",
+};
+
+export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspectRatio, onOpenPanel, onSuggestionClick }: StudioCenterCanvasProps) {
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [publishTarget, setPublishTarget] = useState<{
         url: string;
@@ -492,15 +517,43 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                 <div className="absolute inset-0 z-10 pointer-events-none rounded-[24px] sm:rounded-[32px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_0_40px_rgba(255,255,255,0.02)]" />
                                 <div className="absolute inset-0 z-10 transition-all duration-700 ease-out flex items-center justify-center">
                                     {!activeGeneration ? (
-                                        <div className="flex flex-col items-center gap-6 sm:gap-8 group p-8">
-                                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/[0.03] border border-white/10 shadow-[0_0_50px_rgba(255,255,255,0.02)] flex items-center justify-center relative overflow-hidden backdrop-blur-3xl transition-all duration-700 group-hover:scale-110 group-hover:border-white/20 group-hover:shadow-[0_0_80px_rgba(255,255,255,0.05)]">
-                                                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-transparent to-cyan-500/20 animate-pulse" />
-                                                <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-white/90 relative z-10 animate-pulse" />
+                                        <div className="flex flex-col items-center gap-6 sm:gap-8 p-6 sm:p-8 max-w-lg w-full pointer-events-auto">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center">
+                                                    <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white/60" />
+                                                </div>
+                                                <span className="text-[11px] sm:text-sm font-semibold text-white/40 tracking-wide">What will you create?</span>
                                             </div>
-                                            <div className="flex flex-col items-center gap-2">
-                                                <span className="text-[11px] sm:text-[12px] font-black text-white/40 tracking-[0.4em] uppercase drop-shadow-md text-center">StudioX Canvas</span>
-                                                <span className="text-[9px] font-medium text-zinc-600 tracking-[0.2em] uppercase">Ready for creation</span>
+
+                                            {/* Prompt suggestions */}
+                                            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {(mode === "video" ? VIDEO_SUGGESTIONS : IMAGE_SUGGESTIONS).slice(0, 4).map((suggestion) => (
+                                                    <button
+                                                        key={suggestion}
+                                                        type="button"
+                                                        onClick={() => onSuggestionClick?.(suggestion)}
+                                                        className="text-left text-[11px] leading-relaxed text-zinc-500 hover:text-zinc-200 bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.05] hover:border-white/[0.12] rounded-xl px-3 py-2.5 transition-all duration-200"
+                                                    >
+                                                        {suggestion}
+                                                    </button>
+                                                ))}
                                             </div>
+
+                                            {/* Contextual tip */}
+                                            <div className="w-full flex items-start gap-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04] px-3.5 py-2.5">
+                                                <Wand2 className="w-3.5 h-3.5 text-[#c5a44e]/60 shrink-0 mt-0.5" />
+                                                <span className="text-[10px] sm:text-[11px] leading-relaxed text-zinc-500">
+                                                    {MODE_TIPS[mode] || MODE_TIPS["image"]}
+                                                </span>
+                                            </div>
+
+                                            {/* Keyboard shortcut hint */}
+                                            <span className="text-[9px] text-zinc-700 tracking-wide">
+                                                <kbd className="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-zinc-500 font-mono">⌘</kbd>
+                                                {" + "}
+                                                <kbd className="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-zinc-500 font-mono">Enter</kbd>
+                                                <span className="ml-1.5 text-zinc-600">to generate</span>
+                                            </span>
                                         </div>
                                     ) : activeGeneration.status === 'completed' ? (
                                         <div className="relative w-full h-full group/image">
