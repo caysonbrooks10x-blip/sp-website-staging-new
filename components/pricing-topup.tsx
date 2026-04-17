@@ -76,18 +76,14 @@ export function PricingTopUp() {
                 onClick={() => {
                   if (pack.stripeLink) window.location.href = pack.stripeLink
                 }}
-                disabled={!pack.stripeLink}
                 className={cn(
                   "mt-5 h-10 rounded-lg text-[11px] font-bold uppercase tracking-[0.16em] transition-all",
-                  pack.stripeLink
-                    ? pack.highlight
-                      ? "bg-cyan-500 text-black hover:bg-cyan-400"
-                      : "bg-white/10 text-white hover:bg-white/20 border border-white/10"
-                    : "bg-white/5 text-zinc-500 border border-white/10 cursor-not-allowed"
+                  pack.highlight
+                    ? "bg-cyan-500 text-black hover:bg-cyan-400"
+                    : "bg-white/10 text-white hover:bg-white/20 border border-white/10"
                 )}
-                title={pack.stripeLink ? undefined : "Stripe link coming soon"}
               >
-                {pack.stripeLink ? "Buy now" : "Coming soon"}
+                Buy now
               </button>
             </div>
           ))}
