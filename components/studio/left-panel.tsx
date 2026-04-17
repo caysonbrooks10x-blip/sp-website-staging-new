@@ -41,7 +41,9 @@ import {
 } from "@/lib/provider-routing";
 import { validateModelParams, MODEL_CAPABILITIES } from "@/lib/model-capabilities";
 import { useAuth } from "@/context/auth-context";
+import { fetchClawState } from "@/lib/claw-state";
 import { toast } from "sonner";
+import Link from "next/link";
 import {
     applyStudioPromptEnhancements,
     AUDIO_DIRECTION_PRESETS,
@@ -122,6 +124,9 @@ function estimateTaskCredits(input: {
 export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt }: StudioLeftPanelProps) {
     const searchParams = useSearchParams();
     const { user } = useAuth();
+    const [creditBalance, setCreditBalance] = useState<number>(0);
+    const [balanceReady, setBalanceReady] = useState<boolean>(false);
+    const [showInsufficient, setShowInsufficient] = useState<boolean>(false);
 
     const urlMode = searchParams?.get("mode")?.toLowerCase() || initialMode || "image";
     const urlPrompt = searchParams?.get("prompt") || "";
@@ -366,7 +371,41 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         };
     }, [cfg?.type, creationId, creationMode, previewUrl, searchParams, selectedModel.id, sourceFile, startImageFile, characterLock, hasCharacterReferenceContext]);
 
+    useEffect(() => {
+        let cancelled = false;
+        if (!user) {
+            setCreditBalance(0);
+            setBalanceReady(false);
+            return;
+        }
+        const load = () => {
+            user.getIdToken()
+                .then((idToken) => fetchClawState(idToken))
+                .then((state) => {
+                    if (cancelled) return;
+                    setCreditBalance(state.creditBalance ?? 0);
+                    setBalanceReady(true);
+                })
+                .catch(() => {});
+        };
+        load();
+        const id = setInterval(load, 15000);
+        return () => { cancelled = true; clearInterval(id); };
+    }, [user]);
+
     const handleGenerate = () => {
+        const taskCredits = estimateTaskCredits({
+            modelId: selectedModel.id,
+            mode: creationMode as "image" | "video" | "remix",
+            resolution,
+            duration,
+            imageCount,
+            generateAudio,
+        });
+        if (balanceReady && taskCredits > 0 && taskCredits > creditBalance) {
+            setShowInsufficient(true);
+            return;
+        }
         let parameters: any = {};
         const previewLooksVideo =
             remixType === "video" ||
@@ -780,10 +819,28 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 {currentTaskCredits > 0 && (
-                                    <div className="px-1">
+                                    <div className="px-1 flex flex-wrap items-center gap-2">
                                         <span className="inline-flex items-center gap-1.5 rounded-full border border-[#c5a44e]/30 bg-[#c5a44e]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c5a44e]">
                                             Est. task credits: {currentTaskCredits}
                                         </span>
+                                        {balanceReady && (
+                                            <span className={cn(
+                                                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]",
+                                                currentTaskCredits > creditBalance
+                                                    ? "border-red-500/40 bg-red-500/10 text-red-400"
+                                                    : "border-zinc-700 bg-zinc-800/60 text-zinc-300"
+                                            )}>
+                                                Balance: {creditBalance}
+                                            </span>
+                                        )}
+                                        {balanceReady && currentTaskCredits > creditBalance && (
+                                            <Link
+                                                href="/pricing#top-up"
+                                                className="inline-flex items-center gap-1.5 rounded-full border border-[#c5a44e]/40 bg-[#c5a44e]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#c5a44e] hover:bg-[#c5a44e]/25"
+                                            >
+                                                Top up →
+                                            </Link>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -1245,6 +1302,35 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 </Button>
             </div>
         </div>
+        {showInsufficient && (
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowInsufficient(false)}>
+                <div className="relative w-full max-w-sm mx-4 rounded-2xl border border-[#c5a44e]/30 bg-[#0a0a0a] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.9)]" onClick={(e) => e.stopPropagation()}>
+                    <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-red-400">Insufficient credits</div>
+                    <h3 className="text-xl font-semibold text-zinc-100">Not enough credits to generate</h3>
+                    <p className="mt-2 text-sm text-zinc-400">
+                        This task costs <span className="text-[#c5a44e] font-semibold">{currentTaskCredits} credits</span>, but your balance is <span className="text-red-400 font-semibold">{creditBalance}</span>.
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                        Buy a top-up or upgrade your plan to continue.
+                    </p>
+                    <div className="mt-5 flex gap-2">
+                        <button
+                            onClick={() => setShowInsufficient(false)}
+                            className="flex-1 h-11 rounded-lg border border-[#222] bg-[#111] text-[12px] font-semibold uppercase tracking-widest text-zinc-300 hover:bg-[#161616]"
+                        >
+                            Cancel
+                        </button>
+                        <Link
+                            href="/pricing#top-up"
+                            className="flex-1 h-11 rounded-lg btn-gold text-[12px] font-bold uppercase tracking-widest flex items-center justify-center"
+                            onClick={() => setShowInsufficient(false)}
+                        >
+                            Buy credits
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        )}
         </>
     );
 }

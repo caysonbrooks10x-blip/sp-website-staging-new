@@ -5,6 +5,7 @@ import { PricingHero } from "@/components/pricing-hero"
 import { PricingCard } from "@/components/pricing-card"
 import { PricingFaq } from "@/components/pricing-faq"
 import { PaymentMethods } from "@/components/payment-methods"
+import { PricingTopUp } from "@/components/pricing-topup"
 import type { PricingPlan } from "@/lib/types"
 
 const pricingPlans: PricingPlan[] = [
@@ -129,6 +130,9 @@ export default function PricingPage() {
             </div>
           </div>
         </section>
+
+        {}
+        <PricingTopUp />
 
         {}
         <PaymentMethods />
