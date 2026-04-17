@@ -241,20 +241,20 @@ export default function ClawHubPage() {
 
         <section className={cn(clawHeroPanelClass, "p-6 md:p-10 lg:p-11")}>
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-400/35 to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/35 to-transparent"
             aria-hidden
           />
-          <div className="pointer-events-none absolute -right-24 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-teal-500/[0.04] blur-3xl" aria-hidden />
+          <div className="pointer-events-none absolute -right-24 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-cyan-500/[0.05] blur-3xl" aria-hidden />
 
           <div className="relative flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/30 px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-300 ring-1 ring-inset ring-white/[0.05]">
-                <Workflow className="h-3 w-3 text-teal-400/90" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/5 px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300 ring-1 ring-inset ring-cyan-500/10">
+                <Workflow className="h-3 w-3 text-cyan-400" />
                 Claw Hub
               </div>
-              <h1 className="mt-5 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-white md:text-5xl md:leading-[1.08]">
+              <h1 className="mt-5 text-[1.75rem] font-bold leading-[1.15] tracking-tight text-white md:text-5xl md:leading-[1.08]">
                 Workflow control,{" "}
-                <span className="bg-gradient-to-r from-teal-200 via-white to-amber-200/90 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-cyan-200 via-white to-cyan-300 bg-clip-text text-transparent">
                   one place.
                 </span>
               </h1>

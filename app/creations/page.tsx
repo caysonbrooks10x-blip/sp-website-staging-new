@@ -111,21 +111,21 @@ function CreationsContent() {
       {}
       <section className="relative border-b border-white/5 overflow-hidden">
         {}
-        <div className="absolute top-0 left-0 w-full h-[300px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/10 via-[#050505] to-[#050505] pointer-events-none" />
+        <div className="absolute top-0 left-0 w-full h-[300px] bg-[radial-gradient(ellipse_at_top,rgba(6,182,212,0.10)_0%,transparent_70%)] pointer-events-none" />
 
         <div className="relative mx-auto max-w-[1600px] px-6 lg:px-12 py-20 md:py-32">
           <div className="max-w-4xl relative z-10">
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6">
               My Creations
             </h1>
-            <p className="text-lg md:text-2xl text-slate-400 font-light leading-relaxed max-w-2xl text-balance">
+            <p className="text-lg md:text-2xl text-zinc-400 leading-relaxed max-w-2xl text-balance">
               Your personal creative archive. <br />
               All your AI-generated assets, perfectly organized.
             </p>
           </div>
 
           {}
-          <div className="absolute top-1/2 right-10 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none opacity-50" />
+          <div className="absolute top-1/2 right-10 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none opacity-50" />
         </div>
       </section>
 
