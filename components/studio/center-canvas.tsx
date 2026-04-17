@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import JSZip from "jszip";
 import { Bot, Download, Loader2, Maximize2, Package, Share, Sparkles, Wand2, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/auth-context";
 import { UploadModal } from "@/components/upload-modal";
 import { MediaRenderer } from "@/components/media-renderer";
 import { ASSET_BASE } from "@/lib/assets";
-import { buildExportPackHref } from "@/lib/export-pack";
+import { buildExportPackFilename } from "@/lib/export-pack";
 import type { CommunityCampaignMeta } from "@/lib/types";
 import { buildStudioTemplateSharePayload, buildStudioTemplateShareUrl, encodeStudioTemplatePack } from "@/lib/studio-template-sharing";
 
@@ -42,27 +44,13 @@ interface StudioCenterCanvasProps {
 
 const IMAGE_SUGGESTIONS = [
     "A cyberpunk cityscape at golden hour, neon reflections on wet streets",
-    "Portrait in renaissance oil painting style, dramatic chiaroscuro lighting",
     "Minimalist product shot on marble surface, soft studio lighting",
-    "Surreal underwater garden with bioluminescent coral and jellyfish",
-    "Abstract geometric art, metallic gold and deep navy, clean lines",
-    "Cozy Japanese café interior, warm afternoon light through paper screens",
 ];
 
 const VIDEO_SUGGESTIONS = [
     "Slow cinematic orbit around a luxury perfume bottle on black velvet",
-    "Dancer in slow motion under a single dramatic spotlight",
     "Aerial drone shot gliding over misty mountain ridges at sunrise",
-    "Time-lapse of city streets from day to night, light trails streaking",
-    "Ocean waves crashing in ultra slow motion, backlit by golden sun",
-    "Smoke tendrils rising and curling through a beam of light",
 ];
-
-const MODE_TIPS: Record<string, string> = {
-    "image": "Describe lighting, mood, style, and composition — specificity drives quality",
-    "video": "Start with a strong opening frame. Mention camera movement for cinematic results",
-    "remix": "Upload a reference and describe what you want changed — the model preserves the core",
-};
 
 export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspectRatio, onOpenPanel, onSuggestionClick }: StudioCenterCanvasProps) {
     const [showPublishModal, setShowPublishModal] = useState(false);
@@ -87,6 +75,17 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
     } | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
+    const [ideaInput, setIdeaInput] = useState("");
+    const { user } = useAuth();
+    const [clawToast, setClawToast] = useState<{ kind: "success" | "pair" | "error"; message: string } | null>(null);
+    const [clawSending, setClawSending] = useState(false);
+
+    const submitIdea = () => {
+        const trimmed = ideaInput.trim();
+        if (!trimmed) return;
+        onSuggestionClick?.(trimmed);
+        setIdeaInput("");
+    };
     const activePlatform = activeGeneration?.generationPlatform || activeGeneration?.settings?.provider || "poyo";
 
     const getFileExtension = (url: string, type: string): string => {
@@ -240,56 +239,108 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         return { ...campaign };
     };
 
-    const openExportPack = (url: string, type: "image" | "video", creationId?: string) => {
-        const campaign = buildCampaignMeta();
-        const href = buildExportPackHref({
-            assetUrl: url,
-            type,
-            prompt: activeGeneration?.prompt,
-            title: activeGeneration?.prompt || "StudioX Export",
-            model: activeGeneration?.model || activeGeneration?.settings?.model,
-            aspect: activeGeneration?.settings?.aspectRatio || activeGeneration?.settings?.size || aspectRatio,
-            creationId,
-            generationPlatform: activePlatform,
-            campaign,
-            presetIds: campaign?.presetIds,
-            autoDownload: Boolean(campaign?.directed),
-        });
-        window.open(href, "_blank");
+    const fetchBlobViaProxy = async (url: string): Promise<Blob> => {
+        const proxyUrl = `/api/download?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+        return response.blob();
     };
 
-    const openBatchExportPack = (urls: string[], creationIds?: string[]) => {
+    const downloadZipInline = async (urls: string[], type: "image" | "video") => {
         if (urls.length === 0) return;
-        const campaign = buildCampaignMeta();
-        const assets = urls.map((url, index) => ({
-            url,
-            creationId: creationIds?.[index] || undefined,
-        }));
-        const href = buildExportPackHref({
-            assetUrl: urls[0] || "",
-            assets,
-            type: activeGeneration?.type || "image",
-            prompt: activeGeneration?.prompt,
-            title: activeGeneration?.prompt || "StudioX Export",
-            model: activeGeneration?.model || activeGeneration?.settings?.model,
-            aspect: activeGeneration?.settings?.aspectRatio || activeGeneration?.settings?.size || aspectRatio,
-            creationId: creationIds?.[0] || activeGeneration?.creationId,
-            generationPlatform: activePlatform,
-            campaign,
-            presetIds: campaign?.presetIds,
-            autoDownload: Boolean(campaign?.directed),
-        });
-        window.open(href, "_blank");
+        setIsDownloading(true);
+        try {
+            const filename = buildExportPackFilename(activeGeneration?.prompt, activeGeneration?.creationId);
+            if (urls.length === 1) {
+                const blob = await fetchBlobViaProxy(urls[0]);
+                const ext = getFileExtension(urls[0], type);
+                const objUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = objUrl;
+                link.download = `${filename}.${ext}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(objUrl);
+                return;
+            }
+            const zip = new JSZip();
+            const pad = urls.length > 9 ? 2 : 1;
+            const blobs = await Promise.all(urls.map((u) => fetchBlobViaProxy(u)));
+            blobs.forEach((blob, idx) => {
+                const ext = getFileExtension(urls[idx], type);
+                const num = String(idx + 1).padStart(pad, "0");
+                zip.file(`${filename}-${num}.${ext}`, blob);
+            });
+            const zipBlob = await zip.generateAsync({ type: "blob" });
+            const objUrl = window.URL.createObjectURL(zipBlob);
+            const link = document.createElement("a");
+            link.href = objUrl;
+            link.download = `${filename}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(objUrl);
+        } catch (error) {
+            console.error("Zip download failed:", error);
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
-    const openClawHub = (url: string, creationId?: string) => {
-        const params = new URLSearchParams();
-        if (activeGeneration?.prompt) params.set("prompt", activeGeneration.prompt);
-        if (url) params.set("assetUrl", url);
-        if (creationId) params.set("creationId", creationId);
-        if (activeGeneration?.taskId) params.set("taskId", activeGeneration.taskId);
-        if (activePlatform) params.set("generationPlatform", activePlatform);
-        window.location.href = `/claw/hub?${params.toString()}`;
+    const downloadZipSingle = (url: string, type: "image" | "video") => {
+        if (!url) return;
+        void downloadZipInline([url], type);
+    };
+
+    const downloadZipBatch = (urls: string[]) => {
+        if (urls.length === 0) return;
+        void downloadZipInline(urls, activeGeneration?.type || "image");
+    };
+
+    const sendToClaw = async (url: string, _creationId?: string) => {
+        if (!url || clawSending) return;
+        if (!user) {
+            setClawToast({ kind: "error", message: "Please sign in first." });
+            setTimeout(() => setClawToast(null), 3500);
+            return;
+        }
+        setClawSending(true);
+        try {
+            const idToken = await user.getIdToken();
+            const mediaType: "image" | "video" = activeGeneration?.type === "video" ? "video" : "image";
+            const res = await fetch("/api/claw/send-asset", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({
+                    assetUrl: url,
+                    mediaType,
+                    caption: activeGeneration?.prompt || "",
+                }),
+            });
+            if (res.status === 409) {
+                setClawToast({ kind: "pair", message: "Pair your Telegram bot first." });
+                setTimeout(() => setClawToast(null), 5000);
+                return;
+            }
+            if (!res.ok) {
+                const data = await res.json().catch(() => null);
+                setClawToast({ kind: "error", message: data?.error || "Delivery failed. Try again." });
+                setTimeout(() => setClawToast(null), 4000);
+                return;
+            }
+            setClawToast({ kind: "success", message: "Sent to Telegram" });
+            setTimeout(() => setClawToast(null), 3000);
+        } catch (e) {
+            console.error("[sendToClaw]", e);
+            setClawToast({ kind: "error", message: "Network error. Try again." });
+            setTimeout(() => setClawToast(null), 4000);
+        } finally {
+            setClawSending(false);
+        }
     };
 
     const getAspectRatioClass = (ratio: string) => {
@@ -312,39 +363,58 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
     const currentRatio = !activeGeneration && mode === "video" ? "1:1" : rawRatio;
     const isMultiImage = (activeGeneration?.srcs && activeGeneration.srcs.length > 0) || (activeGeneration?.settings?.n > 1 && activeGeneration?.status !== "completed");
 
-    let maxWidthStyle = "850px";
-    if (isMultiImage) {
-        maxWidthStyle = "min(1600px, 100%)";
-    } else if (currentRatio === "9:16" || currentRatio === "16:21") {
-        maxWidthStyle = "min(420px, 90%, calc((100vh - 160px) * 9 / 16))";
-    } else if (currentRatio === "2:3" || currentRatio === "3:4") {
-        maxWidthStyle = "min(500px, 90%, calc((100vh - 140px) * 2 / 3))";
-    } else if (currentRatio === "1:1") {
-        maxWidthStyle = "min(650px, 98%, calc(100vh - 120px))";
-    } else if (currentRatio === "4:3" || currentRatio === "3:2") {
-        maxWidthStyle = "min(850px, 98%, calc((100vh - 120px) * 4 / 3))";
-    } else if (currentRatio === "21:9") {
-        maxWidthStyle = "min(1400px, 98%, calc((100vh - 120px) * 21 / 9))";
-    } else {
-        maxWidthStyle = "min(1200px, 98%, calc((100vh - 120px) * 16 / 9))";
-    }
+    const maxWidthStyle = isMultiImage ? "min(1600px, 100%)" : "100%";
 
-    // Empty state: scale up the card so it fills more of the canvas on large screens
-    if (!activeGeneration) {
-        if (currentRatio === "9:16" || currentRatio === "16:21") {
-            maxWidthStyle = "min(500px, 90%, calc((100vh - 160px) * 9 / 16))";
-        } else if (currentRatio === "2:3" || currentRatio === "3:4") {
-            maxWidthStyle = "min(600px, 90%, calc((100vh - 140px) * 2 / 3))";
-        } else if (currentRatio === "1:1") {
-            maxWidthStyle = "min(800px, 98%, calc(100vh - 120px))";
-        } else if (currentRatio === "4:3" || currentRatio === "3:2") {
-            maxWidthStyle = "min(1000px, 98%, calc((100vh - 120px) * 4 / 3))";
-        } else if (currentRatio === "21:9") {
-            maxWidthStyle = "min(1600px, 98%, calc((100vh - 120px) * 21 / 9))";
-        } else {
-            maxWidthStyle = "min(1400px, 98%, calc((100vh - 120px) * 16 / 9))";
-        }
-    }
+    // Fit-to-container: measure the canvas stage and compute the largest
+    // width×height rectangle of the requested ratio that fits inside it.
+    // Replaces the old `100vh - Npx` calc ladder that ignored surrounding
+    // chrome (app nav, studio header, mobile shelf) and clipped at extreme
+    // ratios like 21:9.
+    const stageRef = useRef<HTMLDivElement | null>(null);
+    const [frameSize, setFrameSize] = useState<{ width: number; height: number } | null>(null);
+
+    useEffect(() => {
+        if (isMultiImage) { setFrameSize(null); return; }
+        const el = stageRef.current;
+        if (!el) return;
+
+        const parseRatio = (r: string): number => {
+            const [a, b] = r.split(":").map(Number);
+            if (!a || !b) return 1;
+            return a / b;
+        };
+
+        const compute = () => {
+            const rect = el.getBoundingClientRect();
+            // Breathing room so the frame doesn't kiss the edges (keeps the
+            // StudioX logo above and the ⌘+Enter hint below visible).
+            const padX = 32;
+            const padY = 48;
+            const availW = Math.max(0, rect.width - padX);
+            const availH = Math.max(0, rect.height - padY);
+            if (availW <= 0 || availH <= 0) return;
+            const r = parseRatio(currentRatio);
+            let w: number, h: number;
+            if (availW / availH > r) {
+                // height-limited
+                h = availH;
+                w = h * r;
+            } else {
+                // width-limited
+                w = availW;
+                h = w / r;
+            }
+            const FLOOR = 240;
+            w = Math.max(FLOOR, w);
+            h = Math.max(FLOOR / r, h);
+            setFrameSize({ width: Math.round(w), height: Math.round(h) });
+        };
+
+        compute();
+        const ro = new ResizeObserver(() => compute());
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [currentRatio, isMultiImage, activeGeneration?.status]);
 
     const getGridClass = (count: number) => {
         if (count === 1) return "grid-cols-1 max-w-[1000px]";
@@ -354,6 +424,28 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
 
     return (
         <div className="w-full h-full flex flex-col items-center p-0 md:p-4 relative">
+            {clawToast ? (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] pointer-events-auto">
+                    <div
+                        className={cn(
+                            "flex items-center gap-2 px-4 py-2.5 rounded-full backdrop-blur-xl border shadow-2xl text-sm font-medium",
+                            clawToast.kind === "success" && "bg-emerald-500/90 border-emerald-300/40 text-white",
+                            clawToast.kind === "pair" && "bg-amber-500/90 border-amber-300/40 text-black",
+                            clawToast.kind === "error" && "bg-red-500/90 border-red-300/40 text-white"
+                        )}
+                    >
+                        {clawToast.kind === "success" ? (
+                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                        ) : (
+                            <Bot className="w-4 h-4" />
+                        )}
+                        <span>{clawToast.message}</span>
+                        {clawToast.kind === "pair" ? (
+                            <a href="/claw/hub" className="underline ml-1">Pair now</a>
+                        ) : null}
+                    </div>
+                </div>
+            ) : null}
             {}
             <div className="lg:hidden w-full flex justify-center py-4 shrink-0 z-50 pointer-events-auto">
                 <button
@@ -365,8 +457,8 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                 </button>
             </div>
 
-            <div className="flex-1 w-full min-h-0 relative bg-black/5">
-                <div 
+            <div ref={stageRef} className="flex-1 w-full min-h-0 relative bg-black/5">
+                <div
                     className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar touch-pan-y pointer-events-auto"
                     data-lenis-prevent="true"
                 >
@@ -381,16 +473,16 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                 className="w-full px-4 sm:px-6 py-12 md:py-20 self-start transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
                                 style={{ maxWidth: maxWidthStyle }}
                             >
-                                <div className="mb-6 sm:mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="text-sm text-zinc-300">
-                                        Campaign set ready: <span className="font-semibold text-white">{activeGeneration.srcs?.length || 0} outputs</span>
-                                    </div>
+                                <div className="mb-6 sm:mb-8 flex justify-end">
                                     <button
-                                        onClick={() => openBatchExportPack(activeGeneration.srcs || [], activeGeneration.creationIds)}
-                                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-lime-400/30 bg-lime-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-lime-200 hover:bg-lime-400/20 transition-colors"
+                                        onClick={() => downloadZipBatch(activeGeneration.srcs || [])}
+                                        disabled={isDownloading}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-lime-400/30 bg-lime-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-lime-200 hover:bg-lime-400/20 transition-colors disabled:opacity-60"
                                     >
-                                        <Package className="w-3.5 h-3.5" />
-                                        Export Full Campaign Pack
+                                        {isDownloading
+                                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            : <Download className="w-3.5 h-3.5" />}
+                                        Download Zip
                                     </button>
                                 </div>
                                 <div className={cn(
@@ -412,16 +504,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 fill
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 transition-opacity duration-400" />
-                                            <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-10 flex items-center gap-4">
-                                                <div className="bg-black/60 backdrop-blur-3xl text-white/90 text-[10px] font-black tracking-[0.25em] uppercase px-4 py-2 rounded-2xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                                                    {idx + 1} / {activeGeneration.srcs!.length}
-                                                </div>
-                                                {idx === 0 && (
-                                                    <div className="bg-indigo-500/90 backdrop-blur-3xl text-white text-[9px] font-black tracking-[0.25em] uppercase px-4 py-2 rounded-2xl shadow-[0_0_30px_rgba(99,102,241,0.4)] border border-white/30 animate-in fade-in zoom-in duration-1000">
-                                                        Primary Masterpiece
-                                                    </div>
-                                                )}
-                                            </div>
                                             <div className="absolute inset-x-0 bottom-0 p-2 sm:p-3 flex items-center justify-between gap-1 opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 transition-all duration-300 z-10 w-full overflow-hidden">
                                                 <button
                                                     onClick={(e) => {
@@ -453,9 +535,9 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            openExportPack(src, activeGeneration.type, activeGeneration.creationIds?.[idx] || activeGeneration.creationId);
+                                                            downloadZipSingle(src, activeGeneration.type);
                                                         }}
-                                                        title="Export Campaign Pack"
+                                                        title="Download Zip"
                                                         className="bg-black/70 hover:bg-black/90 text-white backdrop-blur-2xl h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-2xl border border-white/10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/ebtn"
                                                     >
                                                         <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-lime-300 group-hover/ebtn:-translate-y-[1px] transition-transform" />
@@ -480,10 +562,9 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                             );
                                                         }}
                                                         title="Publish"
-                                                        className="bg-white hover:bg-zinc-100 text-black px-2.5 sm:px-4 h-9.5 sm:h-10 rounded-lg sm:rounded-xl shadow-xl shadow-white/10 flex items-center gap-1.5 transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/pbtn"
+                                                        className="bg-white hover:bg-zinc-100 text-black h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-xl shadow-white/10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/pbtn"
                                                     >
-                                                        <Share className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover/pbtn:-translate-y-[1px] transition-transform" />
-                                                        <span className="font-bold tracking-tight text-[10px] sm:text-[11px] whitespace-nowrap">Publish</span>
+                                                        <Share className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/pbtn:-translate-y-[1px] transition-transform" />
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
@@ -495,15 +576,14 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                             );
                                                         }}
                                                         title="Publish Workflow"
-                                                        className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] px-2.5 sm:px-4 h-9.5 sm:h-10 rounded-lg sm:rounded-xl shadow-xl border border-[#c5a44e]/20 flex items-center gap-1.5 transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/tbtn"
+                                                        className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-xl border border-[#c5a44e]/20 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/tbtn"
                                                     >
-                                                        <Wand2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover/tbtn:-translate-y-[1px] transition-transform" />
-                                                        <span className="font-bold tracking-tight text-[10px] sm:text-[11px] whitespace-nowrap">Workflow</span>
+                                                        <Wand2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/tbtn:-translate-y-[1px] transition-transform" />
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            openClawHub(src, activeGeneration.creationIds?.[idx] || activeGeneration.creationId);
+                                                            void sendToClaw(src, activeGeneration.creationIds?.[idx] || activeGeneration.creationId);
                                                         }}
                                                         title="Send to Claw"
                                                         className="bg-black/70 hover:bg-black/90 text-white backdrop-blur-2xl h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-2xl border border-white/10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/cbtn"
@@ -519,13 +599,14 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                         ) : (
                             <div
                                 className={cn(
-                                    "w-full rounded-[24px] sm:rounded-[32px] relative overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col items-center justify-center shrink-0",
-                                    getAspectRatioClass(currentRatio),
+                                    "rounded-[24px] sm:rounded-[32px] relative overflow-hidden transition-[width,height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col items-center justify-center shrink-0",
                                     activeGeneration?.status === "completed"
                                         ? "shadow-[0_40px_80px_rgba(0,0,0,0.8)] border border-white/[0.05] bg-black"
                                         : "border border-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.6)] group bg-[#0a0a0c]/40 backdrop-blur-3xl"
                                 )}
-                                style={{ maxWidth: maxWidthStyle, maxHeight: "100%" }}
+                                style={frameSize
+                                    ? { width: `${frameSize.width}px`, height: `${frameSize.height}px` }
+                                    : { width: "100%", aspectRatio: currentRatio.replace(":", "/") }}
                             >
                                 {activeGeneration?.status !== "completed" && (
                                     <div className="absolute inset-0 z-0">
@@ -541,7 +622,8 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                 <div className="absolute inset-0 z-10 pointer-events-none rounded-[24px] sm:rounded-[32px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_0_40px_rgba(255,255,255,0.02)]" />
                                 <div className="absolute inset-0 z-10 transition-all duration-700 ease-out flex items-center justify-center">
                                     {!activeGeneration ? (
-                                        <div className="flex flex-col items-center gap-6 sm:gap-8 p-6 sm:p-8 max-w-2xl w-full pointer-events-auto">
+                                        <div className="absolute inset-0 overflow-y-auto flex items-start sm:items-center justify-center py-4">
+                                          <div className="flex flex-col items-center gap-4 sm:gap-5 p-4 sm:p-6 max-w-2xl w-full pointer-events-auto">
                                             <div className="flex flex-col items-center gap-3">
                                                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center">
                                                     <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white/60" />
@@ -550,7 +632,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                             </div>
 
                                             {/* Prompt suggestions */}
-                                            <div className="w-full grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2">
+                                            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                 {(mode === "video" ? VIDEO_SUGGESTIONS : IMAGE_SUGGESTIONS).map((suggestion) => (
                                                     <button
                                                         key={suggestion}
@@ -563,13 +645,28 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 ))}
                                             </div>
 
-                                            {/* Contextual tip */}
-                                            <div className="w-full flex items-start gap-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04] px-3.5 py-2.5">
-                                                <Wand2 className="w-3.5 h-3.5 text-[#c5a44e]/60 shrink-0 mt-0.5" />
-                                                <span className="text-[10px] sm:text-[11px] leading-relaxed text-zinc-500">
-                                                    {MODE_TIPS[mode] || MODE_TIPS["image"]}
-                                                </span>
-                                            </div>
+                                            {/* Describe your idea input */}
+                                            <form
+                                                onSubmit={(e) => { e.preventDefault(); submitIdea(); }}
+                                                className="w-full flex items-center gap-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] focus-within:border-[#c5a44e]/40 px-3.5 py-2.5 transition-colors"
+                                            >
+                                                <Wand2 className="w-3.5 h-3.5 text-[#c5a44e]/60 shrink-0" />
+                                                <input
+                                                    type="text"
+                                                    value={ideaInput}
+                                                    onChange={(e) => setIdeaInput(e.target.value)}
+                                                    placeholder="Describe your idea"
+                                                    className="flex-1 bg-transparent outline-none text-[11px] sm:text-[12px] text-zinc-200 placeholder:text-zinc-500"
+                                                />
+                                                {ideaInput.trim() && (
+                                                    <button
+                                                        type="submit"
+                                                        className="text-[10px] text-[#c5a44e] hover:text-[#d4b45e] font-medium tracking-wide"
+                                                    >
+                                                        USE
+                                                    </button>
+                                                )}
+                                            </form>
 
                                             {/* Keyboard shortcut hint */}
                                             <span className="text-[9px] text-zinc-700 tracking-wide">
@@ -578,6 +675,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 <kbd className="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-zinc-500 font-mono">Enter</kbd>
                                                 <span className="ml-1.5 text-zinc-600">to generate</span>
                                             </span>
+                                          </div>
                                         </div>
                                     ) : activeGeneration.status === 'completed' ? (
                                         <div className="relative w-full h-full group/image">
@@ -608,9 +706,9 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     <Wand2 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
                                                 </button>
                                                 <button
-                                                    onClick={() => openExportPack(activeGeneration.src || "", activeGeneration.type, activeGeneration.creationId)}
+                                                    onClick={() => downloadZipSingle(activeGeneration.src || "", activeGeneration.type)}
                                                     className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-2xl h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-2xl border border-white/10 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
-                                                    title="Export Campaign Pack"
+                                                    title="Download Zip"
                                                 >
                                                     <Package className="w-4 h-4 sm:w-5 sm:h-5 text-lime-300 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
                                                 </button>
@@ -630,10 +728,10 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                             taskId: activeGeneration.taskId || activeGeneration.creationId,
                                                         }
                                                     )}
-                                                    className="bg-white hover:bg-zinc-100 text-black px-4 sm:px-6 lg:px-5 h-10 sm:h-12 lg:h-11 rounded-xl sm:rounded-2xl shadow-xl shadow-white/10 flex items-center gap-1.5 sm:gap-2 pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
+                                                    title="Publish"
+                                                    className="bg-white hover:bg-zinc-100 text-black h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-xl shadow-white/10 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                 >
                                                     <Share className="w-4 h-4 sm:w-5 sm:h-5 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
-                                                    <span className="font-bold tracking-tight text-xs sm:text-sm lg:text-[13px]">Publish</span>
                                                 </button>
                                                 <button
                                                     onClick={() => handlePublishWorkflowSingle(
@@ -641,14 +739,13 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                         activeGeneration.creationId,
                                                         activeGeneration.type
                                                     )}
-                                                    className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] px-4 sm:px-6 lg:px-5 h-10 sm:h-12 lg:h-11 rounded-xl sm:rounded-2xl shadow-xl border border-[#c5a44e]/20 flex items-center gap-1.5 sm:gap-2 pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
+                                                    className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-xl border border-[#c5a44e]/20 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                     title="Publish Workflow"
                                                 >
                                                     <Wand2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
-                                                    <span className="font-bold tracking-tight text-xs sm:text-sm lg:text-[13px]">Workflow</span>
                                                 </button>
                                                 <button
-                                                    onClick={() => openClawHub(activeGeneration.src || "", activeGeneration.creationId)}
+                                                    onClick={() => void sendToClaw(activeGeneration.src || "", activeGeneration.creationId)}
                                                     className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-2xl h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-2xl border border-white/10 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                     title="Send to Claw"
                                                 >
