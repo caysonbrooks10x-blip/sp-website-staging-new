@@ -39,7 +39,7 @@ import {
     getProviderRoutingDecision,
     validateStudioExecution,
 } from "@/lib/provider-routing";
-import { validateModelParams } from "@/lib/model-capabilities";
+import { validateModelParams, MODEL_CAPABILITIES } from "@/lib/model-capabilities";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 import {
@@ -613,10 +613,28 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
     const supportsMultiOutput = imgCfg?.supportsN && imgCfg.maxN > 1;
     const isMultiOutputImage = creationMode === "image" || creationMode === "remix";
 
-    const activeModelPool = useMemo(
+    const basePool = useMemo(
         () => (creationMode === "video" || (creationMode === "remix" && remixType === "video") ? AI_VIDEO_MODELS : AI_IMAGE_MODELS),
         [creationMode, remixType]
     );
+
+    const requiresInputImage = studioMode === "image-to-image" || studioMode === "image-to-video" || studioMode === "remix";
+
+    const activeModelPool = useMemo(() => {
+        if (studioMode === "image-to-image" || studioMode === "image-to-video") {
+            return basePool.filter((m) => MODEL_CAPABILITIES[m.id]?.requiresReferenceImage === true);
+        }
+        if (studioMode === "text-to-image" || studioMode === "text-to-video") {
+            return basePool.filter((m) => MODEL_CAPABILITIES[m.id]?.requiresReferenceImage !== true);
+        }
+        return basePool;
+    }, [basePool, studioMode]);
+
+    useEffect(() => {
+        if (activeModelPool.length === 0) return;
+        const stillValid = activeModelPool.some((m) => m.id === selectedModel.id);
+        if (!stillValid) setSelectedModel(activeModelPool[0]);
+    }, [activeModelPool, selectedModel.id]);
 
     const showImageUpload = isImageMode ? imgCfg!.supportsReferenceImage : (isVideoMode ? vidCfg!.supportsReferenceImage : false);
     const showVideoUpload = isVideoMode && vidCfg?.supportsReferenceVideo;
@@ -1202,10 +1220,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 )}
                 <Button
                     onClick={handleGenerate}
-                    disabled={isGenerating || !prompt}
+                    disabled={isGenerating || !prompt || (requiresInputImage && !sourceFile && !startImageFile && !previewUrl)}
+                    title={requiresInputImage && !sourceFile && !startImageFile && !previewUrl ? "Attach a source image to continue" : undefined}
                     className={cn(
                         "flex-1 h-[52px] rounded-xl text-[13px] font-bold tracking-[0.1em] uppercase transition-all duration-300 group relative overflow-hidden",
-                        isGenerating || !prompt
+                        (isGenerating || !prompt || (requiresInputImage && !sourceFile && !startImageFile && !previewUrl))
                             ? "bg-[#111] text-zinc-600 cursor-not-allowed border border-[#222]"
                             : "btn-gold hover:shadow-[0_0_20px_rgba(197,164,78,0.3)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                     )}
