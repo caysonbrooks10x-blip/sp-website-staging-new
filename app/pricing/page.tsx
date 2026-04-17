@@ -5,6 +5,8 @@ import { PricingHero } from "@/components/pricing-hero"
 import { PricingCard } from "@/components/pricing-card"
 import { PricingFaq } from "@/components/pricing-faq"
 import { PaymentMethods } from "@/components/payment-methods"
+import { PricingTopUp } from "@/components/pricing-topup"
+import { ThemeBackdrop } from "@/components/theme-backdrop"
 import type { PricingPlan } from "@/lib/types"
 
 const pricingPlans: PricingPlan[] = [
@@ -102,13 +104,7 @@ export default function PricingPage() {
 
   return (
     <main className="relative min-h-screen bg-black text-white overflow-x-hidden selection:bg-cyan-500/30">
-      {}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        {}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.08)_0%,transparent_70%)]" />
-        {}
-        <div className="absolute top-[40%] right-0 w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(6,182,212,0.04)_0%,transparent_70%)]" />
-      </div>
+      <ThemeBackdrop />
 
       <div className="relative z-10">
         {}
@@ -129,6 +125,9 @@ export default function PricingPage() {
             </div>
           </div>
         </section>
+
+        {}
+        <PricingTopUp />
 
         {}
         <PaymentMethods />

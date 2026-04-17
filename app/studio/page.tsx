@@ -2,6 +2,7 @@
 
 import { useState, Suspense, useEffect, useRef } from "react";
 import { ProtectedRoute } from "@/components/protected-route";
+import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { StudioLeftPanel } from "@/components/studio/left-panel";
 import { StudioCenterCanvas, type GenerationItem } from "@/components/studio/center-canvas";
 import { Loader2, Sparkles, Settings2, X } from "lucide-react";
@@ -113,7 +114,7 @@ function extensionFromBlob(blob: Blob, fallback = "png") {
 export default function StudioPage() {
   return (
     <ProtectedRoute>
-      <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="w-6 h-6 text-[#c5a44e] animate-spin" /></div>}>
+      <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="w-6 h-6 text-[#06b6d4] animate-spin" /></div>}>
         <StudioLayout />
       </Suspense>
     </ProtectedRoute>
@@ -1000,15 +1001,16 @@ function StudioLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-zinc-100 font-sans relative selection:bg-[#c5a44e]/40 overflow-hidden">
+    <div className="min-h-screen bg-black text-zinc-100 font-sans relative selection:bg-cyan-500/30 overflow-hidden">
+      <ThemeBackdrop />
 
       {/* Billing Alert Modal */}
       {showBillingAlert && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xl px-4">
-          <div className="relative rounded-2xl overflow-hidden max-w-[380px] w-full shadow-2xl transform animate-in zoom-in-95 duration-200 border border-[#c5a44e]/20 bg-[#111]">
+          <div className="relative rounded-2xl overflow-hidden max-w-[380px] w-full shadow-2xl transform animate-in zoom-in-95 duration-200 border border-[#06b6d4]/20 bg-[#111]">
             <div className="relative z-10 py-10 px-8 text-center flex flex-col items-center">
-              <div className="w-12 h-12 bg-[#c5a44e]/10 rounded-full flex items-center justify-center mb-6 border border-[#c5a44e]/20">
-                <Sparkles className="w-5 h-5 text-[#c5a44e]" />
+              <div className="w-12 h-12 bg-[#06b6d4]/10 rounded-full flex items-center justify-center mb-6 border border-[#06b6d4]/20">
+                <Sparkles className="w-5 h-5 text-[#06b6d4]" />
               </div>
 
               <h2 className="text-xl font-medium text-white mb-2">Out of Credits</h2>
@@ -1072,17 +1074,18 @@ function StudioLayout() {
           height: `calc(100dvh - ${studioShellTopOffset})`,
         }}
       >
-        {/* Top Bar */}
-        <div className="h-10 border-b border-[#1a1a1a] flex items-center px-6 shrink-0 bg-[#0a0a0a]">
-          <h1 className="text-xs font-semibold text-zinc-400 capitalize tracking-wide">
+        {/* Top Bar — glass */}
+        <div className="relative h-14 flex items-center justify-center px-6 shrink-0 bg-black/20 backdrop-blur-xl overflow-hidden">
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[140px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.22)_0%,transparent_70%)] blur-2xl" aria-hidden />
+          <h1 className="relative studio-display text-xl md:text-2xl italic text-white capitalize tracking-tight drop-shadow-[0_0_20px_rgba(6,182,212,0.35)]">
             {studioMode.replace(/-/g, " ")}
           </h1>
         </div>
 
         {/* Two-column content */}
-        <div className="flex h-[calc(100%-40px)] overflow-hidden flex-col lg:flex-row">
+        <div className="flex h-[calc(100%-56px)] overflow-hidden flex-col lg:flex-row relative">
           {/* Left: Generation Form */}
-          <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-[52dvh] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r border-[#1a1a1a]">
+          <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-[52dvh] lg:h-full flex flex-col">
             <div className="flex-1 min-h-0">
               <StudioLeftPanel
                 onGenerate={(prompt, settings) => {

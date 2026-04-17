@@ -186,8 +186,8 @@ function ScheduleContent() {
 
 function StatPill({ label, value, tone }: { label: string; value: number; tone: "emerald" | "amber" | "zinc" }) {
   const toneClass = {
-    emerald: "border-emerald-500/15 bg-emerald-950/35 text-emerald-100/90 ring-emerald-400/10",
-    amber: "border-amber-500/15 bg-amber-950/35 text-amber-100/90 ring-amber-400/10",
+    emerald: "border-cyan-500/15 bg-cyan-950/35 text-cyan-100/90 ring-cyan-400/10",
+    amber: "border-sky-500/15 bg-sky-950/35 text-sky-100/90 ring-sky-400/10",
     zinc: "border-white/[0.08] bg-black/30 text-zinc-300 ring-white/[0.05]",
   }[tone];
 
@@ -235,8 +235,8 @@ function JobCard({ job, staggerIndex }: { job: ScheduledJob; staggerIndex: numbe
         className={cn(
           "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ring-1 ring-inset ring-white/[0.04]",
           isActive
-            ? "border-emerald-500/20 bg-emerald-950/35 text-emerald-200/90"
-            : "border-amber-500/20 bg-amber-950/35 text-amber-200/90"
+            ? "border-cyan-500/20 bg-cyan-950/35 text-cyan-200/90"
+            : "border-sky-500/20 bg-sky-950/35 text-sky-200/90"
         )}
       >
         <Icon className="h-[18px] w-[18px]" />
@@ -269,8 +269,8 @@ function JobCard({ job, staggerIndex }: { job: ScheduledJob; staggerIndex: numbe
           className={cn(
             "border-0 capitalize shadow-none",
             isActive
-              ? "bg-emerald-950/50 text-emerald-100 ring-1 ring-inset ring-emerald-400/15"
-              : "bg-amber-950/45 text-amber-100 ring-1 ring-inset ring-amber-400/15"
+              ? "bg-cyan-950/50 text-cyan-100 ring-1 ring-inset ring-cyan-400/15"
+              : "bg-sky-950/45 text-sky-100 ring-1 ring-inset ring-sky-400/15"
           )}
         >
           {isActive ? <CheckCircle2 className="mr-1 h-3 w-3" /> : <PauseCircle className="mr-1 h-3 w-3" />}

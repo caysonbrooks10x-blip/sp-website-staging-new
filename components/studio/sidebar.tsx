@@ -95,7 +95,7 @@ export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onT
           onClick={() => onModeChange("text-to-image")}
           className={cn(
             "w-full flex items-center justify-center gap-2 py-2 rounded-lg border transition-all duration-200",
-            "border-[#c5a44e]/40 bg-[#c5a44e]/10 text-[#c5a44e] hover:bg-[#c5a44e]/20 hover:border-[#c5a44e]/60",
+            "border-[#06b6d4]/40 bg-[#06b6d4]/10 text-[#06b6d4] hover:bg-[#06b6d4]/20 hover:border-[#06b6d4]/60",
             collapsed && "px-0"
           )}
         >
@@ -125,7 +125,7 @@ export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onT
                       "flex items-center rounded-md transition-all duration-200 relative group w-full",
                       collapsed ? "justify-center px-2 py-2 mx-1" : "gap-2.5 px-3 py-1.5 mx-1",
                       isActive
-                        ? "text-[#c5a44e] bg-[#c5a44e]/10 border-l-2 border-[#c5a44e]"
+                        ? "text-[#06b6d4] bg-[#06b6d4]/10 border-l-2 border-[#06b6d4]"
                         : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border-l-2 border-transparent"
                     )}
                     title={collapsed ? item.label : undefined}
@@ -155,7 +155,7 @@ export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onT
                   "flex items-center rounded-md transition-all duration-200 relative group",
                   collapsed ? "justify-center px-2 py-2 mx-1" : "gap-2.5 px-3 py-1.5 mx-1",
                   isActive
-                    ? "text-[#c5a44e] bg-[#c5a44e]/10"
+                    ? "text-[#06b6d4] bg-[#06b6d4]/10"
                     : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
                 )}
                 title={collapsed ? link.label : undefined}
@@ -173,11 +173,11 @@ export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onT
         {!collapsed ? (
           <Link
             href="/pricing"
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#c5a44e]/10 border border-[#c5a44e]/20 hover:bg-[#c5a44e]/20 transition-all group"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#06b6d4]/10 border border-[#06b6d4]/20 hover:bg-[#06b6d4]/20 transition-all group"
           >
-            <Sparkles className="w-4 h-4 text-[#c5a44e]" />
+            <Sparkles className="w-4 h-4 text-[#06b6d4]" />
             <div className="flex flex-col">
-              <span className="text-xs font-semibold text-[#c5a44e]">
+              <span className="text-xs font-semibold text-[#06b6d4]">
                 {credits !== null ? credits.toLocaleString() : "..."} Credits
               </span>
               <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400">Upgrade Now</span>
@@ -186,10 +186,10 @@ export function StudioSidebar({ activeMode, onModeChange, collapsed = false, onT
         ) : (
           <Link
             href="/pricing"
-            className="flex items-center justify-center p-2 rounded-lg bg-[#c5a44e]/10 border border-[#c5a44e]/20 hover:bg-[#c5a44e]/20 transition-all"
+            className="flex items-center justify-center p-2 rounded-lg bg-[#06b6d4]/10 border border-[#06b6d4]/20 hover:bg-[#06b6d4]/20 transition-all"
             title={`${credits ?? "..."} Credits`}
           >
-            <Sparkles className="w-4 h-4 text-[#c5a44e]" />
+            <Sparkles className="w-4 h-4 text-[#06b6d4]" />
           </Link>
         )}
       </div>

@@ -424,6 +424,11 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
 
     return (
         <div className="w-full h-full flex flex-col items-center p-0 md:p-4 relative">
+            {/* Canvas cyan gradient backdrop — matches pricing theme */}
+            <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.10)_0%,transparent_70%)]" />
+                <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(6,182,212,0.05)_0%,transparent_70%)]" />
+            </div>
             {clawToast ? (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] pointer-events-auto">
                     <div
@@ -576,7 +581,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                             );
                                                         }}
                                                         title="Publish Workflow"
-                                                        className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-xl border border-[#c5a44e]/20 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/tbtn"
+                                                        className="bg-[#06b6d4]/10 hover:bg-[#06b6d4]/15 text-[#f1ddb1] h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-xl border border-[#06b6d4]/20 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/tbtn"
                                                     >
                                                         <Wand2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/tbtn:-translate-y-[1px] transition-transform" />
                                                     </button>
@@ -602,7 +607,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                     "rounded-[24px] sm:rounded-[32px] relative overflow-hidden transition-[width,height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col items-center justify-center shrink-0",
                                     activeGeneration?.status === "completed"
                                         ? "shadow-[0_40px_80px_rgba(0,0,0,0.8)] border border-white/[0.05] bg-black"
-                                        : "border border-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.6)] group bg-[#0a0a0c]/40 backdrop-blur-3xl"
+                                        : "border border-cyan-400/10 shadow-[0_20px_60px_rgba(6,182,212,0.15)] group bg-transparent backdrop-blur-3xl"
                                 )}
                                 style={frameSize
                                     ? { width: `${frameSize.width}px`, height: `${frameSize.height}px` }
@@ -610,13 +615,10 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                             >
                                 {activeGeneration?.status !== "completed" && (
                                     <div className="absolute inset-0 z-0">
-                                        <div
-                                            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[40s] ease-linear group-hover:scale-110 scale-100 opacity-60 mix-blend-screen"
-                                            style={{ backgroundImage: `url('${ASSET_BASE}/studio/studio1.jpeg')` }}
-                                        />
-                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
-                                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.03)_0%,transparent_100%)] mix-blend-overlay" />
+                                        <div className="absolute inset-0 bg-gradient-to-br from-[#0b1e2a] via-[#050a14] to-[#0a1620]" />
+                                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(6,182,212,0.18)_0%,transparent_60%)]" />
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(34,211,238,0.12)_0%,transparent_55%)]" />
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(255,255,255,0.04)_0%,transparent_50%)]" />
                                     </div>
                                 )}
                                 <div className="absolute inset-0 z-10 pointer-events-none rounded-[24px] sm:rounded-[32px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_0_40px_rgba(255,255,255,0.02)]" />
@@ -628,7 +630,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center">
                                                     <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white/60" />
                                                 </div>
-                                                <span className="text-[11px] sm:text-sm font-semibold text-white/40 tracking-wide">What will you create?</span>
+                                                <span className="studio-display text-lg sm:text-xl italic text-white/70 tracking-tight">What will you create?</span>
                                             </div>
 
                                             {/* Prompt suggestions */}
@@ -648,9 +650,9 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                             {/* Describe your idea input */}
                                             <form
                                                 onSubmit={(e) => { e.preventDefault(); submitIdea(); }}
-                                                className="w-full flex items-center gap-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] focus-within:border-[#c5a44e]/40 px-3.5 py-2.5 transition-colors"
+                                                className="w-full flex items-center gap-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] focus-within:border-[#06b6d4]/40 px-3.5 py-2.5 transition-colors"
                                             >
-                                                <Wand2 className="w-3.5 h-3.5 text-[#c5a44e]/60 shrink-0" />
+                                                <Wand2 className="w-3.5 h-3.5 text-[#06b6d4]/60 shrink-0" />
                                                 <input
                                                     type="text"
                                                     value={ideaInput}
@@ -661,7 +663,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 {ideaInput.trim() && (
                                                     <button
                                                         type="submit"
-                                                        className="text-[10px] text-[#c5a44e] hover:text-[#d4b45e] font-medium tracking-wide"
+                                                        className="text-[10px] text-[#06b6d4] hover:text-[#d4b45e] font-medium tracking-wide"
                                                     >
                                                         USE
                                                     </button>
@@ -739,7 +741,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                         activeGeneration.creationId,
                                                         activeGeneration.type
                                                     )}
-                                                    className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-xl border border-[#c5a44e]/20 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
+                                                    className="bg-[#06b6d4]/10 hover:bg-[#06b6d4]/15 text-[#f1ddb1] h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-xl border border-[#06b6d4]/20 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                     title="Publish Workflow"
                                                 >
                                                     <Wand2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />

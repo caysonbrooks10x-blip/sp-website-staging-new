@@ -179,10 +179,18 @@
 
 /* Gold theme - Studio redesign */
 .glass-card-gold {
-  background: linear-gradient(145deg, rgba(20, 20, 20, 0.95), rgba(12, 12, 12, 0.98));
-  border: 1px solid rgba(197, 164, 78, 0.12);
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(145deg, rgba(12, 16, 22, 0.72), rgba(6, 10, 16, 0.82));
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid transparent;
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Studio premium display font — used for headings/labels in /studio */
+.studio-display {
+  font-family: var(--font-serif), Georgia, serif;
+  letter-spacing: -0.01em;
 }
 
 .pill-option {
@@ -198,13 +206,13 @@
 }
 
 .pill-option-active {
-  background: rgba(197, 164, 78, 0.15) !important;
-  border-color: rgba(197, 164, 78, 0.4) !important;
-  color: #c5a44e;
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  color: #06b6d4;
 }
 
 .btn-gold {
-  background: linear-gradient(135deg, #c5a44e, #a8893d);
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
   color: #0a0a0a;
   font-weight: 600;
   border: none;
@@ -212,29 +220,50 @@
 }
 
 .btn-gold:hover {
-  background: linear-gradient(135deg, #d4b35d, #b8994d);
-  box-shadow: 0 0 20px rgba(197, 164, 78, 0.3);
+  background: linear-gradient(135deg, #22d3ee, #0891b2);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
 }
 
 .input-gold-focus:focus {
-  border-color: rgba(197, 164, 78, 0.4);
-  box-shadow: 0 0 0 2px rgba(197, 164, 78, 0.1);
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.1);
   outline: none;
 }
 
+/* Invisible by default; fades in only while hovering/scrolling. */
+.studio-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 .studio-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 0px;
+  background: transparent;
+}
+
+.studio-scrollbar:hover,
+.studio-scrollbar:focus-within {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.25) transparent;
+}
+
+.studio-scrollbar:hover::-webkit-scrollbar,
+.studio-scrollbar:focus-within::-webkit-scrollbar {
+  width: 4px;
+}
+
+.studio-scrollbar:hover::-webkit-scrollbar-thumb,
+.studio-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.35), rgba(6, 182, 212, 0.15));
+  border-radius: 999px;
 }
 
 .studio-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.studio-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(197, 164, 78, 0.2);
-  border-radius: 3px;
-}
-
-.studio-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(197, 164, 78, 0.35);
+/* Subtle fade gradients at the top/bottom of a scroll region to hint overflow without a visible bar */
+.studio-scroll-fade {
+  mask-image: linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
 }
