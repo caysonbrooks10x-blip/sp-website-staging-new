@@ -424,6 +424,11 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
 
     return (
         <div className="w-full h-full flex flex-col items-center p-0 md:p-4 relative">
+            {/* Canvas cyan gradient backdrop — matches pricing theme */}
+            <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.10)_0%,transparent_70%)]" />
+                <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(6,182,212,0.05)_0%,transparent_70%)]" />
+            </div>
             {clawToast ? (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] pointer-events-auto">
                     <div
@@ -628,7 +633,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center">
                                                     <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white/60" />
                                                 </div>
-                                                <span className="text-[11px] sm:text-sm font-semibold text-white/40 tracking-wide">What will you create?</span>
+                                                <span className="studio-display text-lg sm:text-xl italic text-white/70 tracking-tight">What will you create?</span>
                                             </div>
 
                                             {/* Prompt suggestions */}
