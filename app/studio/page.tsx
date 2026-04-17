@@ -1077,18 +1077,9 @@ function StudioLayout() {
         {/* Top Bar — glass */}
         <div className="relative h-14 flex items-center justify-center px-6 shrink-0 bg-black/20 backdrop-blur-xl overflow-hidden">
           <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[140px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.22)_0%,transparent_70%)] blur-2xl" aria-hidden />
-          <div className="relative flex items-center gap-3">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400/60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.8)]" />
-            </span>
-            <h1 className="studio-display text-xl md:text-2xl italic text-white capitalize tracking-tight drop-shadow-[0_0_20px_rgba(6,182,212,0.35)]">
-              {studioMode.replace(/-/g, " ")}
-            </h1>
-            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-200/90 bg-cyan-400/10 border border-cyan-400/25 backdrop-blur-sm">
-              Mode
-            </span>
-          </div>
+          <h1 className="relative studio-display text-xl md:text-2xl italic text-white capitalize tracking-tight drop-shadow-[0_0_20px_rgba(6,182,212,0.35)]">
+            {studioMode.replace(/-/g, " ")}
+          </h1>
         </div>
 
         {/* Two-column content */}
