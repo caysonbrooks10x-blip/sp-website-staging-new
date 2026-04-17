@@ -65,9 +65,20 @@ function buildErrorFromResponse(response: Response, data: any): ApiMartRequestEr
       ? data.code
       : undefined
 
+  const nestedErrorMessage =
+    data &&
+    typeof data === "object" &&
+    data.error &&
+    typeof data.error === "object" &&
+    typeof data.error.message === "string" &&
+    data.error.message
+      ? (data.error.type ? `${data.error.message} [${data.error.type}]` : data.error.message)
+      : undefined
+
   const errorMessage =
     (data && typeof data === "object" && "message" in data && typeof data.message === "string" && data.message) ||
     (data && typeof data === "object" && "error" in data && typeof data.error === "string" && data.error) ||
+    nestedErrorMessage ||
     `ApiMart request failed with ${status}`
 
   return new ApiMartRequestError(errorMessage, {
@@ -156,8 +167,8 @@ export async function apimartRequest<T>({
         throw new Error("ApiMart request failed")
       }
 
-      const baseDelay = 450 * Math.pow(2, attempt)
-      await sleep(jitter(Math.min(baseDelay, 5_000)))
+      const baseDelay = 1_000 * Math.pow(2, attempt)
+      await sleep(jitter(Math.min(baseDelay, 15_000)))
     }
   }
 
@@ -242,6 +253,7 @@ export async function submitApiMartImageGeneration(body: Record<string, unknown>
     method: "POST",
     path: "/images/generations",
     body,
+    retries: 4,
   })
 }
 
@@ -250,6 +262,7 @@ export async function submitApiMartVideoGeneration(body: Record<string, unknown>
     method: "POST",
     path: "/videos/generations",
     body,
+    retries: 4,
   })
 }
 
@@ -266,5 +279,6 @@ export async function remixApiMartVideo(videoId: string, body: Record<string, un
     method: "POST",
     path: `/videos/${videoId}/remix`,
     body,
+    retries: 4,
   })
 }
