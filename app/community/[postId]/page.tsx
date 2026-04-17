@@ -501,7 +501,7 @@ export default function PostDetailPage() {
                     <div className="mb-8 rounded-2xl bg-[#111113] border border-white/5 overflow-hidden">
                         {}
                         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/5">
-                            <Info className="h-4 w-4 text-emerald-400" />
+                            <Info className="h-4 w-4 text-cyan-400" />
                             <span className="text-xs font-semibold uppercase tracking-wider text-zinc-300">Information</span>
                         </div>
 
@@ -599,7 +599,7 @@ export default function PostDetailPage() {
                                                 className={cn(
                                                     "rounded-full border px-3 py-2 text-xs transition-colors",
                                                     node.id === post.id
-                                                        ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
+                                                        ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
                                                         : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20"
                                                 )}
                                             >
@@ -757,7 +757,7 @@ export default function PostDetailPage() {
                                                         </div>
                                                         <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
                                                             <div
-                                                                className="h-full rounded-full bg-gradient-to-r from-indigo-400/90 via-lime-300/80 to-cyan-300/90"
+                                                                className="h-full rounded-full bg-gradient-to-r from-indigo-400/90 via-cyan-300/80 to-cyan-300/90"
                                                                 style={{ width: `${widthPercent}%` }}
                                                             />
                                                         </div>
@@ -778,7 +778,7 @@ export default function PostDetailPage() {
                                                     className={cn(
                                                         "block rounded-xl border px-3 py-2 transition-colors",
                                                         event.postId === post.id
-                                                            ? "border-lime-300/30 bg-lime-300/10"
+                                                            ? "border-cyan-300/30 bg-cyan-300/10"
                                                             : "border-white/5 bg-white/[0.02] hover:border-white/15"
                                                     )}
                                                 >
@@ -828,7 +828,7 @@ export default function PostDetailPage() {
                         </Button>
                         <Button
                             variant="outline"
-                            className="w-full h-12 rounded-xl border-lime-300/30 bg-lime-300/10 hover:bg-lime-300/20 text-lime-100 text-sm"
+                            className="w-full h-12 rounded-xl border-cyan-300/30 bg-cyan-300/10 hover:bg-cyan-300/20 text-cyan-100 text-sm"
                             onClick={() => {
                                 if (!user) {
                                     router.push(`/login?redirect=${encodeURIComponent(directorRemixTarget)}`)

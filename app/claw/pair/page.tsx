@@ -176,7 +176,7 @@ function PairContent() {
                   "flex items-start gap-3 rounded-2xl border-white/[0.05] px-4 py-3 text-xs leading-relaxed text-zinc-500"
                 )}
               >
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400/80" />
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400/80" />
                 Code expires in 10 minutes and is tied to your account.
               </div>
             </div>
@@ -191,8 +191,8 @@ function PairContent() {
 
           {step === "success" && (
             <div className="flex flex-col items-center gap-5 py-4">
-              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl border border-emerald-400/20 bg-emerald-950/40 ring-1 ring-inset ring-emerald-400/10">
-                <CheckCircle2 className="h-9 w-9 text-emerald-300/90" />
+              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl border border-cyan-400/20 bg-cyan-950/40 ring-1 ring-inset ring-cyan-400/10">
+                <CheckCircle2 className="h-9 w-9 text-cyan-300/90" />
               </div>
               <div className="text-center">
                 <p className="text-xl font-semibold text-white">Account linked</p>
@@ -233,8 +233,8 @@ function PairContent() {
 
           {step === "relink" && (
             <div className="flex flex-col items-center gap-5 py-4">
-              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl border border-emerald-400/20 bg-emerald-950/40 ring-1 ring-inset ring-emerald-400/10">
-                <ShieldCheck className="h-9 w-9 text-emerald-300/90" />
+              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl border border-cyan-400/20 bg-cyan-950/40 ring-1 ring-inset ring-cyan-400/10">
+                <ShieldCheck className="h-9 w-9 text-cyan-300/90" />
               </div>
               <div className="text-center">
                 <p className="text-xl font-semibold text-white">Already linked</p>

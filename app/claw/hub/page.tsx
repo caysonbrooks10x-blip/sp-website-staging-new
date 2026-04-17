@@ -69,11 +69,11 @@ const WORKFLOW_SECTION_META: Record<
   },
   commerce: {
     badge: "Commerce",
-    badgeGlass: "border-emerald-400/30 bg-emerald-950/85 text-emerald-100",
+    badgeGlass: "border-cyan-400/30 bg-cyan-950/85 text-cyan-100",
   },
   motion: {
     badge: "Motion",
-    badgeGlass: "border-amber-400/30 bg-amber-950/85 text-amber-100",
+    badgeGlass: "border-sky-400/30 bg-sky-950/85 text-sky-100",
   },
 };
 
@@ -107,11 +107,11 @@ const formatRelativeTime = (value?: string) => {
 
 const statusTone = (status: string) => {
   if (status === "completed" || status === "active")
-    return "border-emerald-400/25 bg-emerald-950/50 text-emerald-100/95 ring-1 ring-inset ring-emerald-400/10";
+    return "border-cyan-400/25 bg-cyan-950/50 text-cyan-100/95 ring-1 ring-inset ring-cyan-400/10";
   if (status === "failed" || status === "cancelled" || status === "permanently_failed")
     return "border-rose-400/25 bg-rose-950/45 text-rose-100/95 ring-1 ring-inset ring-rose-400/10";
   if (status === "paused")
-    return "border-amber-400/25 bg-amber-950/45 text-amber-100/95 ring-1 ring-inset ring-amber-400/10";
+    return "border-sky-400/25 bg-sky-950/45 text-sky-100/95 ring-1 ring-inset ring-sky-400/10";
   return "border-cyan-400/20 bg-cyan-950/40 text-cyan-100/90 ring-1 ring-inset ring-cyan-400/10";
 };
 
@@ -463,7 +463,7 @@ export default function ClawHubPage() {
                     className={cn(
                       "shrink-0 border-0 text-[11px] font-medium capitalize",
                       isLinked
-                        ? "bg-emerald-950/55 text-emerald-100 ring-1 ring-inset ring-emerald-400/15"
+                        ? "bg-cyan-950/55 text-cyan-100 ring-1 ring-inset ring-cyan-400/15"
                         : "bg-zinc-900/90 text-zinc-400 ring-1 ring-inset ring-white/[0.08]"
                     )}
                   >
@@ -775,21 +775,21 @@ function StatusChip({
   href?: string;
 }) {
   const toneClass = {
-    emerald: "border-emerald-500/15 bg-emerald-950/30",
+    emerald: "border-cyan-500/15 bg-cyan-950/30",
     teal: "border-cyan-500/15 bg-cyan-950/30",
-    amber: "border-amber-500/15 bg-amber-950/30",
+    amber: "border-sky-500/15 bg-sky-950/30",
     zinc: "border-white/[0.07] bg-zinc-950/40",
   }[tone];
   const iconTone = {
-    emerald: "text-emerald-300/90",
+    emerald: "text-cyan-300/90",
     teal: "text-cyan-300/90",
-    amber: "text-amber-300/90",
+    amber: "text-sky-300/90",
     zinc: "text-zinc-500",
   }[tone];
   const accentBar = {
-    emerald: "bg-emerald-400/60",
+    emerald: "bg-cyan-400/60",
     teal: "bg-cyan-400/60",
-    amber: "bg-amber-400/60",
+    amber: "bg-sky-400/60",
     zinc: "bg-zinc-500/50",
   }[tone];
 
@@ -823,8 +823,8 @@ function StatusChip({
 
 function MiniStat({ label, value, tone }: { label: string; value: number; tone: "emerald" | "amber" | "teal" | "rose" }) {
   const toneClass = {
-    emerald: "border-emerald-500/12 bg-emerald-950/35 text-emerald-100/90",
-    amber: "border-amber-500/12 bg-amber-950/35 text-amber-100/90",
+    emerald: "border-cyan-500/12 bg-cyan-950/35 text-cyan-100/90",
+    amber: "border-sky-500/12 bg-sky-950/35 text-sky-100/90",
     teal: "border-cyan-500/12 bg-cyan-950/35 text-cyan-100/90",
     rose: "border-rose-500/12 bg-rose-950/35 text-rose-100/90",
   }[tone];
@@ -848,16 +848,16 @@ const SECTION_THEME: Record<
     wash: "from-cyan-500/[0.07] to-transparent",
   },
   emerald: {
-    bar: "from-emerald-400/90 via-emerald-500/40 to-transparent",
-    icon: "border-emerald-400/30 bg-emerald-950/50 text-emerald-100 shadow-[0_0_20px_-6px_rgba(52,211,153,0.3)]",
-    badge: "border-emerald-400/20 bg-emerald-950/55 text-emerald-100 ring-emerald-400/15",
-    wash: "from-emerald-500/[0.07] to-transparent",
+    bar: "from-cyan-400/90 via-cyan-500/40 to-transparent",
+    icon: "border-cyan-400/30 bg-cyan-950/50 text-cyan-100 shadow-[0_0_20px_-6px_rgba(6,182,212,0.3)]",
+    badge: "border-cyan-400/20 bg-cyan-950/55 text-cyan-100 ring-cyan-400/15",
+    wash: "from-cyan-500/[0.07] to-transparent",
   },
   amber: {
-    bar: "from-amber-400/90 via-amber-500/40 to-transparent",
-    icon: "border-amber-400/30 bg-amber-950/50 text-amber-100 shadow-[0_0_20px_-6px_rgba(251,191,36,0.28)]",
-    badge: "border-amber-400/20 bg-amber-950/55 text-amber-100 ring-amber-400/15",
-    wash: "from-amber-500/[0.07] to-transparent",
+    bar: "from-sky-400/90 via-sky-500/40 to-transparent",
+    icon: "border-sky-400/30 bg-sky-950/50 text-sky-100 shadow-[0_0_20px_-6px_rgba(56,189,248,0.28)]",
+    badge: "border-sky-400/20 bg-sky-950/55 text-sky-100 ring-sky-400/15",
+    wash: "from-sky-500/[0.07] to-transparent",
   },
 };
 
@@ -935,7 +935,7 @@ function WorkflowCard({
   const backdrop = WORKFLOW_BACKDROP_MAP[workflow.id] || `${ASSET_BASE}/capabilities/capabilities3.png`;
   const mediaBadge =
     workflow.mediaType === "video"
-      ? "border-amber-400/35 bg-amber-950/90 text-amber-50"
+      ? "border-sky-400/35 bg-sky-950/90 text-sky-50"
       : "border-cyan-400/35 bg-cyan-950/90 text-cyan-50";
 
   return (

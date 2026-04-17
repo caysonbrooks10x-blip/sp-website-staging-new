@@ -364,7 +364,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
               className="w-full flex items-center justify-between px-4 py-3 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-2">
-                <Info className="h-3.5 w-3.5 text-emerald-400" />
+                <Info className="h-3.5 w-3.5 text-cyan-400" />
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Information</span>
               </div>
               {showInfo ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
