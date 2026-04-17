@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 /** Page shell — avoid `overflow-hidden` so Lenis/body scroll isn’t fighting layout. */
 export const clawPageBgClass =
-  "relative min-h-screen overflow-x-hidden bg-[#060708] font-sans text-zinc-100 antialiased";
+  "relative min-h-screen overflow-x-hidden bg-black font-sans text-zinc-100 antialiased selection:bg-cyan-500/30";
 
 /** Primary surface — solid glass (no heavy backdrop-blur = smoother scroll). */
 export const clawCardClass =

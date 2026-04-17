@@ -2,6 +2,7 @@
 
 import { useState, Suspense, useEffect, useRef } from "react";
 import { ProtectedRoute } from "@/components/protected-route";
+import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { StudioLeftPanel } from "@/components/studio/left-panel";
 import { StudioCenterCanvas, type GenerationItem } from "@/components/studio/center-canvas";
 import { Loader2, Sparkles, Settings2, X } from "lucide-react";
@@ -1000,7 +1001,8 @@ function StudioLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-zinc-100 font-sans relative selection:bg-[#c5a44e]/40 overflow-hidden">
+    <div className="min-h-screen bg-black text-zinc-100 font-sans relative selection:bg-cyan-500/30 overflow-hidden">
+      <ThemeBackdrop />
 
       {/* Billing Alert Modal */}
       {showBillingAlert && (

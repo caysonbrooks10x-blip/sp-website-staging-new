@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/context/auth-context"
 import { useRouter, useSearchParams } from "next/navigation"
+import { ThemeBackdrop } from "@/components/theme-backdrop"
 
 function CommunityContent() {
   const headerRef = useRef<HTMLDivElement>(null)
@@ -79,7 +80,8 @@ function CommunityContent() {
   }, [searchParams])
 
   return (
-    <main ref={headerRef} className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30 overflow-x-hidden">
+    <main ref={headerRef} className="relative min-h-screen bg-black text-white selection:bg-cyan-500/30 overflow-x-hidden">
+      <ThemeBackdrop />
 
       {}
       <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />

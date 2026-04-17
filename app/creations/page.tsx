@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { LayoutGrid, Loader2 } from "lucide-react"
 import { gsap } from "gsap"
 import { ProtectedRoute } from "@/components/protected-route"
+import { ThemeBackdrop } from "@/components/theme-backdrop"
 import { CreationCard } from "@/components/profile/creation-card"
 import { useAuth } from "@/context/auth-context"
 import { httpsCallable } from "firebase/functions"
@@ -104,10 +105,11 @@ function CreationsContent() {
   }, [loading, creations])
 
   return (
-    <main className="min-h-screen bg-[#050505] text-zinc-100">
+    <main className="relative min-h-screen bg-black text-zinc-100 selection:bg-cyan-500/30">
+      <ThemeBackdrop />
 
       {}
-      <section className="relative border-b border-white/5 bg-[#050505] overflow-hidden">
+      <section className="relative border-b border-white/5 overflow-hidden">
         {}
         <div className="absolute top-0 left-0 w-full h-[300px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/10 via-[#050505] to-[#050505] pointer-events-none" />
 
