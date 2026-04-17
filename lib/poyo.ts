@@ -76,9 +76,22 @@ function buildErrorFromResponse(response: Response, data: any): PoyoRequestError
       ? data.code
       : undefined
 
+  const nestedErrorMessage =
+    data &&
+    typeof data === "object" &&
+    data.error &&
+    typeof data.error === "object" &&
+    typeof data.error.message === "string" &&
+    data.error.message
+      ? data.error.type
+        ? `${data.error.message} [${data.error.type}]`
+        : data.error.message
+      : undefined
+
   const errorMessage =
     (data && typeof data === "object" && "message" in data && typeof data.message === "string" && data.message) ||
     (data && typeof data === "object" && "error" in data && typeof data.error === "string" && data.error) ||
+    nestedErrorMessage ||
     `Poyo request failed with ${status}`
 
   return new PoyoRequestError(errorMessage, {
@@ -135,6 +148,18 @@ export async function poyoRequest<T>({
       const data = parseBody(text)
 
       if (!response.ok) throw buildErrorFromResponse(response, data)
+      // Poyo sometimes returns HTTP 200 with body-level { code: 4xx, error: {...} }.
+      // Treat any numeric body-level code >= 400 as a real failure so it surfaces
+      // through the executor's retry/fallback logic instead of being masked.
+      if (
+        data &&
+        typeof data === "object" &&
+        typeof (data as any).code === "number" &&
+        (data as any).code >= 400
+      ) {
+        const bodyStatus = (data as any).code as number
+        throw buildErrorFromResponse({ ...response, status: bodyStatus } as any, data)
+      }
       return data as T
     } catch (error: unknown) {
       const timedOut = error instanceof Error && error.name === "AbortError"
@@ -209,10 +234,13 @@ export interface PoyoSubmitInput {
 }
 
 export async function submitPoyoGeneration(body: PoyoSubmitInput) {
+  // Poyo's UnifiedSubmitRequest uses `input` (singular); our internal
+  // PoyoSubmitInput exposes `inputs` for readability. Translate on the wire.
+  const { model, inputs, callback_url, idempotency_key } = body
   return poyoRequest<PoyoSubmitResponse>({
     method: "POST",
     path: "/api/generate/submit",
-    body,
+    body: { model, input: inputs, callback_url, idempotency_key },
   })
 }
 
