@@ -140,7 +140,7 @@ function CommunityContent() {
                       applySearch()
                     }
                   }}
-                  className="pl-12 h-14 bg-white/[0.03] border-white/5 rounded-full text-base text-white placeholder:text-neutral-600 focus:bg-white/[0.08] focus:border-white/10 transition-all duration-300 shadow-xl"
+                  className="pl-12 h-14 bg-white/[0.03] border-white/5 rounded-full text-base text-white placeholder:text-neutral-600 focus:bg-cyan-400/[0.05] focus:border-cyan-400/30 focus:shadow-[0_0_24px_rgba(6,182,212,0.15)] transition-all duration-300 shadow-xl"
                 />
               </div>
               <Button
@@ -161,13 +161,13 @@ function CommunityContent() {
 
             <div
               className={cn(
-                "overflow-hidden rounded-[28px] border border-white/8 bg-white/[0.02] p-4 transition-all duration-300 ease-out",
-                isFiltersVisible ? "max-h-64 opacity-100" : "max-h-0 border-transparent p-0 opacity-0 lg:max-h-64 lg:border-white/8 lg:p-4 lg:opacity-100"
+                "overflow-hidden rounded-[28px] border border-cyan-400/10 bg-gradient-to-br from-cyan-500/[0.04] via-white/[0.02] to-transparent p-4 shadow-[0_0_40px_rgba(6,182,212,0.06)] backdrop-blur-xl transition-all duration-300 ease-out",
+                isFiltersVisible ? "max-h-64 opacity-100" : "max-h-0 border-transparent p-0 opacity-0 lg:max-h-64 lg:border-cyan-400/10 lg:p-4 lg:opacity-100"
               )}
             >
               <div className="mb-3 flex items-center gap-3">
-                <div className="h-px w-8 bg-white/10" />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
+                <div className="h-px w-8 bg-cyan-400/40" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
                   Browse Categories
                 </span>
               </div>
@@ -181,8 +181,8 @@ function CommunityContent() {
                       className={cn(
                         "rounded-full border px-4 py-2 text-xs font-semibold tracking-wide transition-colors",
                         isActive
-                          ? "border-lime-300/40 bg-lime-300/10 text-lime-100"
-                          : "border-white/10 bg-white/[0.03] text-zinc-400 hover:border-white/20 hover:text-white"
+                          ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-100 shadow-[0_0_16px_rgba(6,182,212,0.2)]"
+                          : "border-white/10 bg-white/[0.03] text-zinc-400 hover:border-cyan-400/25 hover:text-white"
                       )}
                     >
                       {item.label}

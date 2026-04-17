@@ -65,7 +65,7 @@ const WORKFLOW_SECTION_META: Record<
 > = {
   core: {
     badge: "Core",
-    badgeGlass: "border-teal-400/30 bg-teal-950/85 text-teal-100",
+    badgeGlass: "border-cyan-400/30 bg-cyan-950/85 text-cyan-100",
   },
   commerce: {
     badge: "Commerce",
@@ -112,7 +112,7 @@ const statusTone = (status: string) => {
     return "border-rose-400/25 bg-rose-950/45 text-rose-100/95 ring-1 ring-inset ring-rose-400/10";
   if (status === "paused")
     return "border-amber-400/25 bg-amber-950/45 text-amber-100/95 ring-1 ring-inset ring-amber-400/10";
-  return "border-teal-400/20 bg-teal-950/40 text-teal-100/90 ring-1 ring-inset ring-teal-400/10";
+  return "border-cyan-400/20 bg-cyan-950/40 text-cyan-100/90 ring-1 ring-inset ring-cyan-400/10";
 };
 
 /* ─── page ─── */
@@ -274,7 +274,7 @@ export default function ClawHubPage() {
               </Button>
               <Button
                 asChild
-                className="h-11 rounded-xl border border-teal-400/30 bg-gradient-to-b from-teal-400 to-teal-600 px-6 text-sm font-semibold text-teal-950 shadow-lg shadow-teal-950/20 transition duration-300 hover:brightness-110"
+                className="h-11 rounded-xl border border-cyan-400/30 bg-gradient-to-b from-cyan-400 to-cyan-600 px-6 text-sm font-semibold text-cyan-950 shadow-lg shadow-cyan-950/20 transition duration-300 hover:brightness-110"
               >
                 <a href={telegramBotUrl} target="_blank" rel="noreferrer">
                   <Bot className="mr-2 h-4 w-4" />
@@ -388,12 +388,12 @@ export default function ClawHubPage() {
               onClick={() => setTelegramDialogConfig(item.dialog)}
               className={cn(
                 clawCardClass,
-                "group relative flex flex-col gap-3 p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-500/25 hover:shadow-[0_20px_56px_-22px_rgba(0,0,0,0.55),0_0_0_1px_rgba(45,212,191,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/40"
+                "group relative flex flex-col gap-3 p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-500/25 hover:shadow-[0_20px_56px_-22px_rgba(0,0,0,0.55),0_0_0_1px_rgba(6,182,212,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
               )}
             >
               <div className="flex items-center justify-between">
                 <span className="text-2xl">{item.icon}</span>
-                <ArrowUpRight className="h-3.5 w-3.5 text-zinc-600 transition-all duration-300 group-hover:text-teal-300" />
+                <ArrowUpRight className="h-3.5 w-3.5 text-zinc-600 transition-all duration-300 group-hover:text-cyan-300" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">{item.label}</p>
@@ -450,7 +450,7 @@ export default function ClawHubPage() {
               <div className="border-b border-white/[0.06] pb-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Telegram</p>
                 <div className="mt-3 flex items-center gap-3.5">
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-teal-400/20 bg-teal-950/45 text-teal-200 ring-1 ring-inset ring-white/[0.05]">
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-950/45 text-cyan-200 ring-1 ring-inset ring-white/[0.05]">
                     <Bot className="h-[18px] w-[18px]" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -474,7 +474,7 @@ export default function ClawHubPage() {
               <div className="mt-5 flex gap-2.5">
                 <Button
                   asChild
-                  className="h-10 flex-1 rounded-xl border border-teal-400/25 bg-gradient-to-b from-teal-400 to-teal-600 text-xs font-semibold text-teal-950 shadow-md transition duration-300 hover:brightness-110"
+                  className="h-10 flex-1 rounded-xl border border-cyan-400/25 bg-gradient-to-b from-cyan-400 to-cyan-600 text-xs font-semibold text-cyan-950 shadow-md transition duration-300 hover:brightness-110"
                 >
                   <a href={telegramBotUrl} target="_blank" rel="noreferrer">
                     Open bot
@@ -496,7 +496,7 @@ export default function ClawHubPage() {
           <div className="relative rounded-[1.65rem] border border-white/[0.08] bg-gradient-to-b from-zinc-900/55 via-zinc-950/35 to-zinc-950/20 p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/[0.05] md:p-9">
           <div className="flex flex-col gap-8 border-b border-white/[0.06] pb-10 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-teal-400/70">Library</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-400/70">Library</p>
               <h2 className="mt-2 bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-3xl font-semibold tracking-tight text-transparent md:text-4xl">
                 Workflows
               </h2>
@@ -540,7 +540,7 @@ export default function ClawHubPage() {
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search workflows…"
-                    className="h-11 w-full min-w-[200px] rounded-xl border-white/[0.08] bg-black/40 pl-10 text-sm text-zinc-100 placeholder:text-zinc-600 ring-1 ring-inset ring-white/[0.05] transition focus-visible:ring-teal-500/30 sm:w-[260px]"
+                    className="h-11 w-full min-w-[200px] rounded-xl border-white/[0.08] bg-black/40 pl-10 text-sm text-zinc-100 placeholder:text-zinc-600 ring-1 ring-inset ring-white/[0.05] transition focus-visible:ring-cyan-500/30 sm:w-[260px]"
                   />
                 </div>
               </div>
@@ -776,19 +776,19 @@ function StatusChip({
 }) {
   const toneClass = {
     emerald: "border-emerald-500/15 bg-emerald-950/30",
-    teal: "border-teal-500/15 bg-teal-950/30",
+    teal: "border-cyan-500/15 bg-cyan-950/30",
     amber: "border-amber-500/15 bg-amber-950/30",
     zinc: "border-white/[0.07] bg-zinc-950/40",
   }[tone];
   const iconTone = {
     emerald: "text-emerald-300/90",
-    teal: "text-teal-300/90",
+    teal: "text-cyan-300/90",
     amber: "text-amber-300/90",
     zinc: "text-zinc-500",
   }[tone];
   const accentBar = {
     emerald: "bg-emerald-400/60",
-    teal: "bg-teal-400/60",
+    teal: "bg-cyan-400/60",
     amber: "bg-amber-400/60",
     zinc: "bg-zinc-500/50",
   }[tone];
@@ -812,7 +812,7 @@ function StatusChip({
   return href ? (
     <Link
       href={href}
-      className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#060708]"
+      className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#060708]"
     >
       {inner}
     </Link>
@@ -825,7 +825,7 @@ function MiniStat({ label, value, tone }: { label: string; value: number; tone: 
   const toneClass = {
     emerald: "border-emerald-500/12 bg-emerald-950/35 text-emerald-100/90",
     amber: "border-amber-500/12 bg-amber-950/35 text-amber-100/90",
-    teal: "border-teal-500/12 bg-teal-950/35 text-teal-100/90",
+    teal: "border-cyan-500/12 bg-cyan-950/35 text-cyan-100/90",
     rose: "border-rose-500/12 bg-rose-950/35 text-rose-100/90",
   }[tone];
 
@@ -842,10 +842,10 @@ const SECTION_THEME: Record<
   { bar: string; icon: string; badge: string; wash: string }
 > = {
   teal: {
-    bar: "from-teal-400/90 via-teal-500/40 to-transparent",
-    icon: "border-teal-400/30 bg-teal-950/50 text-teal-100 shadow-[0_0_20px_-6px_rgba(45,212,191,0.35)]",
-    badge: "border-teal-400/20 bg-teal-950/55 text-teal-100 ring-teal-400/15",
-    wash: "from-teal-500/[0.07] to-transparent",
+    bar: "from-cyan-400/90 via-cyan-500/40 to-transparent",
+    icon: "border-cyan-400/30 bg-cyan-950/50 text-cyan-100 shadow-[0_0_20px_-6px_rgba(6,182,212,0.35)]",
+    badge: "border-cyan-400/20 bg-cyan-950/55 text-cyan-100 ring-cyan-400/15",
+    wash: "from-cyan-500/[0.07] to-transparent",
   },
   emerald: {
     bar: "from-emerald-400/90 via-emerald-500/40 to-transparent",
@@ -936,7 +936,7 @@ function WorkflowCard({
   const mediaBadge =
     workflow.mediaType === "video"
       ? "border-amber-400/35 bg-amber-950/90 text-amber-50"
-      : "border-teal-400/35 bg-teal-950/90 text-teal-50";
+      : "border-cyan-400/35 bg-cyan-950/90 text-cyan-50";
 
   return (
     <article
@@ -1019,7 +1019,7 @@ function WorkflowCard({
                 actionLabel: "Send to Telegram",
               })
             }
-            className="h-10 w-full rounded-xl border-white/[0.14] bg-black/50 text-xs font-semibold tracking-wide text-zinc-100 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition duration-300 hover:border-teal-500/30 hover:bg-teal-950/30"
+            className="h-10 w-full rounded-xl border-white/[0.14] bg-black/50 text-xs font-semibold tracking-wide text-zinc-100 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition duration-300 hover:border-cyan-500/30 hover:bg-cyan-950/30"
           >
             <span className="inline-flex w-full items-center justify-center gap-2">
               Telegram
