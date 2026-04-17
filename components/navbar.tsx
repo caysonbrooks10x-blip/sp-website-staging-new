@@ -215,11 +215,11 @@ export function Navbar() {
               {isClawLinked ? "Claw Linked" : "Link Claw"}
             </Link>
             {}
-            <div className="flex items-center gap-2 pl-1 pr-2 sm:pr-3 py-1 rounded-full bg-zinc-900/80 border border-white/10 shadow-lg backdrop-blur-md min-w-0">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-2 pl-1 pr-2 sm:pr-3 py-1 rounded-full bg-zinc-900/80 border border-cyan-400/20 shadow-[0_0_20px_rgba(6,182,212,0.15)] backdrop-blur-md min-w-0">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 to-sky-500 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.5)]">
                 <Sparkles className="w-3 h-3 text-white fill-white" />
               </div>
-              <span className="text-xs font-semibold text-zinc-100 tabular-nums tracking-wide">{balance}</span>
+              <span className="text-xs font-semibold bg-gradient-to-r from-cyan-200 to-white bg-clip-text text-transparent tabular-nums tracking-wide">{balance}</span>
             </div>
 
             {}
