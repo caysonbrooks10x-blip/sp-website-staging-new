@@ -180,7 +180,7 @@
 /* Gold theme - Studio redesign */
 .glass-card-gold {
   background: linear-gradient(145deg, rgba(20, 20, 20, 0.95), rgba(12, 12, 12, 0.98));
-  border: 1px solid rgba(197, 164, 78, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.12);
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
@@ -198,13 +198,13 @@
 }
 
 .pill-option-active {
-  background: rgba(197, 164, 78, 0.15) !important;
-  border-color: rgba(197, 164, 78, 0.4) !important;
-  color: #c5a44e;
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  color: #06b6d4;
 }
 
 .btn-gold {
-  background: linear-gradient(135deg, #c5a44e, #a8893d);
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
   color: #0a0a0a;
   font-weight: 600;
   border: none;
@@ -212,13 +212,13 @@
 }
 
 .btn-gold:hover {
-  background: linear-gradient(135deg, #d4b35d, #b8994d);
-  box-shadow: 0 0 20px rgba(197, 164, 78, 0.3);
+  background: linear-gradient(135deg, #22d3ee, #0891b2);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
 }
 
 .input-gold-focus:focus {
-  border-color: rgba(197, 164, 78, 0.4);
-  box-shadow: 0 0 0 2px rgba(197, 164, 78, 0.1);
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.1);
   outline: none;
 }
 
@@ -231,10 +231,10 @@
 }
 
 .studio-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(197, 164, 78, 0.2);
+  background: rgba(6, 182, 212, 0.2);
   border-radius: 3px;
 }
 
 .studio-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(197, 164, 78, 0.35);
+  background: rgba(6, 182, 212, 0.35);
 }

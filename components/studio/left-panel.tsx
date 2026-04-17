@@ -761,12 +761,12 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                         <div className="w-full h-11 px-3 bg-[#111] hover:bg-[#161616] rounded-lg border border-[#222] hover:border-[#333] transition-all duration-200 cursor-pointer flex items-center justify-between group">
                                             <div className="flex flex-1 items-center justify-between">
                                                 <div className="flex items-center gap-2.5 min-w-0">
-                                                    <div className="w-6 h-6 rounded-md bg-[#c5a44e]/10 border border-[#c5a44e]/20 flex items-center justify-center shrink-0">
-                                                        {creationMode === 'video' ? <Video className="w-3.5 h-3.5 text-[#c5a44e]" /> : <Sparkles className="w-3.5 h-3.5 text-[#c5a44e]" />}
+                                                    <div className="w-6 h-6 rounded-md bg-[#06b6d4]/10 border border-[#06b6d4]/20 flex items-center justify-center shrink-0">
+                                                        {creationMode === 'video' ? <Video className="w-3.5 h-3.5 text-[#06b6d4]" /> : <Sparkles className="w-3.5 h-3.5 text-[#06b6d4]" />}
                                                     </div>
                                                     <span className="text-sm font-medium text-zinc-200 truncate">{selectedModel.name}</span>
                                                     {selectedModel.isNew && (
-                                                        <span className="text-[10px] bg-[#c5a44e] text-black px-1.5 py-0.5 rounded font-bold">NEW</span>
+                                                        <span className="text-[10px] bg-[#06b6d4] text-black px-1.5 py-0.5 rounded font-bold">NEW</span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-4">
@@ -799,7 +799,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                         >
                                                             <div className="min-w-0">
                                                                 <div className="flex items-center gap-2.5">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 group-hover:bg-[#c5a44e] transition-colors" />
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 group-hover:bg-[#06b6d4] transition-colors" />
                                                                     <span className={cn("text-[13px] font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors truncate")}>{model.name}</span>
                                                                 </div>
                                                                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -808,7 +808,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                                             ~{modelCredits} cr
                                                                         </span>
                                                                     )}
-                                                                    {model.isNew && <span className="bg-[#c5a44e]/10 text-[#c5a44e] text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border border-[#c5a44e]/20">New</span>}
+                                                                    {model.isNew && <span className="bg-[#06b6d4]/10 text-[#06b6d4] text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border border-[#06b6d4]/20">New</span>}
                                                                 </div>
                                                             </div>
                                                         </DropdownMenuItem>
@@ -820,7 +820,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 </DropdownMenu>
                                 {currentTaskCredits > 0 && (
                                     <div className="px-1 flex flex-wrap items-center gap-2">
-                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#c5a44e]/30 bg-[#c5a44e]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c5a44e]">
+                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#06b6d4]/30 bg-[#06b6d4]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#06b6d4]">
                                             Est. task credits: {currentTaskCredits}
                                         </span>
                                         {balanceReady && (
@@ -836,7 +836,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                         {balanceReady && currentTaskCredits > creditBalance && (
                                             <Link
                                                 href="/pricing#top-up"
-                                                className="inline-flex items-center gap-1.5 rounded-full border border-[#c5a44e]/40 bg-[#c5a44e]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#c5a44e] hover:bg-[#c5a44e]/25"
+                                                className="inline-flex items-center gap-1.5 rounded-full border border-[#06b6d4]/40 bg-[#06b6d4]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#06b6d4] hover:bg-[#06b6d4]/25"
                                             >
                                                 Top up →
                                             </Link>
@@ -857,7 +857,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                         </button>
                                     )}
                                 </label>
-                                <div className="bg-[#111] rounded-xl border border-[#222] focus-within:border-[#c5a44e]/40 focus-within:shadow-[0_0_0_2px_rgba(197,164,78,0.1)] transition-all duration-300 overflow-hidden flex flex-col group relative">
+                                <div className="bg-[#111] rounded-xl border border-[#222] focus-within:border-[#06b6d4]/40 focus-within:shadow-[0_0_0_2px_rgba(6,182,212,0.1)] transition-all duration-300 overflow-hidden flex flex-col group relative">
                                     <Textarea
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
@@ -883,7 +883,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                     
                                                     {}
                                                     {sourceFile && (
-                                                        <div className="absolute inset-0 bg-[#c5a44e]/20 backdrop-blur-[2px] flex items-center justify-center animate-pulse">
+                                                        <div className="absolute inset-0 bg-[#06b6d4]/20 backdrop-blur-[2px] flex items-center justify-center animate-pulse">
                                                             <Sparkles className="w-5 h-5 text-white" />
                                                         </div>
                                                     )}
@@ -901,7 +901,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                         <span className="bg-red-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg shadow-lg">Remove</span>
                                                     </button>
                                                 </div>
-                                                <div className="absolute -bottom-2 -right-2 bg-[#c5a44e] text-black p-1.5 rounded-full shadow-lg border border-[#c5a44e]/40 z-10">
+                                                <div className="absolute -bottom-2 -right-2 bg-[#06b6d4] text-black p-1.5 rounded-full shadow-lg border border-[#06b6d4]/40 z-10">
                                                     <Wand2 className="w-3 h-3" />
                                                 </div>
                                             </div>
@@ -935,7 +935,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             className={cn(
                                                 "py-3 rounded-[12px] text-[12px] font-semibold transition-all duration-300 border flex items-center justify-center",
                                                 aspectRatio === ratio
-                                                    ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40"
+                                                    ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40"
                                                     : "bg-white/[0.02] text-zinc-500 border-[#222] hover:bg-white/[0.04] hover:text-zinc-300 hover:border-[#333]"
                                             )}
                                         >
@@ -960,12 +960,12 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                     {Array.from({ length: maxN }, (_, i) => i + 1).map(n => {
                                                         const isDisabled = !supportsMultiOutput && n > 1;
                                                         return (
-                                                            <button key={n} disabled={isDisabled} onClick={() => setImageCount(n)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", imageCount === n ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : isDisabled ? "bg-white/[0.01] text-zinc-700 border-white/[0.02] cursor-not-allowed" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>{n}</button>
+                                                            <button key={n} disabled={isDisabled} onClick={() => setImageCount(n)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", imageCount === n ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : isDisabled ? "bg-white/[0.01] text-zinc-700 border-white/[0.02] cursor-not-allowed" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>{n}</button>
                                                         );
                                                     })}
                                                 </div>
                                             ) : (
-                                                <input type="range" min="1" max={maxN} value={imageCount} onChange={(e) => setImageCount(parseInt(e.target.value))} className="w-full h-1.5 bg-black/50 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ background: `linear-gradient(to right, #c5a44e ${((imageCount - 1) / (maxN - 1)) * 100}%, rgba(0,0,0,0.5) ${((imageCount - 1) / (maxN - 1)) * 100}%)` }} />
+                                                <input type="range" min="1" max={maxN} value={imageCount} onChange={(e) => setImageCount(parseInt(e.target.value))} className="w-full h-1.5 bg-black/50 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ background: `linear-gradient(to right, #06b6d4 ${((imageCount - 1) / (maxN - 1)) * 100}%, rgba(0,0,0,0.5) ${((imageCount - 1) / (maxN - 1)) * 100}%)` }} />
                                             )}
                                         </div>
                                     )}
@@ -975,7 +975,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Quality (Resolution)</span>
                                             <div className="flex gap-2">
                                                 {resOptions.map(r => (
-                                                    <button key={r.value} onClick={() => setResolution(r.value)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", resolution === r.value ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
+                                                    <button key={r.value} onClick={() => setResolution(r.value)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border", resolution === r.value ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {r.label}
                                                     </button>
                                                 ))}
@@ -988,7 +988,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Output Format</span>
                                             <div className="flex gap-2">
                                                 {imgCfg.outputFormatOptions.map(fmt => (
-                                                    <button key={fmt} onClick={() => setOutputFormat(fmt)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border uppercase", outputFormat === fmt ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
+                                                    <button key={fmt} onClick={() => setOutputFormat(fmt)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border uppercase", outputFormat === fmt ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {fmt}
                                                     </button>
                                                 ))}
@@ -1000,11 +1000,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                         <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-3 hover:border-[#333] transition-colors">
                                             <span className="text-[11px] font-semibold text-zinc-400">Duration {vidCfg?.durationRange && <span className="text-zinc-600">({duration}s)</span>}</span>
                                             {vidCfg?.durationRange ? (
-                                                <input type="range" min={vidCfg.durationRange.min} max={vidCfg.durationRange.max} value={duration} onChange={(e) => setDuration(parseInt(e.target.value))} className="w-full h-1.5 bg-black/50 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ background: `linear-gradient(to right, #c5a44e ${((duration - vidCfg.durationRange.min) / (vidCfg.durationRange.max - vidCfg.durationRange.min)) * 100}%, rgba(0,0,0,0.5) ${((duration - vidCfg.durationRange.min) / (vidCfg.durationRange.max - vidCfg.durationRange.min)) * 100}%)` }} />
+                                                <input type="range" min={vidCfg.durationRange.min} max={vidCfg.durationRange.max} value={duration} onChange={(e) => setDuration(parseInt(e.target.value))} className="w-full h-1.5 bg-black/50 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ background: `linear-gradient(to right, #06b6d4 ${((duration - vidCfg.durationRange.min) / (vidCfg.durationRange.max - vidCfg.durationRange.min)) * 100}%, rgba(0,0,0,0.5) ${((duration - vidCfg.durationRange.min) / (vidCfg.durationRange.max - vidCfg.durationRange.min)) * 100}%)` }} />
                                             ) : (
                                                 <div className="flex gap-1.5 flex-wrap">
                                                     {durationButtons.map(d => (
-                                                        <button key={d.value} disabled={d.disabled} onClick={() => setDuration(d.value)} className={cn("px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all border", duration === d.value ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : d.disabled ? "bg-white/[0.01] text-zinc-700 border-white/[0.02] cursor-not-allowed opacity-40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
+                                                        <button key={d.value} disabled={d.disabled} onClick={() => setDuration(d.value)} className={cn("px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all border", duration === d.value ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : d.disabled ? "bg-white/[0.01] text-zinc-700 border-white/[0.02] cursor-not-allowed opacity-40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                             {d.label}
                                                         </button>
                                                     ))}
@@ -1018,7 +1018,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Style</span>
                                             <div className="flex gap-1.5 flex-wrap">
                                                 {vidCfg.styleOptions.map(s => (
-                                                    <button key={s} onClick={() => setVideoStyle(s)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", videoStyle === s ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
+                                                    <button key={s} onClick={() => setVideoStyle(s)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", videoStyle === s ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {s}
                                                     </button>
                                                 ))}
@@ -1031,7 +1031,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Camera Movement</span>
                                             <div className="flex gap-1.5 flex-wrap">
                                                 {(isHailuo23Model(selectedModel.id) ? HAILUO_23_CAMERA_LABELS : CINEMA_CAMERA_MOVES).map(movement => (
-                                                    <button key={movement} onClick={() => setCameraMovement(movement)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", cameraMovement === movement ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
+                                                    <button key={movement} onClick={() => setCameraMovement(movement)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", cameraMovement === movement ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {movement}
                                                     </button>
                                                 ))}
@@ -1044,7 +1044,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Effect Preset</span>
                                             <div className="flex gap-1.5 flex-wrap">
                                                 {WAN_EFFECT_PRESETS.map(effect => (
-                                                    <button key={effect} onClick={() => setEffectPreset(effect)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", effectPreset === effect ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
+                                                    <button key={effect} onClick={() => setEffectPreset(effect)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", effectPreset === effect ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {effect}
                                                     </button>
                                                 ))}
@@ -1057,7 +1057,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Mode</span>
                                             <div className="flex gap-2">
                                                 {vidCfg.modeOptions.map(m => (
-                                                    <button key={m} onClick={() => setVideoMode(m)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border capitalize", videoMode === m ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
+                                                    <button key={m} onClick={() => setVideoMode(m)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border capitalize", videoMode === m ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {m}
                                                     </button>
                                                 ))}
@@ -1070,7 +1070,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Character Orientation</span>
                                             <div className="flex gap-2">
                                                 {vidCfg.characterOrientationOptions.map(o => (
-                                                    <button key={o} onClick={() => setCharacterOrientation(o)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border capitalize", characterOrientation === o ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
+                                                    <button key={o} onClick={() => setCharacterOrientation(o)} className={cn("flex-1 h-11 rounded-xl text-[12px] font-bold transition-all border capitalize", characterOrientation === o ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {o}
                                                     </button>
                                                 ))}
@@ -1084,7 +1084,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Character Lock</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">Preserve subject identity, wardrobe, and silhouette continuity.</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", characterLock ? "bg-[#c5a44e]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", characterLock ? "bg-[#06b6d4]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", characterLock ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
@@ -1096,7 +1096,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Audio Synthesis</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">{multiShots ? "Required for multi-shots" : "Generate matching soundscape"}</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", soundEnabled ? "bg-[#c5a44e]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", soundEnabled ? "bg-[#06b6d4]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", soundEnabled ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
@@ -1108,7 +1108,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Multi-Shots</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">Dynamic camera cuts & shifts</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", multiShots ? "bg-[#c5a44e]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", multiShots ? "bg-[#06b6d4]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", multiShots ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
@@ -1120,7 +1120,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Fixed Lens</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">Maintain consistent focal length</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", fixedLens ? "bg-[#c5a44e]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", fixedLens ? "bg-[#06b6d4]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", fixedLens ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
@@ -1132,7 +1132,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Audio Synthesis</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">AI generated foley & sound</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", generateAudio ? "bg-[#c5a44e]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", generateAudio ? "bg-[#06b6d4]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", generateAudio ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
@@ -1143,7 +1143,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Audio Direction</span>
                                             <div className="flex gap-1.5 flex-wrap">
                                                 {AUDIO_DIRECTION_PRESETS.map(direction => (
-                                                    <button key={direction} onClick={() => setAudioDirection(direction)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", audioDirection === direction ? "bg-[#c5a44e]/15 text-[#c5a44e] border-[#c5a44e]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
+                                                    <button key={direction} onClick={() => setAudioDirection(direction)} className={cn("px-3 py-2 rounded-xl text-[11px] font-bold transition-all border capitalize", audioDirection === direction ? "bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4]/40" : "bg-white/[0.02] text-zinc-500 border-[#222] hover:text-zinc-300 hover:bg-white/[0.04] hover:border-[#333]")}>
                                                         {direction}
                                                     </button>
                                                 ))}
@@ -1157,7 +1157,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Storyboard</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">Enable storyboard mode</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", storyboard ? "bg-[#c5a44e]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", storyboard ? "bg-[#06b6d4]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", storyboard ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
@@ -1169,7 +1169,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                 <span className="text-[11px] font-bold text-zinc-300 group-hover/item:text-white transition-colors">Prompt Optimizer</span>
                                                 <span className="text-[9px] text-zinc-600 font-medium">Auto-enhance vision description</span>
                                             </div>
-                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", promptOptimizer ? "bg-[#c5a44e]" : "bg-zinc-800")}>
+                                            <div className={cn("w-10 h-5.5 rounded-full transition-all duration-500 relative", promptOptimizer ? "bg-[#06b6d4]" : "bg-zinc-800")}>
                                                 <div className={cn("absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-xl", promptOptimizer ? "left-[19px] scale-110" : "left-[3px] scale-90")} />
                                             </div>
                                         </div>
@@ -1178,7 +1178,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                     {showNegativePrompt && (
                                         <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Negative Prompt</span>
-                                            <Textarea value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)} placeholder="Elements to avoid..." className="resize-none min-h-[60px] bg-[#0e0e0e] border border-[#222] text-white placeholder:text-zinc-700 focus-visible:ring-0 focus:border-[#c5a44e]/40 px-4 py-3 text-[13px] font-medium rounded-xl" />
+                                            <Textarea value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)} placeholder="Elements to avoid..." className="resize-none min-h-[60px] bg-[#0e0e0e] border border-[#222] text-white placeholder:text-zinc-700 focus-visible:ring-0 focus:border-[#06b6d4]/40 px-4 py-3 text-[13px] font-medium rounded-xl" />
                                         </div>
                                     )}
 
@@ -1186,10 +1186,10 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                         <div className="flex flex-col gap-3 bg-[#111] border border-[#222] rounded-xl p-4 group/strength">
                                             <div className="flex items-center justify-between px-1">
                                                 <div className="flex flex-col gap-0.5">
-                                                    <span className="text-[10px] font-black text-[#c5a44e] uppercase tracking-[0.15em]">Remix Strength</span>
+                                                    <span className="text-[10px] font-black text-[#06b6d4] uppercase tracking-[0.15em]">Remix Strength</span>
                                                     <span className="text-[9px] text-zinc-600 font-bold italic tracking-wide">Creative deviation vs preservation</span>
                                                 </div>
-                                                <span className="text-[13px] font-black tabular-nums text-white bg-white/5 px-2.5 py-1 rounded-lg border border-[#222] group-hover/strength:border-[#c5a44e]/30 transition-all duration-500">{remixStrength}%</span>
+                                                <span className="text-[13px] font-black tabular-nums text-white bg-white/5 px-2.5 py-1 rounded-lg border border-[#222] group-hover/strength:border-[#06b6d4]/30 transition-all duration-500">{remixStrength}%</span>
                                             </div>
                                             <Slider
                                                 value={[remixStrength]}
@@ -1216,7 +1216,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                     <button onClick={() => { setSourceVideo(null); setSourceVideoPreview(""); if (videoInputRef.current) videoInputRef.current.value = ""; }} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><span className="bg-red-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg">Remove</span></button>
                                                 </div>
                                             ) : (
-                                                <button onClick={() => videoInputRef.current?.click()} className="w-full h-16 rounded-xl border border-dashed border-[#333] hover:border-[#c5a44e]/40 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
+                                                <button onClick={() => videoInputRef.current?.click()} className="w-full h-16 rounded-xl border border-dashed border-[#333] hover:border-[#06b6d4]/40 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
                                                     <Upload className="w-4 h-4" /><span className="text-[11px] font-bold uppercase tracking-wider">Upload Video</span>
                                                 </button>
                                             )}
@@ -1233,7 +1233,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                     <button onClick={() => { setStartImageFile(null); setStartImagePreview(""); if (startImageRef.current) startImageRef.current.value = ""; }} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><X className="w-4 h-4 text-white" /></button>
                                                 </div>
                                             ) : (
-                                                <button onClick={() => startImageRef.current?.click()} className="w-full h-14 rounded-xl border border-dashed border-[#333] hover:border-[#c5a44e]/40 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
+                                                <button onClick={() => startImageRef.current?.click()} className="w-full h-14 rounded-xl border border-dashed border-[#333] hover:border-[#06b6d4]/40 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
                                                     <Upload className="w-3.5 h-3.5" /><span className="text-[10px] font-bold uppercase tracking-wider">Upload Start Frame</span>
                                                 </button>
                                             )}
@@ -1250,7 +1250,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                                     <button onClick={() => { setEndImageFile(null); setEndImagePreview(""); if (endImageRef.current) endImageRef.current.value = ""; }} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><X className="w-4 h-4 text-white" /></button>
                                                 </div>
                                             ) : (
-                                                <button onClick={() => endImageRef.current?.click()} className="w-full h-14 rounded-xl border border-dashed border-[#333] hover:border-[#c5a44e]/40 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
+                                                <button onClick={() => endImageRef.current?.click()} className="w-full h-14 rounded-xl border border-dashed border-[#333] hover:border-[#06b6d4]/40 flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition-all">
                                                     <Upload className="w-3.5 h-3.5" /><span className="text-[10px] font-bold uppercase tracking-wider">Upload End Frame</span>
                                                 </button>
                                             )}
@@ -1283,14 +1283,14 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                         "flex-1 h-[52px] rounded-xl text-[13px] font-bold tracking-[0.1em] uppercase transition-all duration-300 group relative overflow-hidden",
                         (isGenerating || !prompt || (requiresInputImage && !sourceFile && !startImageFile && !previewUrl))
                             ? "bg-[#111] text-zinc-600 cursor-not-allowed border border-[#222]"
-                            : "btn-gold hover:shadow-[0_0_20px_rgba(197,164,78,0.3)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+                            : "btn-gold hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                     )}
                 >
                     {isGenerating ? (
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#c5a44e]/10 rounded-full border border-[#c5a44e]/20 animate-pulse">
-                                <Loader2 className="w-3.5 h-3.5 text-[#c5a44e] animate-spin" />
-                                <span className="text-[10px] font-black text-[#c5a44e] uppercase tracking-widest">Generating</span>
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#06b6d4]/10 rounded-full border border-[#06b6d4]/20 animate-pulse">
+                                <Loader2 className="w-3.5 h-3.5 text-[#06b6d4] animate-spin" />
+                                <span className="text-[10px] font-black text-[#06b6d4] uppercase tracking-widest">Generating</span>
                             </div>
                         </div>
                     ) : (
@@ -1304,11 +1304,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
         </div>
         {showInsufficient && (
             <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowInsufficient(false)}>
-                <div className="relative w-full max-w-sm mx-4 rounded-2xl border border-[#c5a44e]/30 bg-[#0a0a0a] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.9)]" onClick={(e) => e.stopPropagation()}>
+                <div className="relative w-full max-w-sm mx-4 rounded-2xl border border-[#06b6d4]/30 bg-[#0a0a0a] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.9)]" onClick={(e) => e.stopPropagation()}>
                     <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-red-400">Insufficient credits</div>
                     <h3 className="text-xl font-semibold text-zinc-100">Not enough credits to generate</h3>
                     <p className="mt-2 text-sm text-zinc-400">
-                        This task costs <span className="text-[#c5a44e] font-semibold">{currentTaskCredits} credits</span>, but your balance is <span className="text-red-400 font-semibold">{creditBalance}</span>.
+                        This task costs <span className="text-[#06b6d4] font-semibold">{currentTaskCredits} credits</span>, but your balance is <span className="text-red-400 font-semibold">{creditBalance}</span>.
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
                         Buy a top-up or upgrade your plan to continue.

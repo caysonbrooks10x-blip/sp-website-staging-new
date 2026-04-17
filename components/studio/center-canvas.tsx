@@ -576,7 +576,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                             );
                                                         }}
                                                         title="Publish Workflow"
-                                                        className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-xl border border-[#c5a44e]/20 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/tbtn"
+                                                        className="bg-[#06b6d4]/10 hover:bg-[#06b6d4]/15 text-[#f1ddb1] h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-xl border border-[#06b6d4]/20 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/tbtn"
                                                     >
                                                         <Wand2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/tbtn:-translate-y-[1px] transition-transform" />
                                                     </button>
@@ -648,9 +648,9 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                             {/* Describe your idea input */}
                                             <form
                                                 onSubmit={(e) => { e.preventDefault(); submitIdea(); }}
-                                                className="w-full flex items-center gap-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] focus-within:border-[#c5a44e]/40 px-3.5 py-2.5 transition-colors"
+                                                className="w-full flex items-center gap-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] focus-within:border-[#06b6d4]/40 px-3.5 py-2.5 transition-colors"
                                             >
-                                                <Wand2 className="w-3.5 h-3.5 text-[#c5a44e]/60 shrink-0" />
+                                                <Wand2 className="w-3.5 h-3.5 text-[#06b6d4]/60 shrink-0" />
                                                 <input
                                                     type="text"
                                                     value={ideaInput}
@@ -661,7 +661,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 {ideaInput.trim() && (
                                                     <button
                                                         type="submit"
-                                                        className="text-[10px] text-[#c5a44e] hover:text-[#d4b45e] font-medium tracking-wide"
+                                                        className="text-[10px] text-[#06b6d4] hover:text-[#d4b45e] font-medium tracking-wide"
                                                     >
                                                         USE
                                                     </button>
@@ -739,7 +739,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                         activeGeneration.creationId,
                                                         activeGeneration.type
                                                     )}
-                                                    className="bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f1ddb1] h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-xl border border-[#c5a44e]/20 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
+                                                    className="bg-[#06b6d4]/10 hover:bg-[#06b6d4]/15 text-[#f1ddb1] h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-xl border border-[#06b6d4]/20 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                     title="Publish Workflow"
                                                 >
                                                     <Wand2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />

@@ -114,7 +114,7 @@ function extensionFromBlob(blob: Blob, fallback = "png") {
 export default function StudioPage() {
   return (
     <ProtectedRoute>
-      <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="w-6 h-6 text-[#c5a44e] animate-spin" /></div>}>
+      <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="w-6 h-6 text-[#06b6d4] animate-spin" /></div>}>
         <StudioLayout />
       </Suspense>
     </ProtectedRoute>
@@ -1007,10 +1007,10 @@ function StudioLayout() {
       {/* Billing Alert Modal */}
       {showBillingAlert && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xl px-4">
-          <div className="relative rounded-2xl overflow-hidden max-w-[380px] w-full shadow-2xl transform animate-in zoom-in-95 duration-200 border border-[#c5a44e]/20 bg-[#111]">
+          <div className="relative rounded-2xl overflow-hidden max-w-[380px] w-full shadow-2xl transform animate-in zoom-in-95 duration-200 border border-[#06b6d4]/20 bg-[#111]">
             <div className="relative z-10 py-10 px-8 text-center flex flex-col items-center">
-              <div className="w-12 h-12 bg-[#c5a44e]/10 rounded-full flex items-center justify-center mb-6 border border-[#c5a44e]/20">
-                <Sparkles className="w-5 h-5 text-[#c5a44e]" />
+              <div className="w-12 h-12 bg-[#06b6d4]/10 rounded-full flex items-center justify-center mb-6 border border-[#06b6d4]/20">
+                <Sparkles className="w-5 h-5 text-[#06b6d4]" />
               </div>
 
               <h2 className="text-xl font-medium text-white mb-2">Out of Credits</h2>

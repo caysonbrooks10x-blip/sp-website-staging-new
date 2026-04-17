@@ -416,7 +416,7 @@ export const CommunityPostCard = memo(function CommunityPostCard({ post, index, 
                   {hasWorkflowLink && (
                     <Button
                       variant="outline"
-                      className="w-full h-9 rounded-lg border-[#c5a44e]/25 bg-[#c5a44e]/10 hover:bg-[#c5a44e]/15 text-[#f0ddb0] text-[11px]"
+                      className="w-full h-9 rounded-lg border-[#06b6d4]/25 bg-[#06b6d4]/10 hover:bg-[#06b6d4]/15 text-[#f0ddb0] text-[11px]"
                       onClick={handleUseWorkflow}
                     >
                       <Wand2 className="h-3.5 w-3.5 mr-1.5" />
