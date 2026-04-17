@@ -103,7 +103,7 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   "flux-kontext-max":       { primary: "apimart", also: ["poyo"] },
   "seedream-4":             { primary: "apimart", also: ["poyo"] },
   "seedream-4.5":           { primary: "poyo", also: ["apimart"] },
-  "seedream-5.0-lite":      { primary: "poyo", gateToApimart: ["n<=4 && need_apimart_behavior"] },
+  "seedream-5.0-lite":      { primary: "poyo", also: ["apimart"], gateToApimart: ["n<=4 && need_apimart_behavior"] },
   "z-image":                { primary: "poyo" },
   "z-image-turbo":          { primary: "apimart" },
   "qwen-image-2.0":         { primary: "apimart" },
@@ -139,8 +139,8 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   "kling-video-o1":         { primary: "apimart" },
   "seedance-1.0-pro":       { primary: "poyo", also: ["apimart"] },
   "seedance-1.5-pro":       { primary: "poyo", also: ["apimart"] },
-  "seedance-2":             { primary: "poyo" },
-  "seedance-2-fast":        { primary: "poyo" },
+  "seedance-2":             { primary: "poyo", also: ["apimart"] },
+  "seedance-2-fast":        { primary: "poyo", also: ["apimart"] },
   "doubao-seedance-2.0":    { primary: "poyo", also: ["apimart"] },
   "doubao-seedance-2.0-face":{ primary: "apimart" },
   "doubao-seedance-2.0-fast-face":{ primary: "apimart" },
@@ -165,6 +165,35 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   "viduq3-mix":             { primary: "apimart" },
   "viduq3-pro":             { primary: "apimart" },
   "viduq3-turbo":           { primary: "apimart" },
+}
+
+// -------------------------------------------------------------------
+// MODEL_ALIASES — cross-provider wire name translation.
+//
+// Some upstream models exist on both providers under different canonical
+// IDs (verified 2026-04-17 against https://apimart.ai/api/pricing). The
+// studio picks ONE canonical ID per upstream model (the Poyo name by
+// convention); the dispatcher translates to the opposite provider's wire
+// name when the router chooses ApiMart / falls back to ApiMart.
+//
+// Add here ONLY when the same upstream model ships under different IDs.
+// Do NOT add here for capability-gated variants (those are separate rows
+// in MODEL_PROVIDERS with their own routing).
+// -------------------------------------------------------------------
+
+export const MODEL_ALIASES: Record<string, Partial<Record<StudioProvider, string>>> = {
+  "seedance-1.0-pro":  { apimart: "doubao-seedance-1-0-pro-quality" },
+  "seedance-1.5-pro":  { apimart: "doubao-seedance-1-5-pro" },
+  "seedance-2":        { apimart: "doubao-seedance-2.0" },
+  "seedance-2-fast":   { apimart: "doubao-seedance-2.0-fast" },
+}
+
+export function resolveProviderModelId(
+  canonical: string,
+  provider: StudioProvider,
+): string {
+  const mapped = MODEL_ALIASES[canonical]?.[provider]
+  return mapped ?? canonical
 }
 
 // -------------------------------------------------------------------

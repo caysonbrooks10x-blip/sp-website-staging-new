@@ -307,7 +307,9 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         }
     };
 
-    const currentRatio = activeGeneration?.settings?.size || activeGeneration?.settings?.aspect_ratio || activeGeneration?.settings?.aspectRatio || aspectRatio;
+    const rawRatio = activeGeneration?.settings?.size || activeGeneration?.settings?.aspect_ratio || activeGeneration?.settings?.aspectRatio || aspectRatio;
+    // Empty state for video modes mirrors the text-to-image canvas exactly (1:1 framing + sizing)
+    const currentRatio = !activeGeneration && mode === "video" ? "1:1" : rawRatio;
     const isMultiImage = (activeGeneration?.srcs && activeGeneration.srcs.length > 0) || (activeGeneration?.settings?.n > 1 && activeGeneration?.status !== "completed");
 
     let maxWidthStyle = "850px";
@@ -368,7 +370,12 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                     className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar touch-pan-y pointer-events-auto"
                     data-lenis-prevent="true"
                 >
-                    <div className="w-full flex flex-col items-center min-h-full pb-20 lg:pb-32 px-4 sm:px-0">
+                    <div className={cn(
+                        "w-full flex flex-col items-center px-4 sm:px-0",
+                        !activeGeneration
+                            ? "min-h-full justify-center py-6 lg:py-10"
+                            : "min-h-full pb-20 lg:pb-32"
+                    )}>
                         {activeGeneration?.status === "completed" && isMultiImage ? (
                             <div
                                 className="w-full px-4 sm:px-6 py-12 md:py-20 self-start transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"

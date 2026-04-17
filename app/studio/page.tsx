@@ -127,7 +127,6 @@ function studioModeToCreationMode(sm: StudioMode): "image" | "video" {
       return "image";
     case "text-to-video":
     case "image-to-video":
-    case "motion-control":
       return "video";
     case "remix":
       return "image";

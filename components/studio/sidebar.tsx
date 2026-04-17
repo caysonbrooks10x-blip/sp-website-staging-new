@@ -15,7 +15,6 @@ import {
   PanelLeftClose,
   PanelLeft,
   Plus,
-  Move3D,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
@@ -25,7 +24,6 @@ export type StudioMode =
   | "image-to-image"
   | "text-to-video"
   | "image-to-video"
-  | "motion-control"
   | "remix";
 
 interface SidebarProps {
@@ -43,7 +41,6 @@ const NAV_SECTIONS = [
     items: [
       { id: "text-to-video" as StudioMode, label: "Text to Video", icon: Video },
       { id: "image-to-video" as StudioMode, label: "Image to Video", icon: Film },
-      { id: "motion-control" as StudioMode, label: "Motion Control", icon: Move3D },
     ],
   },
   {
@@ -56,7 +53,7 @@ const NAV_SECTIONS = [
   {
     label: "REMIX",
     items: [
-      { id: "remix" as StudioMode, label: "Video Remix", icon: Wand2 },
+      { id: "remix" as StudioMode, label: "Remix", icon: Wand2 },
     ],
   },
 ];

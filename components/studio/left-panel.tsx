@@ -275,12 +275,6 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             case "image-to-video":
                 if (creationMode !== "video") handleModeSwitch("video");
                 break;
-            case "motion-control":
-                if (creationMode !== "video") handleModeSwitch("video");
-                // Auto-select motion control model
-                const mcModel = AI_VIDEO_MODELS.find(m => m.id === "kling-3.0-motion-control");
-                if (mcModel) setSelectedModel(mcModel);
-                break;
             case "remix":
                 if (creationMode !== "remix") handleModeSwitch("remix");
                 break;

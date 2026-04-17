@@ -36,6 +36,7 @@ import {
 import {
   chooseProvider,
   getProviderFallback,
+  resolveProviderModelId,
   type ProviderRoutingInput,
   type StudioProvider,
 } from "@/lib/provider-routing"
@@ -100,11 +101,12 @@ async function submitImage(
   provider: StudioProvider,
   payload: Record<string, unknown>,
 ): Promise<{ task_id: string; raw: unknown }> {
+  const wirePayload = translateModelForProvider(provider, payload)
   if (provider === "apimart") {
-    const raw = await submitApiMartImageGeneration(payload)
+    const raw = await submitApiMartImageGeneration(wirePayload)
     return { task_id: extractTaskIdFromApiMart(raw), raw }
   }
-  const { model, ...rest } = payload as { model: string } & Record<string, unknown>
+  const { model, ...rest } = wirePayload as { model: string } & Record<string, unknown>
   const raw = await submitPoyoGeneration({ model, inputs: rest })
   return { task_id: extractTaskIdFromPoyo(raw), raw }
 }
@@ -113,13 +115,28 @@ async function submitVideo(
   provider: StudioProvider,
   payload: Record<string, unknown>,
 ): Promise<{ task_id: string; raw: unknown }> {
+  const wirePayload = translateModelForProvider(provider, payload)
   if (provider === "apimart") {
-    const raw = await submitApiMartVideoGeneration(payload)
+    const raw = await submitApiMartVideoGeneration(wirePayload)
     return { task_id: extractTaskIdFromApiMart(raw), raw }
   }
-  const { model, ...rest } = payload as { model: string } & Record<string, unknown>
+  const { model, ...rest } = wirePayload as { model: string } & Record<string, unknown>
   const raw = await submitPoyoGeneration({ model, inputs: rest })
   return { task_id: extractTaskIdFromPoyo(raw), raw }
+}
+
+// Translate payload.model from studio-canonical → provider-wire ID, if
+// the chosen provider uses a different upstream name for the same model.
+// No-op when no alias is registered.
+function translateModelForProvider(
+  provider: StudioProvider,
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  const canonical = typeof payload.model === "string" ? payload.model : undefined
+  if (!canonical) return payload
+  const wireName = resolveProviderModelId(canonical, provider)
+  if (wireName === canonical) return payload
+  return { ...payload, model: wireName }
 }
 
 async function submitRemix(
