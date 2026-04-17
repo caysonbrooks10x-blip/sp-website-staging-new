@@ -1075,8 +1075,7 @@ function StudioLayout() {
         }}
       >
         {/* Top Bar — glass */}
-        <div className="relative h-10 flex items-center px-6 shrink-0 bg-black/30 backdrop-blur-xl">
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-400/25 to-transparent" aria-hidden />
+        <div className="relative h-10 flex items-center px-6 shrink-0 bg-black/20 backdrop-blur-xl">
           <h1 className="studio-display text-sm italic text-zinc-200 capitalize tracking-tight">
             {studioMode.replace(/-/g, " ")}
           </h1>
@@ -1084,8 +1083,6 @@ function StudioLayout() {
 
         {/* Two-column content */}
         <div className="flex h-[calc(100%-40px)] overflow-hidden flex-col lg:flex-row relative">
-          {/* Vertical cyan gradient divider between left panel and canvas (desktop) */}
-          <div className="hidden lg:block pointer-events-none absolute top-0 bottom-0 left-[480px] xl:left-[520px] w-px bg-gradient-to-b from-transparent via-cyan-400/20 to-transparent z-10" aria-hidden />
           {/* Left: Generation Form */}
           <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-[52dvh] lg:h-full flex flex-col">
             <div className="flex-1 min-h-0">

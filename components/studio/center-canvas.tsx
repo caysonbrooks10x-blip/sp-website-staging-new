@@ -607,7 +607,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                     "rounded-[24px] sm:rounded-[32px] relative overflow-hidden transition-[width,height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col items-center justify-center shrink-0",
                                     activeGeneration?.status === "completed"
                                         ? "shadow-[0_40px_80px_rgba(0,0,0,0.8)] border border-white/[0.05] bg-black"
-                                        : "border border-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.6)] group bg-[#0a0a0c]/40 backdrop-blur-3xl"
+                                        : "border border-cyan-400/10 shadow-[0_20px_60px_rgba(6,182,212,0.15)] group bg-transparent backdrop-blur-3xl"
                                 )}
                                 style={frameSize
                                     ? { width: `${frameSize.width}px`, height: `${frameSize.height}px` }
@@ -615,13 +615,10 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                             >
                                 {activeGeneration?.status !== "completed" && (
                                     <div className="absolute inset-0 z-0">
-                                        <div
-                                            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[40s] ease-linear group-hover:scale-110 scale-100 opacity-60 mix-blend-screen"
-                                            style={{ backgroundImage: `url('${ASSET_BASE}/studio/studio1.jpeg')` }}
-                                        />
-                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
-                                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.03)_0%,transparent_100%)] mix-blend-overlay" />
+                                        <div className="absolute inset-0 bg-gradient-to-br from-[#0b1e2a] via-[#050a14] to-[#0a1620]" />
+                                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(6,182,212,0.18)_0%,transparent_60%)]" />
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(34,211,238,0.12)_0%,transparent_55%)]" />
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(255,255,255,0.04)_0%,transparent_50%)]" />
                                     </div>
                                 )}
                                 <div className="absolute inset-0 z-10 pointer-events-none rounded-[24px] sm:rounded-[32px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_0_40px_rgba(255,255,255,0.02)]" />
