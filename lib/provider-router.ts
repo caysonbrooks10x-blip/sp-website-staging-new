@@ -120,9 +120,40 @@ async function submitVideo(
     const raw = await submitApiMartVideoGeneration(wirePayload)
     return { task_id: extractTaskIdFromApiMart(raw), raw }
   }
-  const { model, ...rest } = wirePayload as { model: string } & Record<string, unknown>
+  const normalized = normalizePoyoVideoPayload(wirePayload)
+  const { model, ...rest } = normalized as { model: string } & Record<string, unknown>
   const raw = await submitPoyoGeneration({ model, inputs: rest })
   return { task_id: extractTaskIdFromPoyo(raw), raw }
+}
+
+/**
+ * Poyo-side payload shaping for video models.
+ *
+ * Poyo rejects the shared canonical payload for seedance/veo models because
+ * its per-model input spec differs from ApiMart's:
+ *
+ *   - seedance-2 / seedance-2-fast: `duration` is required (Poyo 400s if
+ *                                   absent). Default to 4s (UI default).
+ *   - veo3.1-*: duration is fixed at 8 seconds on Poyo; wants the `seconds`
+ *               key rather than a generic duration.
+ *
+ * ApiMart accepts these fields natively, so this only runs when the router
+ * picked Poyo.
+ */
+function normalizePoyoVideoPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const model = typeof payload.model === "string" ? payload.model : ""
+  const out: Record<string, unknown> = { ...payload }
+
+  if (model === "seedance-2" || model === "seedance-2-fast") {
+    if (out.duration === undefined) out.duration = 4
+  }
+
+  if (model.startsWith("veo3.1")) {
+    out.seconds = 8
+    delete out.duration
+  }
+
+  return out
 }
 
 // Translate payload.model from studio-canonical → provider-wire ID, if

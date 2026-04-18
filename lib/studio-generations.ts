@@ -1,5 +1,6 @@
 "use client"
 
+import { auth } from "@/lib/firebaseClient"
 import type { CommunityCampaignMeta } from "@/lib/types"
 
 export interface PersistedStudioGeneration {
@@ -88,17 +89,92 @@ function writeLocalStudioGenerationHistory(items: PersistedStudioGeneration[]) {
   window.localStorage.setItem("studio_generations_history", JSON.stringify(serialized))
 }
 
+async function getIdToken(): Promise<string | null> {
+  const currentUser = auth.currentUser
+  if (!currentUser) return null
+  try {
+    return await currentUser.getIdToken()
+  } catch {
+    return null
+  }
+}
+
 export async function persistStudioGeneration(uid: string, input: PersistedStudioGeneration) {
   void uid
 
+  // Optimistic local cache so the current tab sees the new creation immediately.
   const current = readLocalStudioGenerationHistory()
   const next = [input, ...current.filter((item) => item.id !== input.id)].slice(0, 40)
   writeLocalStudioGenerationHistory(next)
+
+  const token = await getIdToken()
+  if (!token) return
+
+  try {
+    await fetch("/api/creations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(input),
+    })
+  } catch (error) {
+    console.warn("Failed to persist studio generation remotely:", error)
+  }
 }
 
-export async function listPersistedStudioGenerations(uid: string) {
+export async function listPersistedStudioGenerations(uid: string): Promise<PersistedStudioGeneration[]> {
   void uid
-  return readLocalStudioGenerationHistory()
+
+  const local = readLocalStudioGenerationHistory()
+  const token = await getIdToken()
+  if (!token) return local
+
+  try {
+    const res = await fetch("/api/creations", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    })
+    if (!res.ok) return local
+
+    const payload = (await res.json()) as { creations?: unknown }
+    const remoteList = Array.isArray(payload.creations) ? payload.creations : []
+
+    const merged = new Map<string, PersistedStudioGeneration>()
+    for (const item of remoteList) {
+      if (!item || typeof item !== "object") continue
+      const record = item as PersistedStudioGeneration & { id?: string }
+      if (!record.id || !record.outputUrl) continue
+      merged.set(String(record.id), {
+        id: String(record.id),
+        creationId: record.creationId || String(record.id),
+        taskId: record.taskId || null,
+        prompt: record.prompt || "Untitled Creation",
+        model: record.model,
+        type: record.type === "video" ? "video" : "image",
+        outputUrl: record.outputUrl,
+        outputUrls: record.outputUrls,
+        thumbnailUrl: record.thumbnailUrl || null,
+        generationPlatform: record.generationPlatform,
+        rootCreationId: record.rootCreationId || null,
+        parentCreationId: record.parentCreationId || null,
+        remixDepth: Number(record.remixDepth || 0),
+        sourcePostId: record.sourcePostId || null,
+        campaign: record.campaign || null,
+      })
+    }
+
+    // Fold in localStorage entries that haven't synced yet (unseen by server).
+    for (const item of local) {
+      if (!merged.has(item.id)) merged.set(item.id, item)
+    }
+
+    return Array.from(merged.values())
+  } catch (error) {
+    console.warn("Remote creations fetch failed, falling back to local history.", error)
+    return local
+  }
 }
 
 export async function deletePersistedStudioGeneration(uid: string, generationId: string) {
@@ -106,4 +182,16 @@ export async function deletePersistedStudioGeneration(uid: string, generationId:
 
   const current = readLocalStudioGenerationHistory()
   writeLocalStudioGenerationHistory(current.filter((item) => item.id !== generationId))
+
+  const token = await getIdToken()
+  if (!token) return
+
+  try {
+    await fetch(`/api/creations?id=${encodeURIComponent(generationId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  } catch (error) {
+    console.warn("Failed to delete remote creation:", error)
+  }
 }

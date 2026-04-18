@@ -170,7 +170,9 @@ check("validator: 3 refs accepted when max=4", okRefCount.ok)
     check("retry: non-retryable error not retried", nonRetryableCalls === 1)
   }
 
-  // Fix 4: fallback should NOT fire on 400 (payload bug propagates identically)
+  // Policy revised 2026-04-18: 4xx from primary no longer blocks fallback,
+  // because Poyo ↔ ApiMart have different per-model payload specs — a 400
+  // on one provider often succeeds on the other.
   let fourxxPrimary = 0
   let fourxxFallback = 0
   const primary400 = buildProviderCall("apimart", "x", async () => {
@@ -179,20 +181,19 @@ check("validator: 3 refs accepted when max=4", okRefCount.ok)
   })
   const fallback400 = buildProviderCall("poyo", "x", async () => {
     fourxxFallback += 1
-    return "should-not-reach"
+    return "from-fallback"
   })
-  try {
-    await executeWithFallback(primary400, fallback400, { baseDelayMs: 1, maxDelayMs: 2 })
-    check("fallback gated: 400 should throw, not try fallback", false)
-  } catch {
-    check("fallback gated: primary 400 propagates, fallback not called", fourxxPrimary === 1 && fourxxFallback === 0)
-  }
+  const resFallback4xx = await executeWithFallback(primary400, fallback400, { baseDelayMs: 1, maxDelayMs: 2 })
+  check(
+    "fallback on 4xx: primary 400 routes to fallback (cross-provider payload differences)",
+    resFallback4xx.result === "from-fallback" && resFallback4xx.usedFallback && fourxxPrimary === 1 && fourxxFallback === 1,
+  )
 
-  check("shouldAttemptFallback: 400 → false", !shouldAttemptFallback(new Error("400 bad request")))
+  check("shouldAttemptFallback: 400 → true (cross-provider payloads differ)", shouldAttemptFallback(new Error("400 bad request")))
   check("shouldAttemptFallback: 429 → true", shouldAttemptFallback(new Error("429 rate limit")))
   check("shouldAttemptFallback: 503 → true", shouldAttemptFallback(new Error("503 temporarily unavailable")))
   check("shouldAttemptFallback: 500 → true (generic server err)", shouldAttemptFallback(new Error("500 internal server error")))
-  check("shouldAttemptFallback: 422 → false", !shouldAttemptFallback(new Error("422 unprocessable")))
+  check("shouldAttemptFallback: 422 → true (cross-provider param shapes differ)", shouldAttemptFallback(new Error("422 unprocessable")))
 
   // ---------- two-step decisions ----------
 

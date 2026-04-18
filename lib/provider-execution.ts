@@ -20,18 +20,23 @@ import { isRetryableProviderFailure, type ProviderFallbackPlan, type StudioProvi
 import type { Logger } from "@/lib/logger"
 
 /**
- * Fix 4: a fallback attempt only helps when the primary failure is the
- * provider's fault (5xx, network, rate limit, timeout) — not when the
- * caller sent a bad payload. A 400/401/403/404/422 on the primary will
- * reproduce on the fallback because the payload is identical. Surfacing
- * the primary error directly is clearer than a double-error message.
+ * Cross-provider fallback policy (revised 2026-04-18).
+ *
+ * Original policy treated every 4xx as "caller's fault, don't retry on
+ * fallback" — assuming both providers would reject the same payload.
+ * That assumption is wrong for Poyo ↔ ApiMart: the providers have
+ * different per-model param specs (e.g. Poyo's wan2.5 requires
+ * `1280*720`; ApiMart accepts `16:9`). So a payload that 400s on Poyo
+ * can succeed on ApiMart — and vice versa — purely because of shape
+ * differences. 404 (model not in that provider's catalog) is also
+ * legitimately recoverable via the alternate provider.
+ *
+ * We now attempt the fallback for any error. The fallback has its own
+ * retry budget, and if it also fails, `executeWithFallback` returns
+ * a combined error that surfaces both reasons. That's clearer than
+ * silently eating the primary's 4xx.
  */
-export function shouldAttemptFallback(error: unknown): boolean {
-  if (isRetryableProviderFailure(error)) return true
-  if (!(error instanceof Error)) return true
-  const message = error.message.toLowerCase()
-  const fourxx = /(^|[^\d])(400|401|403|404|405|409|410|415|422)([^\d]|$)/
-  if (fourxx.test(message) && !message.includes("429")) return false
+export function shouldAttemptFallback(_error: unknown): boolean {
   return true
 }
 

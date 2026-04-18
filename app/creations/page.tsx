@@ -8,8 +8,6 @@ import { ProtectedRoute } from "@/components/protected-route"
 import { ThemeBackdrop } from "@/components/theme-backdrop"
 import { CreationCard } from "@/components/profile/creation-card"
 import { useAuth } from "@/context/auth-context"
-import { httpsCallable } from "firebase/functions"
-import { functions } from "@/lib/firebaseClient"
 import { listPersistedStudioGenerations } from "@/lib/studio-generations"
 
 function CreationsContent() {
@@ -36,39 +34,9 @@ function CreationsContent() {
       }
 
       try {
-        const getUserCreations = httpsCallable(functions, "getUserCreations")
-        const [remoteResult, persistedResult] = await Promise.allSettled([
-          getUserCreations(),
-          listPersistedStudioGenerations(uid),
-        ])
-
+        const persisted = await listPersistedStudioGenerations(uid)
         if (!isMounted) return
-
-        const merged = new Map<string, any>()
-
-        if (remoteResult.status === "fulfilled") {
-          const data = remoteResult.value.data as any
-          const creationsList = Array.isArray(data) ? data : data.creations || []
-          for (const creation of creationsList) {
-            merged.set(creation.id, creation)
-          }
-        } else {
-          console.warn("Callable getUserCreations failed, showing persisted generations only.", remoteResult.reason)
-        }
-
-        if (persistedResult.status === "fulfilled") {
-          for (const creation of persistedResult.value) {
-            merged.set(String(creation.id), {
-              ...creation,
-              id: creation.id,
-              _localPersisted: true,
-            })
-          }
-        } else {
-          console.warn("Persisted generations query failed.", persistedResult.reason)
-        }
-
-        setCreations(Array.from(merged.values()))
+        setCreations(persisted.map((creation) => ({ ...creation, id: creation.id })))
       } catch (err) {
         console.error("Failed to fetch user creations:", err)
       } finally {

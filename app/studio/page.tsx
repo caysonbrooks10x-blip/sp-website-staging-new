@@ -275,7 +275,9 @@ function StudioLayout() {
     let telemetryProvider: StudioProvider | null = null;
 
     try {
-      const createStudioJob = httpsCallable(functions, "createStudioJob");
+      // 2026-04-18: UI migrated from provider-specific endpoints + ghost
+      // `createStudioJob` Firebase callable onto the unified /api/route/*
+      // routes. Server owns chooseProvider + executeWithFallback now.
       const {
         model,
         mode: legacyMode,
@@ -435,7 +437,7 @@ function StudioLayout() {
           if (decision.needed) {
             try {
               toast.loading(`Reframing reference to ${targetAr} via ${decision.stepOne.model}...`, { id: "gen-toast" });
-              const stepOneResp = await fetch("/api/apimart/images/generations", {
+              const stepOneResp = await fetch("/api/route/images/generations", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -450,32 +452,40 @@ function StudioLayout() {
               if (!stepOneResp.ok) {
                 throw new Error(stepOneJson?.error || "Step 1 reframe failed");
               }
-              const stepOneRequestId = newRequestId();
-              const submission = adaptApimartSubmission(stepOneJson, {
-                provider: decision.stepOne.provider,
-                model: decision.stepOne.model,
-                request_id: stepOneRequestId,
-              });
+              // /api/route/images/generations returns NormalizedSubmit:
+              //   { provider, task_id, model, used_fallback, raw }
+              // When provider=apimart and the response was a direct-image
+              // shape, `raw.data[]` carries the inline b64/url.
+              const stepOneProvider = stepOneJson.provider ?? decision.stepOne.provider;
+              const stepOneTaskId: string | undefined = stepOneJson.task_id;
               let reframedUrl: string | undefined;
-              if (submission.kind === "direct") {
-                reframedUrl = submission.canonical.urls[0];
-              } else if (submission.taskId) {
+              const directUrl = (() => {
+                const rawData = stepOneJson?.raw?.data;
+                if (!Array.isArray(rawData)) return undefined;
+                for (const entry of rawData) {
+                  if (entry?.url) return entry.url as string;
+                }
+                return undefined;
+              })();
+              if (directUrl) {
+                reframedUrl = directUrl;
+              } else if (stepOneTaskId) {
                 const deadline = Date.now() + 180_000;
                 while (Date.now() < deadline) {
                   await new Promise((r) => setTimeout(r, 3000));
-                  const statusResp = await fetch(`/api/apimart/tasks/${encodeURIComponent(submission.taskId)}`);
+                  const statusResp = await fetch(
+                    `/api/route/tasks/${encodeURIComponent(stepOneTaskId)}?provider=${encodeURIComponent(stepOneProvider)}`,
+                  );
                   const statusJson = await statusResp.json();
-                  const canonical = adaptApimartStatus(statusJson, {
-                    provider: decision.stepOne.provider,
-                    model: decision.stepOne.model,
-                    request_id: stepOneRequestId,
-                  });
-                  if (canonical.status === "completed") {
-                    reframedUrl = canonical.urls[0];
+                  if (statusJson.status === "completed") {
+                    reframedUrl = Array.isArray(statusJson.output_urls) ? statusJson.output_urls[0] : undefined;
                     break;
                   }
-                  if (canonical.status === "failed") {
-                    throw new Error(canonical.error || "Step 1 reframe job failed");
+                  if (statusJson.status === "failed") {
+                    throw new Error(
+                      (typeof statusJson.error === "string" ? statusJson.error : statusJson.error?.message) ||
+                        "Step 1 reframe job failed",
+                    );
                   }
                 }
               }
@@ -526,38 +536,49 @@ function StudioLayout() {
       const submitWithProvider = async (
         submissionProvider: StudioProvider,
         submissionModel: string
-      ): Promise<{ jobId: string; taskId?: string; directCompletedItem?: GenerationItem }> => {
-        if (submissionProvider === "apimart") {
-          const isVideoRemix = isRemixRequest && generationType === "video";
-          const remixTaskId = settings.originalTaskId || settings.taskId || settings.originalCreationId;
-          const endpoint = isVideoRemix
-            ? `/api/apimart/videos/${encodeURIComponent(remixTaskId || "")}/remix`
-            : generationType === "video"
-              ? "/api/apimart/videos/generations"
-              : "/api/apimart/images/generations";
+      ): Promise<{ jobId: string; taskId?: string; actualProvider?: StudioProvider; usedFallback?: boolean; directCompletedItem?: GenerationItem }> => {
+        // Unified path: all submits go through /api/route/*. The server
+        // runs chooseProvider + executeWithFallback and returns a
+        // NormalizedSubmit: { provider, task_id, model, used_fallback, raw }.
+        // `submissionProvider` is kept in the signature for client-side
+        // telemetry only — the server may pick a different provider.
+        void submissionProvider;
+        const isVideoRemix = isRemixRequest && generationType === "video";
+        const remixTaskId = settings.originalTaskId || settings.taskId || settings.originalCreationId;
+        if (isVideoRemix && !remixTaskId) {
+          throw new Error("This video cannot be remixed yet because its source task ID is missing.");
+        }
+        const endpoint = isVideoRemix
+          ? `/api/route/videos/${encodeURIComponent(remixTaskId || "")}/remix`
+          : generationType === "video"
+            ? "/api/route/videos/generations"
+            : "/api/route/images/generations";
 
-          if (isVideoRemix && !remixTaskId) {
-            throw new Error("This video cannot be remixed yet because its ApiMart task ID is missing.");
-          }
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: submissionModel, ...parameters }),
+        });
+        const submission = await response.json();
+        if (!response.ok) {
+          throw new Error(submission?.error || "Generation submission failed");
+        }
 
-          const response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: submissionModel,
-              ...parameters,
-            }),
-          });
-          const submission = await response.json();
-          if (!response.ok) {
-            throw new Error(submission?.error || "ApiMart generation submission failed");
-          }
+        const actualProvider: StudioProvider = submission.provider ?? "apimart";
+        const usedFallback: boolean = Boolean(submission.used_fallback);
 
-          if (generationType === "image" && isApiMartDirectImageResponse(submission)) {
+        // Image direct-response shortcut: ApiMart can return inline images
+        // (no task id to poll). These arrive under `submission.raw.data[].url`
+        // or `.b64_json`; the normalizer stamps `task_id` with a `direct-*`
+        // sentinel so callers can detect this without peeking at `.raw`.
+        const rawData = submission?.raw?.data;
+        const isDirectImage =
+          generationType === "image" &&
+          Array.isArray(rawData) &&
+          rawData.some((entry: any) => entry?.b64_json || entry?.url);
+        if (isDirectImage) {
             const directImageJobId = `apimart-img-${Date.now()}`;
-            const responseItems = Array.isArray(submission.data) ? submission.data : [];
+            const responseItems = Array.isArray(submission.raw.data) ? submission.raw.data : [];
             const uploadedUrls = await Promise.all(
               responseItems.map(async (entry: any, index: number) => {
                 if (entry?.b64_json) {
@@ -584,12 +605,14 @@ function StudioLayout() {
 
             return {
               jobId: directImageJobId,
+              actualProvider,
+              usedFallback,
               directCompletedItem: {
                 id: directImageJobId,
                 creationId: directImageJobId,
                 creationIds: uploadedUrls.map((_, index) => `${directImageJobId}_${index}`),
                 taskId: undefined,
-                generationPlatform: submissionProvider,
+                generationPlatform: actualProvider,
                 type: "image",
                 prompt,
                 model: submissionModel,
@@ -599,28 +622,19 @@ function StudioLayout() {
                 settings: {
                   ...settings,
                   n: uploadedUrls.length,
-                  provider: submissionProvider,
+                  provider: actualProvider,
                   previewUrl: uploadedUrls[0],
-                  fallbackUsed: submissionModel !== usedModel,
+                  fallbackUsed: usedFallback || submissionModel !== usedModel,
                 },
               },
             };
           }
 
-          const nextTaskId = submission?.data?.[0]?.task_id;
+          const nextTaskId: string | undefined = submission.task_id;
           if (!nextTaskId) {
-            throw new Error("ApiMart did not return a task ID");
+            throw new Error("Router did not return a task ID");
           }
-          return { jobId: nextTaskId, taskId: nextTaskId };
-        }
-
-        const result = await createStudioJob({
-          provider: submissionProvider,
-          model: submissionModel,
-          parameters,
-        });
-
-        return { jobId: (result.data as any).jobId };
+          return { jobId: nextTaskId, taskId: nextTaskId, actualProvider, usedFallback };
       };
 
       // Fix 3: no longer swap finalProvider preemptively based on live
@@ -671,11 +685,15 @@ function StudioLayout() {
         },
       });
 
-      finalProvider = execution.provider;
+      // Prefer the server-reported actual provider (it may have fallen
+      // back internally via executeWithFallback on the /api/route/* route);
+      // fall back to the client-side executeWithFallback's decision.
+      finalProvider = execution.result.actualProvider ?? execution.provider;
       finalModel = execution.model;
       const submission = execution.result;
       jobId = submission.jobId;
       taskId = submission.taskId;
+      const serverUsedFallback = Boolean(submission.usedFallback);
       recordProviderTelemetryEvent({ provider: finalProvider, outcome: "queued" });
       telemetryProvider = finalProvider;
 
@@ -751,8 +769,11 @@ function StudioLayout() {
   };
 
   const startJobPoller = async (jobId: string, item: GenerationItem) => {
+    // 2026-04-18: Polling migrated to unified /api/route/tasks/{id}.
+    // The server owns provider routing; the client just tells it which
+    // provider actually queued this task (which may differ from the
+    // originally-requested provider if executeWithFallback flipped it).
     const provider = (item.generationPlatform || item.settings?.provider || "poyo") as StudioProvider;
-    const getJobStatus = provider === "poyo" ? httpsCallable(functions, "getJobStatus") : null;
     const maxPollAttempts = provider === "apimart" ? 240 : 200;
     const maxConsecutiveErrors = 6;
     let pollAttempts = 0;
@@ -795,24 +816,39 @@ function StudioLayout() {
       pollAttempts += 1;
 
       try {
-        const data: any = provider === "apimart"
-          ? await (async () => {
-              const controller = new AbortController();
-              const timeout = setTimeout(() => controller.abort(), 15_000);
-              const response = await fetch(`/api/apimart/tasks/${encodeURIComponent(jobId)}?language=en`, {
-                cache: "no-store",
-                signal: controller.signal,
-              }).finally(() => {
-                clearTimeout(timeout);
-              });
-              const raw = await response.text();
-              const payload = raw ? JSON.parse(raw) : null;
-              if (!response.ok) {
-                throw new Error(payload?.error || `ApiMart task polling failed (${response.status})`);
-              }
-              return normalizeApiMartStatus(payload);
-            })()
-          : (await getJobStatus!({ jobId: jobId })).data;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15_000);
+        const response = await fetch(
+          `/api/route/tasks/${encodeURIComponent(jobId)}?provider=${encodeURIComponent(provider)}&language=en`,
+          { cache: "no-store", signal: controller.signal },
+        ).finally(() => {
+          clearTimeout(timeout);
+        });
+        const raw = await response.text();
+        const payload = raw ? JSON.parse(raw) : null;
+        if (!response.ok) {
+          throw new Error(payload?.error || `Task polling failed (${response.status})`);
+        }
+
+        // Adapt /api/route/tasks normalized shape → legacy field names
+        // the downstream branches still read (output_urls, thumbnailUrl,
+        // taskId, error-as-string, and a "processing"→default status).
+        const normalized = payload as {
+          status: "pending" | "processing" | "completed" | "failed";
+          progress?: number;
+          output_urls?: string[];
+          thumbnail_url?: string;
+          task_id?: string;
+          error?: { message?: string; code?: string | number };
+        };
+        const data: any = {
+          status: normalized.status,
+          progress: normalized.progress,
+          output_urls: normalized.output_urls || [],
+          thumbnailUrl: normalized.thumbnail_url,
+          taskId: normalized.task_id || jobId,
+          error: normalized.error?.message,
+        };
 
         consecutiveErrors = 0;
 

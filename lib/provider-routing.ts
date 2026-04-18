@@ -95,76 +95,57 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   "nano-banana-pro":        { primary: "poyo" },
   "gpt-4o-image":           { primary: "apimart", also: ["poyo"], gateToApimart: ["mask_url"] },
   "gpt-image-1.5":          { primary: "poyo", gateToApimart: ["official_tier", "mask_url"] },
-  "gpt-image-1":            { primary: "apimart" },
-  "gpt-image-1-mini":       { primary: "apimart" },
   "flux-2-pro":             { primary: "apimart", also: ["poyo"] },
   "flux-2-flex":            { primary: "apimart", also: ["poyo"] },
   "flux-kontext-pro":       { primary: "apimart", also: ["poyo"] },
   "flux-kontext-max":       { primary: "apimart", also: ["poyo"] },
-  "seedream-4":             { primary: "apimart", also: ["poyo"] },
   "seedream-4.5":           { primary: "poyo", also: ["apimart"] },
   "seedream-5.0-lite":      { primary: "poyo", also: ["apimart"], gateToApimart: ["n<=4 && need_apimart_behavior"] },
   "z-image":                { primary: "poyo" },
-  "z-image-turbo":          { primary: "apimart" },
-  "qwen-image-2.0":         { primary: "apimart" },
   "qwen-image-2.0-pro":     { primary: "apimart" },
   "grok-imagine-image":     { primary: "apimart", also: ["poyo"] },
-  "wan-2.7-image":          { primary: "poyo" },
   "wan-2.7-image-pro":      { primary: "poyo" },
-  "kling-o1-image-edit":    { primary: "poyo" },
   "kling-o3-image":         { primary: "poyo" },
   "kling-o3-image-edit":    { primary: "poyo" },
 
   // VIDEO
-  "sora-2":                 { primary: "poyo", also: ["apimart"], gateToApimart: ["remix", "character", "preview", "vip"] },
-  "sora-2-pro":             { primary: "poyo", also: ["apimart"] },
+  // Sora is ApiMart-only as of 2026-04-18: live probe of api.poyo.ai with
+  // 8 candidate IDs (sora, sora2, sora-2, sora-2-text-to-video, etc.) all
+  // returned 404 resource_not_found_error. Previous primary:"poyo" was
+  // inherited from an earlier handoff doc and was never true on the wire.
+  "sora-2":                 { primary: "apimart", gateToApimart: ["remix", "character", "preview", "vip"] },
+  "sora-2-pro":             { primary: "apimart" },
   "sora-2-vip":             { primary: "apimart" },
   "sora-2-preview":         { primary: "apimart" },
   "sora-2-pro-preview":     { primary: "apimart" },
-  "sora-2-official":        { primary: "poyo" },
+  "sora-2-official":        { primary: "apimart" },
   "veo3.1-lite":            { primary: "apimart" },
   "veo3.1-fast":            { primary: "apimart", also: ["poyo"] },
   "veo3.1-quality":         { primary: "apimart", also: ["poyo"], gateToPoyo: ["generation_type=reference"] },
   "veo3.1-fast-official":   { primary: "apimart" },
   "veo3.1-quality-official":{ primary: "apimart" },
-  "kling-2.1/standard":     { primary: "poyo" },
-  "kling-2.1/pro":          { primary: "poyo" },
-  "kling-2.5-turbo-pro":    { primary: "poyo" },
   "kling-2.6":              { primary: "apimart", also: ["poyo"], gateToPoyo: ["need_last_frame_image_without_pro_mode"] },
   "kling-3.0/standard":     { primary: "apimart", also: ["poyo"], gateToPoyo: ["kling_elements"] },
   "kling-3.0/pro":          { primary: "apimart", also: ["poyo"], gateToPoyo: ["kling_elements"] },
-  "kling-2.6-motion-control":{ primary: "poyo" },
-  "kling-3.0-motion-control":{ primary: "poyo" },
   "kling-v3-omni":          { primary: "apimart" },
   "kling-video-o1":         { primary: "apimart" },
-  "seedance-1.0-pro":       { primary: "poyo", also: ["apimart"] },
-  "seedance-1.5-pro":       { primary: "poyo", also: ["apimart"] },
   "seedance-2":             { primary: "poyo", also: ["apimart"] },
   "seedance-2-fast":        { primary: "poyo", also: ["apimart"] },
-  "doubao-seedance-2.0":    { primary: "poyo", also: ["apimart"] },
+  // `doubao-seedance-2.0` IS ApiMart's native wire name for the same
+  // model Poyo ships as `seedance-2` (see MODEL_ALIASES). Poyo does not
+  // recognize `doubao-seedance-2.0` as a model ID — it 404s. So this
+  // canonical ID must be ApiMart-primary; the Poyo path is unreachable.
+  "doubao-seedance-2.0":    { primary: "apimart" },
   "doubao-seedance-2.0-face":{ primary: "apimart" },
   "doubao-seedance-2.0-fast-face":{ primary: "apimart" },
-  "hailuo-02":              { primary: "poyo", also: ["apimart"] },
-  "hailuo-02-pro":          { primary: "poyo" },
   "hailuo-2.3":             { primary: "apimart", also: ["poyo"], gateToApimart: ["camera_movement_set"] },
   "MiniMax-Hailuo-2.3-Fast":{ primary: "apimart" },
-  "wan2.2-text-to-video-fast":{ primary: "poyo" },
-  "wan2.2-image-to-video-fast":{ primary: "poyo" },
-  "wan2.5-text-to-video":   { primary: "poyo" },
-  "wan2.5-image-to-video":  { primary: "poyo" },
   "wan2.6-text-to-video":   { primary: "apimart", also: ["poyo"], gateToApimart: ["template_set"] },
   "wan2.6-image-to-video":  { primary: "apimart", also: ["poyo"], gateToApimart: ["template_set"] },
   "wan2.6-video-to-video":  { primary: "poyo" },
   "wan2.6-i2v-flash":       { primary: "apimart" },
-  "wan-animate-move":       { primary: "poyo" },
-  "wan-animate-replace":    { primary: "poyo" },
   "grok-vid":               { primary: "apimart", also: ["poyo"] },
-  "grok-imagine-1.0-video-apimart":{ primary: "apimart" },
   "runway-gen-4.5":         { primary: "poyo" },
-  "viduq3":                 { primary: "apimart" },
-  "viduq3-mix":             { primary: "apimart" },
-  "viduq3-pro":             { primary: "apimart" },
-  "viduq3-turbo":           { primary: "apimart" },
 }
 
 // -------------------------------------------------------------------
@@ -182,8 +163,6 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
 // -------------------------------------------------------------------
 
 export const MODEL_ALIASES: Record<string, Partial<Record<StudioProvider, string>>> = {
-  "seedance-1.0-pro":  { apimart: "doubao-seedance-1-0-pro-quality" },
-  "seedance-1.5-pro":  { apimart: "doubao-seedance-1-5-pro" },
   "seedance-2":        { apimart: "doubao-seedance-2.0" },
   "seedance-2-fast":   { apimart: "doubao-seedance-2.0-fast" },
 }
@@ -203,12 +182,12 @@ export function resolveProviderModelId(
 
 const IMAGE_MODEL_IDS = new Set<string>([
   "nano-banana", "nano-banana-2", "nano-banana-2-new", "nano-banana-2-official", "nano-banana-pro",
-  "gpt-4o-image", "gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini",
+  "gpt-4o-image", "gpt-image-1.5",
   "flux-2-pro", "flux-2-flex", "flux-kontext-pro", "flux-kontext-max",
-  "seedream-4", "seedream-4.5", "seedream-5.0-lite",
-  "z-image", "z-image-turbo", "qwen-image-2.0", "qwen-image-2.0-pro",
-  "grok-imagine-image", "wan-2.7-image", "wan-2.7-image-pro",
-  "kling-o1-image-edit", "kling-o3-image", "kling-o3-image-edit",
+  "seedream-4.5", "seedream-5.0-lite",
+  "z-image", "qwen-image-2.0-pro",
+  "grok-imagine-image", "wan-2.7-image-pro",
+  "kling-o3-image", "kling-o3-image-edit",
 ])
 
 export const APIMART_IMAGE_MODELS = new Set<string>(

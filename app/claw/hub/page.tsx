@@ -303,13 +303,6 @@ export default function ClawHubPage() {
                 href="/pricing"
               />
               <StatusChip
-                icon={TimerReset}
-                label={scheduleStats.active > 0 ? `${scheduleStats.active} active` : "No automations"}
-                detail={nextScheduledRun ? `Next ${formatRelativeTime(nextScheduledRun)}` : "Schedule from Telegram"}
-                tone={scheduleStats.active > 0 ? "amber" : "zinc"}
-                href="/claw/schedule"
-              />
-              <StatusChip
                 icon={Rocket}
                 label={`${jobStats.total} jobs logged`}
                 detail={jobStats.running > 0 ? `${jobStats.running} running now` : "All quiet"}
@@ -349,21 +342,6 @@ export default function ClawHubPage() {
                 telegramCommand: "/video",
                 promptPlaceholder: "Slow cinematic orbit around a luxury perfume bottle on black velvet, dramatic rim light",
                 actionLabel: "Send to Telegram",
-                requiresPrompt: true,
-              },
-            },
-            {
-              icon: "⏱️",
-              label: "Schedule",
-              desc: "Automate recurring jobs",
-              action: "/schedule every 1h …",
-              dialog: {
-                title: "Schedule a recurring job",
-                description: "Write the schedule brief below (what to generate and how often). We'll copy it to your clipboard and open the bot.",
-                startParam: "schedule",
-                telegramCommand: "/schedule",
-                promptPlaceholder: "every 1h generate a minimalist product shot of a ceramic mug on a wooden table",
-                actionLabel: "Open in Telegram",
                 requiresPrompt: true,
               },
             },

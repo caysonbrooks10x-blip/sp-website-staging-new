@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Link2, Clock } from "lucide-react";
+import { LayoutDashboard, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/claw/hub", label: "Hub", icon: LayoutDashboard },
   { href: "/claw/pair", label: "Pair", icon: Link2 },
-  { href: "/claw/schedule", label: "Schedule", icon: Clock },
 ] as const;
 
 export function ClawSubNav({ className }: { className?: string }) {
