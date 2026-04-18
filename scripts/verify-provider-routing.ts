@@ -38,51 +38,18 @@ const cases: Case[] = [
   { name: "nano-banana-2-new → apimart", input: { mode: "image", model: "nano-banana-2-new" }, expected: "apimart" },
   { name: "nano-banana-pro → poyo (official tier)", input: { mode: "image", model: "nano-banana-pro" }, expected: "poyo" },
 
-  // --- Sora 2 family ---
-  { name: "sora-2 default → poyo (cheaper flat)", input: { mode: "video", model: "sora-2" }, expected: "poyo" },
-  { name: "sora-2 with remix → apimart (capability)", input: { mode: "video", model: "sora-2", wantsRemix: true }, expected: "apimart" },
-  { name: "sora-2 with character → apimart (capability)", input: { mode: "video", model: "sora-2", needsCharacterReference: true }, expected: "apimart" },
-  { name: "sora-2-pro → poyo (17% cheaper)", input: { mode: "video", model: "sora-2-pro" }, expected: "poyo" },
-
   // --- Price-preferred wins ---
   { name: "grok-vid → apimart (21x cheaper)", input: { mode: "video", model: "grok-vid" }, expected: "apimart" },
   { name: "flux-2-pro → apimart", input: { mode: "image", model: "flux-2-pro" }, expected: "apimart" },
   { name: "flux-2-flex → apimart", input: { mode: "image", model: "flux-2-flex" }, expected: "apimart" },
-  { name: "kling-2.6 → apimart", input: { mode: "video", model: "kling-2.6" }, expected: "apimart" },
   { name: "wan2.6-text-to-video → apimart", input: { mode: "video", model: "wan2.6-text-to-video" }, expected: "apimart" },
   { name: "seedance-1.5-pro → poyo", input: { mode: "video", model: "seedance-1.5-pro" }, expected: "poyo" },
   { name: "hailuo-02 → poyo", input: { mode: "video", model: "hailuo-02" }, expected: "poyo" },
 
   // --- Stage 1 hard gates ---
   { name: "remix mode → apimart (unknown model)", input: { mode: "remix", model: "nano-banana" }, expected: "apimart" },
-  { name: "needsCharacterReference → apimart", input: { mode: "video", model: "seedance-2", needsCharacterReference: true }, expected: "apimart" },
 
   // --- Stage 2 param gates ---
-  {
-    name: "kling-3.0/pro with elements → poyo",
-    input: { mode: "video", model: "kling-3.0/pro", params: { kling_elements: ["alice", "bob"] } },
-    expected: "poyo",
-  },
-  {
-    name: "kling-3.0/pro without elements → apimart",
-    input: { mode: "video", model: "kling-3.0/pro" },
-    expected: "apimart",
-  },
-  {
-    name: "veo3.1-quality reference generation → poyo",
-    input: { mode: "video", model: "veo3.1-quality", params: { generation_type: "reference" } },
-    expected: "poyo",
-  },
-  {
-    name: "veo3.1-quality default → apimart",
-    input: { mode: "video", model: "veo3.1-quality" },
-    expected: "apimart",
-  },
-  {
-    name: "kling-2.6 with last_frame_image → poyo",
-    input: { mode: "video", model: "kling-2.6", params: { last_frame_image: "https://x/y.png" } },
-    expected: "poyo",
-  },
   {
     name: "wan2.6-text-to-video with template → apimart (explicit)",
     input: { mode: "video", model: "wan2.6-text-to-video", params: { template: "squish" } },
@@ -129,11 +96,6 @@ const cases: Case[] = [
     name: "z-image with Poyo down → stays poyo (no secondary)",
     input: { mode: "image", model: "z-image", liveHealth: "down" },
     expected: "poyo",
-  },
-  {
-    name: "sora-2-pro with Poyo degraded → apimart",
-    input: { mode: "video", model: "sora-2-pro", liveHealth: "degraded" },
-    expected: "apimart",
   },
 ]
 

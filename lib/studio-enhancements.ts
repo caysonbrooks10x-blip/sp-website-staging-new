@@ -116,7 +116,7 @@ export function getHailuo23CameraToken(english?: string): string | null {
 
 export function isHailuo23Model(modelId?: string): boolean {
   if (!modelId) return false
-  return modelId === "hailuo-2.3" || modelId === "MiniMax-Hailuo-2.3-Fast"
+  return modelId === "hailuo-2.3"
 }
 
 // -------------------------------------------------------------------

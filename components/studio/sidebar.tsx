@@ -40,7 +40,6 @@ const NAV_SECTIONS = [
     label: "AI VIDEO",
     items: [
       { id: "text-to-video" as StudioMode, label: "Text to Video", icon: Video },
-      { id: "image-to-video" as StudioMode, label: "Image to Video", icon: Film },
     ],
   },
   {
@@ -48,12 +47,6 @@ const NAV_SECTIONS = [
     items: [
       { id: "text-to-image" as StudioMode, label: "Text to Image", icon: ImageIcon },
       { id: "image-to-image" as StudioMode, label: "Image to Image", icon: Layers },
-    ],
-  },
-  {
-    label: "REMIX",
-    items: [
-      { id: "remix" as StudioMode, label: "Remix", icon: Wand2 },
     ],
   },
 ];

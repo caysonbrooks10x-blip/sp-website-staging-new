@@ -66,6 +66,34 @@ export interface NormalizedTaskStatus {
   raw: unknown
 }
 
+function flattenUrlList(input: unknown): string[] {
+  if (typeof input === "string" && input.trim().length > 0) {
+    return [input]
+  }
+
+  if (!Array.isArray(input)) return []
+
+  return input.flatMap((entry) => flattenUrlList(entry))
+}
+
+export interface PublicProviderErrorDetails {
+  code: string
+  status?: number
+  provider?: StudioProvider
+  model?: string
+  retryable?: boolean
+  raw_message?: string
+  primary_provider?: StudioProvider
+  fallback_provider?: StudioProvider
+  primary_error?: string
+  fallback_error?: string
+}
+
+export interface PublicProviderErrorPayload {
+  error: string
+  details: PublicProviderErrorDetails
+}
+
 // -------------------------------------------------------------------
 // Provider-specific submit adapters
 // Each takes the flat bot/web payload and shapes it for the upstream.
@@ -296,8 +324,8 @@ function normalizeApiMartStatus(
   }
   const status: NormalizedStatus = d?.status ? statusMap[d.status] ?? "pending" : "pending"
 
-  const imageUrls = (d?.result?.images ?? []).flatMap((i) => (Array.isArray(i?.url) ? i.url : []))
-  const videoUrls = (d?.result?.videos ?? []).map((v) => v?.url).filter((u): u is string => !!u)
+  const imageUrls = (d?.result?.images ?? []).flatMap((i) => flattenUrlList(i?.url))
+  const videoUrls = (d?.result?.videos ?? []).flatMap((v) => flattenUrlList(v?.url))
   const thumbnail =
     d?.result?.videos?.[0]?.thumbnail_url ||
     d?.result?.thumbnail_url ||
@@ -350,8 +378,8 @@ function normalizePoyoStatus(
   const files: any[] = Array.isArray(body?.files) ? body.files : []
   const outputs: any[] = Array.isArray(body?.outputs) ? body.outputs : []
   const output_urls = [
-    ...files.map((f: any) => f?.file_url).filter((u: unknown): u is string => typeof u === "string"),
-    ...outputs.map((o: any) => o?.url).filter((u: unknown): u is string => typeof u === "string"),
+    ...files.flatMap((f: any) => flattenUrlList(f?.file_url)),
+    ...outputs.flatMap((o: any) => flattenUrlList(o?.url)),
   ]
   const thumbnail =
     files.find((f: any) => f?.thumbnail_url)?.thumbnail_url ??
@@ -399,7 +427,197 @@ function buildRoutingParams(payload: Record<string, unknown>) {
   }
 }
 
+function prettifyModelName(model?: string): string {
+  if (!model) return "This model"
+  return model
+    .replace(/\//g, " ")
+    .replace(/-/g, " ")
+    .replace(/\bofficial\b/gi, "Official")
+    .replace(/\bpro\b/gi, "Pro")
+    .replace(/\bvip\b/gi, "VIP")
+    .replace(/\bveo\b/gi, "Veo")
+    .replace(/\bwan\b/gi, "Wan")
+    .replace(/\bgrok\b/gi, "Grok")
+    .replace(/\bsora\b/gi, "Sora")
+    .replace(/\bseedance\b/gi, "Seedance")
+    .replace(/\bkling\b/gi, "Kling")
+    .replace(/\bhailuo\b/gi, "Hailuo")
+    .replace(/\bdoubao\b/gi, "Doubao")
+    .replace(/\bmini max\b/gi, "MiniMax")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+function unwrapProviderError(error: unknown): {
+  provider?: StudioProvider
+  status?: number
+  code?: number | string
+  retriable?: boolean
+  rawMessage: string
+} {
+  if (error instanceof ApiMartRequestError) {
+    return {
+      provider: "apimart",
+      status: error.status,
+      code: error.code,
+      retriable: error.retriable,
+      rawMessage: error.message,
+    }
+  }
+  if (error instanceof PoyoRequestError) {
+    return {
+      provider: "poyo",
+      status: error.status,
+      code: error.code,
+      retriable: error.retriable,
+      rawMessage: error.message,
+    }
+  }
+  if (error instanceof Error) {
+    return { rawMessage: error.message }
+  }
+  return { rawMessage: "Unknown provider error" }
+}
+
+function classifyProviderFailure(
+  error: unknown,
+  model?: string,
+): PublicProviderErrorPayload {
+  const modelName = prettifyModelName(model)
+  const meta = unwrapProviderError(error)
+  const rawMessage = meta.rawMessage || "Unknown provider error"
+  const lowered = rawMessage.toLowerCase()
+
+  if (
+    meta.status === 402 ||
+    lowered.includes("insufficient account balance") ||
+    lowered.includes("top up") ||
+    lowered.includes("low on credits")
+  ) {
+    return {
+      error: `${modelName} is temporarily unavailable because the upstream service has exhausted its available balance. Please try again later or switch to another model.`,
+      details: {
+        code: "PROVIDER_BALANCE_LOW",
+        status: meta.status,
+        provider: meta.provider,
+        model,
+        retryable: meta.retriable,
+        raw_message: rawMessage,
+      },
+    }
+  }
+
+  if (
+    meta.status === 404 ||
+    lowered.includes("model not found") ||
+    lowered.includes("not currently available")
+  ) {
+    return {
+      error: `${modelName} is not currently available on the live execution route. Please switch models and try again.`,
+      details: {
+        code: "MODEL_UNAVAILABLE",
+        status: meta.status,
+        provider: meta.provider,
+        model,
+        retryable: meta.retriable,
+        raw_message: rawMessage,
+      },
+    }
+  }
+
+  if (
+    meta.status === 422 ||
+    lowered.includes("not support") ||
+    lowered.includes("unsupported") ||
+    lowered.includes("invalid") ||
+    lowered.includes("parameter")
+  ) {
+    return {
+      error: `${modelName} rejected the current settings. Adjust duration, resolution, or reference inputs and try again.`,
+      details: {
+        code: "MODEL_SETTINGS_UNSUPPORTED",
+        status: meta.status,
+        provider: meta.provider,
+        model,
+        retryable: meta.retriable,
+        raw_message: rawMessage,
+      },
+    }
+  }
+
+  if (
+    meta.status === 429 ||
+    meta.status === 503 ||
+    meta.status === 504 ||
+    lowered.includes("please wait and try again later") ||
+    lowered.includes("at capacity") ||
+    lowered.includes("temporarily unavailable") ||
+    lowered.includes("server exception")
+  ) {
+    return {
+      error: `${modelName} is temporarily at capacity on the upstream service. Please retry in a few minutes or switch to another model.`,
+      details: {
+        code: "PROVIDER_CAPACITY",
+        status: meta.status,
+        provider: meta.provider,
+        model,
+        retryable: meta.retriable,
+        raw_message: rawMessage,
+      },
+    }
+  }
+
+  return {
+    error: `${modelName} could not be queued because the upstream service rejected the request. Please retry or switch models.`,
+    details: {
+      code: "UPSTREAM_SUBMIT_FAILED",
+      status: meta.status,
+      provider: meta.provider,
+      model,
+      retryable: meta.retriable,
+      raw_message: rawMessage,
+    },
+  }
+}
+
+export function buildProviderErrorPayload(
+  error: unknown,
+  context: { model?: string } = {},
+): PublicProviderErrorPayload {
+  const combined = error as Error & {
+    primaryError?: unknown
+    fallbackError?: unknown
+  }
+  if (combined?.primaryError || combined?.fallbackError) {
+    const primary = classifyProviderFailure(combined.primaryError, context.model)
+    const fallback = classifyProviderFailure(combined.fallbackError, context.model)
+    const modelName = prettifyModelName(context.model)
+    return {
+      error: `${modelName} could not be queued because both the primary and backup routes failed. ${fallback.error}`,
+      details: {
+        code: "FALLBACK_EXHAUSTED",
+        model: context.model,
+        primary_provider: primary.details.provider,
+        fallback_provider: fallback.details.provider,
+        primary_error: primary.details.raw_message,
+        fallback_error: fallback.details.raw_message,
+        raw_message: combined.message,
+      },
+    }
+  }
+  return classifyProviderFailure(error, context.model)
+}
+
 export function inferHttpStatus(error: unknown): number {
+  const combined = error as Error & { primaryError?: unknown; fallbackError?: unknown }
+  if (combined?.primaryError || combined?.fallbackError) {
+    const primaryStatus = inferHttpStatus(combined.primaryError)
+    if (primaryStatus !== 500) return primaryStatus
+    const fallbackStatus = inferHttpStatus(combined.fallbackError)
+    if (fallbackStatus !== 500) return fallbackStatus
+    return 503
+  }
   if (error instanceof ApiMartRequestError && error.status) return error.status
   if (error instanceof PoyoRequestError && error.status) return error.status
   return 500

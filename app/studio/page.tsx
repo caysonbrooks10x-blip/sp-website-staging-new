@@ -44,6 +44,16 @@ interface NormalizedJobStatus {
   thumbnailUrl?: string;
 }
 
+function flattenOutputUrls(input: unknown): string[] {
+  if (typeof input === "string" && input.trim().length > 0) {
+    return [input];
+  }
+
+  if (!Array.isArray(input)) return [];
+
+  return input.flatMap((entry) => flattenOutputUrls(entry));
+}
+
 const VIDEO_MODEL_IDS = new Set(Object.keys(VIDEO_MODELS));
 
 function inferGenerationType(mode: string, model: string): "image" | "video" {
@@ -111,6 +121,95 @@ function extensionFromBlob(blob: Blob, fallback = "png") {
   return fallback;
 }
 
+function isSurfacedProviderFailure(error: any): boolean {
+  const code = error?.details?.code;
+  return [
+    "PROVIDER_BALANCE_LOW",
+    "MODEL_UNAVAILABLE",
+    "MODEL_SETTINGS_UNSUPPORTED",
+    "PROVIDER_CAPACITY",
+    "UPSTREAM_SUBMIT_FAILED",
+    "FALLBACK_EXHAUSTED",
+  ].includes(code);
+}
+
+const STUDIO_ACTIVE_STORAGE_KEY = "studio_active_generation";
+const STUDIO_ACTIVE_TIME_KEY = "studio_active_time";
+const STUDIO_HISTORY_STORAGE_KEY = "studio_generations_history";
+const ACTIVE_PERSIST_INTERVAL_MS = 5000;
+const HISTORY_PERSIST_INTERVAL_MS = 5000;
+
+function pickPersistableSettings(settings: any) {
+  if (!settings || typeof settings !== "object") return undefined;
+
+  const picked = {
+    mode: settings.mode,
+    creationMode: settings.creationMode,
+    provider: settings.provider,
+    fallbackUsed: settings.fallbackUsed,
+    fallbackModel: settings.fallbackModel,
+    aspectRatio: settings.aspectRatio,
+    size: settings.size,
+    resolution: settings.resolution,
+    duration: settings.duration,
+    output_format: settings.output_format,
+    n: settings.n,
+    rootCreationId: settings.rootCreationId,
+    originalCreationId: settings.originalCreationId,
+    parentCreationId: settings.parentCreationId,
+    remixDepth: settings.remixDepth,
+    sourcePostId: settings.sourcePostId,
+    campaign: settings.campaign,
+    originalPrompt: settings.originalPrompt,
+  };
+
+  return Object.fromEntries(
+    Object.entries(picked).filter(([, value]) => value !== undefined && value !== null && value !== "")
+  );
+}
+
+function serializeGenerationForStorage(item: GenerationItem | null) {
+  if (!item) return null;
+
+  return {
+    id: item.id,
+    type: item.type,
+    src: item.src,
+    srcs: item.srcs,
+    creationId: item.creationId,
+    creationIds: item.creationIds,
+    taskId: item.taskId,
+    generationPlatform: item.generationPlatform,
+    thumbnailUrl: item.thumbnailUrl,
+    prompt: item.prompt,
+    model: item.model,
+    status: item.status,
+    error: item.error,
+    progress: item.progress,
+    completedCount: item.completedCount,
+    totalCount: item.totalCount,
+    settings: pickPersistableSettings(item.settings),
+  };
+}
+
+function safeSetLocalStorage(key: string, value: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, value);
+  } catch (error) {
+    console.warn(`Failed to write ${key} to localStorage.`, error);
+  }
+}
+
+function safeRemoveLocalStorage(key: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(key);
+  } catch (error) {
+    console.warn(`Failed to remove ${key} from localStorage.`, error);
+  }
+}
+
 export default function StudioPage() {
   return (
     <ProtectedRoute>
@@ -158,13 +257,15 @@ function StudioLayout() {
   const [showBillingAlert, setShowBillingAlert] = useState(false);
   const processedJobIdRef = useRef<string | null>(null);
   const cancelledJobsRef = useRef<Set<string>>(new Set());
+  const lastActivePersistAtRef = useRef(0);
+  const lastHistoryPersistAtRef = useRef(0);
 
   
   useEffect(() => {
     try {
-      const savedActive = localStorage.getItem("studio_active_generation");
-      const savedActiveTime = localStorage.getItem("studio_active_time");
-      const savedGens = localStorage.getItem("studio_generations_history");
+      const savedActive = localStorage.getItem(STUDIO_ACTIVE_STORAGE_KEY);
+      const savedActiveTime = localStorage.getItem(STUDIO_ACTIVE_TIME_KEY);
+      const savedGens = localStorage.getItem(STUDIO_HISTORY_STORAGE_KEY);
 
       if (savedActive && savedActiveTime) {
         const isStale = Date.now() - parseInt(savedActiveTime, 10) > 5 * 60 * 1000;
@@ -172,15 +273,15 @@ function StudioLayout() {
           setActiveGeneration(JSON.parse(savedActive));
           if (savedGens) setGenerations(JSON.parse(savedGens));
         } else {
-          localStorage.removeItem("studio_active_generation");
-          localStorage.removeItem("studio_generations_history");
-          localStorage.removeItem("studio_active_time");
+          safeRemoveLocalStorage(STUDIO_ACTIVE_STORAGE_KEY);
+          safeRemoveLocalStorage(STUDIO_HISTORY_STORAGE_KEY);
+          safeRemoveLocalStorage(STUDIO_ACTIVE_TIME_KEY);
         }
       } else if (savedActive || savedGens) {
         
-        localStorage.removeItem("studio_active_generation");
-        localStorage.removeItem("studio_generations_history");
-        localStorage.removeItem("studio_active_time");
+        safeRemoveLocalStorage(STUDIO_ACTIVE_STORAGE_KEY);
+        safeRemoveLocalStorage(STUDIO_HISTORY_STORAGE_KEY);
+        safeRemoveLocalStorage(STUDIO_ACTIVE_TIME_KEY);
       }
     } catch (error) {
       console.warn("Failed to load generic studio state:", error);
@@ -190,18 +291,42 @@ function StudioLayout() {
   
   useEffect(() => {
     if (activeGeneration) {
-      localStorage.setItem("studio_active_generation", JSON.stringify(activeGeneration));
-      localStorage.setItem("studio_active_time", Date.now().toString());
+      const now = Date.now();
+      const shouldThrottle =
+        (activeGeneration.status === "queued" || activeGeneration.status === "generating") &&
+        now - lastActivePersistAtRef.current < ACTIVE_PERSIST_INTERVAL_MS;
+
+      if (shouldThrottle) return;
+
+      lastActivePersistAtRef.current = now;
+      safeSetLocalStorage(
+        STUDIO_ACTIVE_STORAGE_KEY,
+        JSON.stringify(serializeGenerationForStorage(activeGeneration))
+      );
+      safeSetLocalStorage(STUDIO_ACTIVE_TIME_KEY, String(now));
     } else {
-      localStorage.removeItem("studio_active_generation");
-      localStorage.removeItem("studio_active_time");
+      safeRemoveLocalStorage(STUDIO_ACTIVE_STORAGE_KEY);
+      safeRemoveLocalStorage(STUDIO_ACTIVE_TIME_KEY);
     }
   }, [activeGeneration]);
 
   useEffect(() => {
     if (generations.length > 0) {
-      
-      localStorage.setItem("studio_generations_history", JSON.stringify(generations.slice(0, 10)));
+      const now = Date.now();
+      const hasInFlightGeneration = generations.some(
+        (generation) => generation.status === "queued" || generation.status === "generating"
+      );
+      if (hasInFlightGeneration && now - lastHistoryPersistAtRef.current < HISTORY_PERSIST_INTERVAL_MS) {
+        return;
+      }
+
+      lastHistoryPersistAtRef.current = now;
+      safeSetLocalStorage(
+        STUDIO_HISTORY_STORAGE_KEY,
+        JSON.stringify(generations.slice(0, 10).map((generation) => serializeGenerationForStorage(generation)))
+      );
+    } else {
+      safeRemoveLocalStorage(STUDIO_HISTORY_STORAGE_KEY);
     }
   }, [generations]);
 
@@ -268,9 +393,9 @@ function StudioLayout() {
     
     setGenerations([]);
     setActiveGeneration(null);
-    localStorage.removeItem("studio_generations_history");
-    localStorage.removeItem("studio_active_generation");
-    localStorage.removeItem("studio_active_time");
+    safeRemoveLocalStorage(STUDIO_HISTORY_STORAGE_KEY);
+    safeRemoveLocalStorage(STUDIO_ACTIVE_STORAGE_KEY);
+    safeRemoveLocalStorage(STUDIO_ACTIVE_TIME_KEY);
 
     let telemetryProvider: StudioProvider | null = null;
 
@@ -379,7 +504,7 @@ function StudioLayout() {
       toast.loading('Initiating AI Model creation...', { id: 'gen-toast' });
 
       const count = dynamicParameters.n && typeof dynamicParameters.n === 'number' ? dynamicParameters.n : 1;
-      const usedModel = model || (requestedMode === 'video' ? "sora-2" : "flux-2-pro");
+      const usedModel = model || (requestedMode === 'video' ? "grok-vid" : "flux-2-pro");
       const generationType = inferGenerationType(requestedMode, usedModel);
       const hasImageReference = Boolean(dynamicParameters.image_url || dynamicParameters.image_urls?.length);
       const imageModelConfig = generationType === "image" ? getImageModelConfig(usedModel) : undefined;
@@ -478,7 +603,7 @@ function StudioLayout() {
                   );
                   const statusJson = await statusResp.json();
                   if (statusJson.status === "completed") {
-                    reframedUrl = Array.isArray(statusJson.output_urls) ? statusJson.output_urls[0] : undefined;
+                    reframedUrl = flattenOutputUrls(statusJson.output_urls)[0];
                     break;
                   }
                   if (statusJson.status === "failed") {
@@ -561,7 +686,9 @@ function StudioLayout() {
         });
         const submission = await response.json();
         if (!response.ok) {
-          throw new Error(submission?.error || "Generation submission failed");
+          const submitError = new Error(submission?.error || "Generation submission failed");
+          (submitError as any).details = submission?.details;
+          throw submitError;
         }
 
         const actualProvider: StudioProvider = submission.provider ?? "apimart";
@@ -745,7 +872,7 @@ function StudioLayout() {
       const appCode = error.details?.code;
       if (appCode === "INSUFFICIENT_TOKENS") {
         setShowBillingAlert(true);
-      } else if (appCode === "PROVIDER_ERROR") {
+      } else if (appCode === "PROVIDER_ERROR" || isSurfacedProviderFailure(error)) {
         if (telemetryProvider) {
           recordProviderTelemetryEvent({
             provider: telemetryProvider,
@@ -753,7 +880,10 @@ function StudioLayout() {
             message: error instanceof Error ? error.message : "Provider error before queueing.",
           });
         }
-        toast.error("AI Provider is currently at capacity or low on credits. Your tokens have been refunded. Please try again or switch models.", { duration: 6000 });
+        toast.error(error?.message || "The upstream model rejected this job. Please retry or switch models.", {
+          duration: 7000,
+          id: "gen-toast",
+        });
       } else {
         if (telemetryProvider) {
           recordProviderTelemetryEvent({
@@ -827,7 +957,9 @@ function StudioLayout() {
         const raw = await response.text();
         const payload = raw ? JSON.parse(raw) : null;
         if (!response.ok) {
-          throw new Error(payload?.error || `Task polling failed (${response.status})`);
+          const statusError = new Error(payload?.error || `Task polling failed (${response.status})`);
+          (statusError as any).details = payload?.details;
+          throw statusError;
         }
 
         // Adapt /api/route/tasks normalized shape → legacy field names
@@ -856,8 +988,14 @@ function StudioLayout() {
           console.log("Finished Rendering!", data);
 
           
-          const rawUrls = data.outputUrls || data.output_urls || data.images || data.urls || data.result_urls || (Array.isArray(data.outputUrl) ? data.outputUrl : null);
-          const urls = Array.isArray(rawUrls) ? rawUrls.filter(u => !!u) : [];
+          const rawUrls =
+            data.outputUrls ||
+            data.output_urls ||
+            data.images ||
+            data.urls ||
+            data.result_urls ||
+            (Array.isArray(data.outputUrl) ? data.outputUrl : data.outputUrl ? [data.outputUrl] : null);
+          const urls = flattenOutputUrls(rawUrls);
 
           if (urls.length > 1) {
             
@@ -975,8 +1113,8 @@ function StudioLayout() {
       setIsGenerating(false);
 
       
-      localStorage.removeItem("studio_active_generation");
-      localStorage.removeItem("studio_active_time");
+      safeRemoveLocalStorage(STUDIO_ACTIVE_STORAGE_KEY);
+      safeRemoveLocalStorage(STUDIO_ACTIVE_TIME_KEY);
 
       console.log("Job marked as cancelled locally, syncing with backend...");
 

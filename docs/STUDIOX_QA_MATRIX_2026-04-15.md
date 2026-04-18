@@ -16,6 +16,13 @@ Pass/Fail and capture the **actual cost** charged on the provider
 dashboard so we can resolve the §14 price gaps that the handoff flagged
 as "TBD — verify on a real run."
 
+> **2026-04-18 reality check:** this matrix contains archival rows from the
+> broader provider-research phase. The active public Studio web surface is now
+> narrower and is defined by `lib/model-config.ts` -> `VIDEO_MODEL_PRIORITY`.
+> If a model is not in that keep-list, treat its row here as historical rather
+> than release-blocking. Telegram should mirror `VIDEO_MODEL_PRIORITY`, not the
+> full archival matrix.
+
 ---
 
 ## How to run
@@ -85,7 +92,7 @@ no model resolves to `null` or 404s.
 
 | # | Model | Inputs | Expected provider | Expected gate | Observed provider | Observed cost USD | Pass/Fail |
 |---|-------|--------|-------------------|---------------|-------------------|-------------------|-----------|
-| B1 | sora-2 | text-only | poyo | also apimart | | | |
+| B1 | sora-2 | text-only | apimart | live override: Poyo 404ed during 2026-04-18 probes | | | |
 | B2 | sora-2 | remix existing | apimart | gateToApimart `remix` | | | |
 | B3 | sora-2 | character lock on | apimart | hard gate Stage 1 | | | |
 | B4 | sora-2 | preview tier | apimart | gateToApimart `preview` | | | |
@@ -93,7 +100,7 @@ no model resolves to `null` or 404s.
 | B6 | sora-2-vip | text-only | apimart | only on apimart | | | |
 | B7 | sora-2-preview | text-only | apimart | only on apimart | | | |
 | B8 | sora-2-pro-preview | text-only | apimart | only on apimart | | | |
-| B9 | sora-2-official | text-only | poyo | only on poyo (apimart removed P0) | | | |
+| B9 | sora-2-official | text-only | poyo | only on poyo (legacy / not in current web keep-list) | | | |
 | B10 | veo3.1-lite | text-only | apimart | only on apimart | | | |
 | B11 | veo3.1-fast | text-only | apimart | also poyo | | | |
 | B12 | veo3.1-quality | text-only | apimart | also poyo | | | |
@@ -117,7 +124,7 @@ no model resolves to `null` or 404s.
 | B30 | seedance-1.5-pro | text-only | poyo | also apimart | | | |
 | B31 | seedance-2 | text-only | poyo | only on poyo | | | |
 | B32 | seedance-2-fast | text-only | poyo | only on poyo | | | |
-| B33 | doubao-seedance-2.0 | text-only | poyo | also apimart | | | |
+| B33 | doubao-seedance-2.0 | text-only | apimart | ApiMart-native wire name; Poyo only accepts `seedance-2` | | | |
 | B34 | doubao-seedance-2.0-face | with image_url | apimart | only on apimart | | | |
 | B35 | doubao-seedance-2.0-fast-face | with image_url | apimart | only on apimart | | | |
 | B36 | hailuo-02 | text-only | poyo | also apimart | | | |
@@ -239,7 +246,7 @@ the generate uses the cross-provider mirror.
 
 | # | Primary model | Expected fallback provider | Expected fallback model | Pass/Fail |
 |---|---------------|----------------------------|-------------------------|-----------|
-| F1 | sora-2 | apimart | sora-2 | |
+| F1 | sora-2 | none — hard fail until a working alternate live route is revalidated | — | |
 | F2 | sora-2-pro | apimart | sora-2-pro | |
 | F3 | seedream-4.5 | apimart | seedream-4.5 | |
 | F4 | seedance-1.0-pro | apimart | seedance-1.0-pro | |

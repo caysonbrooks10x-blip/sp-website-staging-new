@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { routeImageSubmit, inferHttpStatus } from "@/lib/provider-router"
+import { routeImageSubmit, inferHttpStatus, buildProviderErrorPayload } from "@/lib/provider-router"
 
 export const runtime = "nodejs"
 
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const result = await routeImageSubmit(payload)
     return NextResponse.json(result)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Image generation failed"
-    return NextResponse.json({ error: message }, { status: inferHttpStatus(error) })
+    const payload = buildProviderErrorPayload(error, {})
+    return NextResponse.json(payload, { status: inferHttpStatus(error) })
   }
 }
