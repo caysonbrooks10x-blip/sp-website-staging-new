@@ -170,69 +170,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
         setShowPublishModal(true);
     };
 
-    const handlePublishWorkflowSingle = (
-        url: string,
-        creationId: string | undefined,
-        type: "image" | "video"
-    ) => {
-        if (!activeGeneration) return;
-
-        const workflowPayload = buildStudioTemplateSharePayload({
-            name: activeGeneration.settings?.templateName || `${activeGeneration.model || "StudioX"} Workflow`,
-            description: "Reusable workflow published from Studio.",
-            mode:
-                activeGeneration.settings?.creationMode === "remix"
-                    ? "remix"
-                    : type === "video"
-                        ? "video"
-                        : "image",
-            model: activeGeneration.model || activeGeneration.settings?.model,
-            provider: activePlatform,
-            prompt: activeGeneration.settings?.originalPrompt || activeGeneration.prompt,
-            aspectRatio: activeGeneration.settings?.aspectRatio || activeGeneration.settings?.size,
-            resolution: activeGeneration.settings?.resolution,
-            duration: activeGeneration.settings?.duration,
-            imageCount: activeGeneration.settings?.n,
-            remixStrength: activeGeneration.settings?.image_weight
-                ? Math.round(Number(activeGeneration.settings.image_weight) * 100)
-                : activeGeneration.settings?.remixStrength,
-            outputFormat: activeGeneration.settings?.output_format,
-            videoStyle: activeGeneration.settings?.style,
-            videoMode: activeGeneration.settings?.mode,
-            negativePrompt: activeGeneration.settings?.negative_prompt,
-            storyboard: activeGeneration.settings?.storyboard,
-            soundEnabled: activeGeneration.settings?.sound,
-            generateAudio: activeGeneration.settings?.generate_audio,
-            characterOrientation: activeGeneration.settings?.character_orientation,
-            cameraMovement: activeGeneration.settings?.cameraMovement,
-            effectPreset: activeGeneration.settings?.effectPreset,
-            audioDirection: activeGeneration.settings?.audioDirection,
-            characterLock: activeGeneration.settings?.characterLock,
-            sharedFrom: "generation",
-        });
-
-        setPublishTarget({
-            url,
-            type,
-            prompt: activeGeneration.prompt,
-            creationId,
-            parentCreationId: activeGeneration.settings?.originalCreationId,
-            rootCreationId: activeGeneration.settings?.rootCreationId,
-            remixDepth: activeGeneration.settings?.remixDepth,
-            sourcePostId: activeGeneration.settings?.sourcePostId,
-            campaign: buildCampaignMeta(),
-            generationPlatform: `${activePlatform}-template`,
-            taskId: activeGeneration.taskId || creationId,
-            defaultTitle: `${workflowPayload.name || "Studio Workflow"} Template`,
-            defaultDescription: `Reusable Studio workflow for ${workflowPayload.prompt}`,
-            defaultTags: ["community", "template", "workflow", activePlatform, type],
-            templatePack: encodeStudioTemplatePack(workflowPayload),
-            templateShareUrl: buildStudioTemplateShareUrl(workflowPayload, typeof window !== "undefined" ? window.location.origin : undefined),
-            workflowMode: workflowPayload.mode,
-        });
-        setShowPublishModal(true);
-    };
-
     const buildCampaignMeta = (): CommunityCampaignMeta | undefined => {
         const campaign = activeGeneration?.settings?.campaign;
         if (!campaign) return undefined;
@@ -509,19 +446,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                 fill
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 transition-opacity duration-400" />
-                                            <div className="absolute inset-x-0 bottom-0 p-2 sm:p-3 flex items-center justify-between gap-1 opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 transition-all duration-300 z-10 w-full overflow-hidden">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(src)}&prompt=${encodeURIComponent(activeGeneration.prompt)}&remixType=image&creationId=${activeGeneration.creationIds?.[idx] || activeGeneration.id}&rootCreationId=${activeGeneration.settings?.rootCreationId || activeGeneration.settings?.originalCreationId || activeGeneration.creationIds?.[idx] || activeGeneration.id}&remixDepth=${(activeGeneration.settings?.remixDepth || 0) + 1}&sourcePostId=${activeGeneration.settings?.sourcePostId || ""}&taskId=${encodeURIComponent(activeGeneration.taskId || activeGeneration.creationIds?.[idx] || activeGeneration.creationId || "")}&generationPlatform=${encodeURIComponent(activePlatform)}&aspectRatio=${encodeURIComponent(activeGeneration.settings?.aspectRatio || activeGeneration.settings?.size || "1:1")}&model=${encodeURIComponent(activeGeneration.model || activeGeneration.settings?.model || "gpt-image-1.5")}`;
-                                                        window.history.pushState({}, '', remixUrl);
-                                                        window.dispatchEvent(new PopStateEvent('popstate'));
-                                                    }}
-                                                    className="bg-black/70 hover:bg-black/90 text-white backdrop-blur-2xl h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-2xl border border-white/10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/rbtn"
-                                                    title="Remix"
-                                                >
-                                                    <Wand2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 group-hover/rbtn:-translate-y-[1px] transition-transform" />
-                                                </button>
+                                            <div className="absolute inset-x-0 bottom-0 p-2 sm:p-3 flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover/card:opacity-100 transition-all duration-300 z-10 w-full overflow-hidden">
                                                 <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                                     <button
                                                         onClick={(e) => {
@@ -570,20 +495,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                         className="bg-white hover:bg-zinc-100 text-black h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-xl shadow-white/10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/pbtn"
                                                     >
                                                         <Share className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/pbtn:-translate-y-[1px] transition-transform" />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handlePublishWorkflowSingle(
-                                                                src,
-                                                                activeGeneration.creationIds?.[idx] || activeGeneration.creationId,
-                                                                activeGeneration.type
-                                                            );
-                                                        }}
-                                                        title="Publish Workflow"
-                                                        className="bg-[#06b6d4]/10 hover:bg-[#06b6d4]/15 text-[#f1ddb1] h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl shadow-xl border border-[#06b6d4]/20 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 group/tbtn"
-                                                    >
-                                                        <Wand2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/tbtn:-translate-y-[1px] transition-transform" />
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
@@ -697,17 +608,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     {isDownloading ? <Loader2 className="w-4 h-4 text-zinc-300 animate-spin" /> : <Download className="w-4 h-4 sm:w-5 sm:h-5 text-white/90 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />}
                                                 </button>
                                                 <button
-                                                    onClick={() => {
-                                                        const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(activeGeneration.src || "")}&prompt=${encodeURIComponent(activeGeneration.prompt)}&remixType=${activeGeneration.type}&creationId=${activeGeneration.creationId || activeGeneration.id}&rootCreationId=${activeGeneration.settings?.rootCreationId || activeGeneration.settings?.originalCreationId || activeGeneration.creationId || activeGeneration.id}&remixDepth=${(activeGeneration.settings?.remixDepth || 0) + 1}&sourcePostId=${activeGeneration.settings?.sourcePostId || ""}&taskId=${encodeURIComponent(activeGeneration.taskId || activeGeneration.creationId || activeGeneration.id)}&generationPlatform=${encodeURIComponent(activePlatform)}`;
-                                                        window.history.pushState({}, '', remixUrl);
-                                                        window.dispatchEvent(new PopStateEvent('popstate'));
-                                                    }}
-                                                    className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-2xl h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-2xl border border-white/10 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
-                                                    title="Remix Result"
-                                                >
-                                                    <Wand2 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
-                                                </button>
-                                                <button
                                                     onClick={() => downloadZipSingle(activeGeneration.src || "", activeGeneration.type)}
                                                     className="bg-black/60 hover:bg-black/80 text-white backdrop-blur-2xl h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-2xl border border-white/10 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                     title="Download Zip"
@@ -734,17 +634,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                                                     className="bg-white hover:bg-zinc-100 text-black h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-xl shadow-white/10 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
                                                 >
                                                     <Share className="w-4 h-4 sm:w-5 sm:h-5 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handlePublishWorkflowSingle(
-                                                        activeGeneration.src || "",
-                                                        activeGeneration.creationId,
-                                                        activeGeneration.type
-                                                    )}
-                                                    className="bg-[#06b6d4]/10 hover:bg-[#06b6d4]/15 text-[#f1ddb1] h-10 w-10 sm:h-12 sm:w-12 lg:h-11 lg:w-11 rounded-xl sm:rounded-2xl shadow-xl border border-[#06b6d4]/20 flex items-center justify-center pointer-events-auto transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] group/btn"
-                                                    title="Publish Workflow"
-                                                >
-                                                    <Wand2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover/btn:-translate-y-0.5 transition-transform duration-300" />
                                                 </button>
                                                 <button
                                                     onClick={() => void sendToClaw(activeGeneration.src || "", activeGeneration.creationId)}

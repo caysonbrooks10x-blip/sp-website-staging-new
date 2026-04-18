@@ -1296,7 +1296,12 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                     ) : (
                         <span className="flex items-center justify-center gap-2.5 relative z-10">
                             <Sparkles className={cn("w-4 h-4 transition-all duration-700 group-hover:rotate-12 group-hover:scale-110", isGenerating || !prompt ? "opacity-50" : "text-black")} />
-                            <span className="relative top-[0.5px]">Generate</span>
+                            <span className="relative top-[0.5px]">
+                                Generate
+                                {currentTaskCredits > 0 && (
+                                    <span className="ml-2 opacity-80">· {currentTaskCredits} credit{currentTaskCredits === 1 ? "" : "s"}</span>
+                                )}
+                            </span>
                         </span>
                     )}
                 </Button>

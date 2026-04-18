@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { Share2, Clock, Sparkles, Download, Trash2, Loader2, Wand2, X } from "lucide-react"
+import { Share2, Clock, Sparkles, Download, Trash2, Loader2, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -10,7 +10,6 @@ import { useState } from "react"
 import { httpsCallable } from "firebase/functions"
 import { functions } from "@/lib/firebaseClient"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
 import { deletePersistedStudioGeneration } from "@/lib/studio-generations"
 
@@ -37,21 +36,12 @@ interface CreationCardProps {
 }
 
 export function CreationCard({ item, index, onDelete }: CreationCardProps) {
-    const router = useRouter();
     const { user } = useAuth();
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
 
-    const handleRemix = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const remixUrl = `/studio?mode=remix&previewUrl=${encodeURIComponent(item.previewUrl)}&prompt=${encodeURIComponent(item.prompt || "")}&remixType=${item.type || 'image'}&creationId=${item.id}&rootCreationId=${item.rootCreationId || item.id}&remixDepth=${(item.remixDepth || 0) + 1}&sourcePostId=${item.sourcePostId || ""}&taskId=${encodeURIComponent(item.taskId || item.id)}&generationPlatform=${encodeURIComponent(item.generationPlatform || "")}`;
-        router.push(remixUrl);
-    };
-
-    
     const getFileExtension = (url: string, type?: string): string => {
         try {
             const pathname = new URL(url).pathname.toLowerCase();
@@ -177,12 +167,6 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
 
                     {}
                     <div className="grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
-                        <Button
-                            onClick={handleRemix}
-                            className="bg-[#c8ff00] hover:bg-[#b8ef00] text-black text-[11px] font-bold h-9 shadow-[0_0_15px_rgba(200,255,0,0.2)] transition-all rounded-lg"
-                        >
-                            <Wand2 className="w-3.5 h-3.5 mr-1.5" /> Remix
-                        </Button>
                         <Button
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPublishModal(true); }}
                             className="bg-white hover:bg-zinc-200 text-black text-[11px] font-bold h-9 shadow-lg shadow-white/10 transition-all rounded-lg"

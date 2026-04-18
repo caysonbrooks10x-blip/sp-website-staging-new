@@ -1,3 +1,5 @@
+import { getModelCredits } from "./model-credits";
+
 export type ModelType = "image" | "video";
 
 export interface DurationOption {
@@ -109,7 +111,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: true,
     supportsOutputFormat: false,
     editVariant: "gpt-4o-image-edit",
-    getCost: ({ n = 1 }) => 4 * n,
+    getCost: ({ n = 1 }) => getModelCredits("gpt-4o-image", { n }),
   },
 
   "gpt-image-1.5": {
@@ -125,7 +127,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: true,
     supportsOutputFormat: false,
     editVariant: "gpt-image-1.5-edit",
-    getCost: ({ n = 1 }) => 2 * n,
+    getCost: ({ n = 1 }) => getModelCredits("gpt-image-1.5", { n }),
   },
 
   "nano-banana": {
@@ -141,7 +143,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: false,
     supportsOutputFormat: false,
     editVariant: "nano-banana-edit",
-    getCost: () => 5,
+    getCost: () => getModelCredits("nano-banana"),
   },
 
   "nano-banana-2": {
@@ -162,7 +164,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: false,
     supportsOutputFormat: false,
     editVariant: "nano-banana-2-edit",
-    getCost: ({ resolution = "2K" }) => 8 * (resolution === "2K" ? 2 : 1),
+    getCost: ({ resolution = "2K" }) => getModelCredits("nano-banana-2", { resolution }),
   },
 
   "nano-banana-2-new": {
@@ -184,7 +186,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsOutputFormat: false,
     editVariant: "nano-banana-2-new-edit",
     isNew: true,
-    getCost: ({ resolution = "2K" }) => 5 * (resolution === "2K" ? 2 : 1),
+    getCost: ({ resolution = "2K" }) => getModelCredits("nano-banana-2-new", { resolution }),
   },
 
   "flux-2-pro": {
@@ -206,7 +208,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: false,
     supportsOutputFormat: false,
     editVariant: "flux-2-pro-edit",
-    getCost: ({ resolution = "1K" }) => 6 * (resolution === "2K" ? 2 : 1),
+    getCost: ({ resolution = "1K" }) => getModelCredits("flux-2-pro", { resolution }),
   },
 
   "flux-2-flex": {
@@ -227,7 +229,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: false,
     supportsOutputFormat: false,
     editVariant: "flux-2-flex-edit",
-    getCost: ({ resolution = "1K" }) => 18 * (resolution === "2K" ? 2 : 1),
+    getCost: ({ resolution = "1K" }) => getModelCredits("flux-2-flex", { resolution }),
   },
 
   "flux-kontext-pro": {
@@ -245,7 +247,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsOutputFormat: true,
     outputFormatOptions: ["png", "jpg"],
     editVariant: "flux-kontext-pro-edit",
-    getCost: () => 6,
+    getCost: () => getModelCredits("flux-kontext-pro"),
   },
 
   "flux-kontext-max": {
@@ -263,7 +265,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsOutputFormat: true,
     outputFormatOptions: ["png", "jpg"],
     editVariant: "flux-kontext-max-edit",
-    getCost: () => 10,
+    getCost: () => getModelCredits("flux-kontext-max"),
   },
 
   "seedream-4.5": {
@@ -280,7 +282,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: false,
     supportsOutputFormat: false,
     editVariant: "seedream-4.5-edit",
-    getCost: ({ n = 1 }) => 5 * n,
+    getCost: ({ n = 1 }) => getModelCredits("seedream-4.5", { n }),
   },
 
   "seedream-5.0-lite": {
@@ -297,7 +299,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: false,
     supportsOutputFormat: false,
     editVariant: "seedream-5.0-lite-edit",
-    getCost: ({ n = 1 }) => 5 * n,
+    getCost: ({ n = 1 }) => getModelCredits("seedream-5.0-lite", { n }),
   },
 
   "z-image": {
@@ -313,7 +315,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: false,
     supportsOutputFormat: false,
     editVariant: null,
-    getCost: () => 2,
+    getCost: () => getModelCredits("z-image"),
   },
 
   "nano-banana-pro": {
@@ -336,7 +338,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsOutputFormat: false,
     editVariant: "nano-banana-pro-edit",
     isNew: true,
-    getCost: ({ resolution = "2K" }) => 10 * (resolution === "4K" ? 4 : resolution === "2K" ? 2 : 1),
+    getCost: ({ resolution = "2K" }) => getModelCredits("nano-banana-pro", { resolution }),
   },
 
   "nano-banana-2-official": {
@@ -357,7 +359,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: false,
     supportsOutputFormat: false,
     editVariant: "nano-banana-2-official-edit",
-    getCost: ({ resolution = "2K" }) => 12 * (resolution === "2K" ? 2 : 1),
+    getCost: ({ resolution = "2K" }) => getModelCredits("nano-banana-2-official", { resolution }),
   },
 
   "qwen-image-2.0-pro": {
@@ -374,7 +376,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsOutputFormat: false,
     editVariant: null,
     isNew: true,
-    getCost: () => 5,
+    getCost: () => getModelCredits("qwen-image-2.0-pro"),
   },
 
   "wan-2.7-image-pro": {
@@ -391,7 +393,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsOutputFormat: false,
     editVariant: null,
     isNew: true,
-    getCost: () => 5,
+    getCost: () => getModelCredits("wan-2.7-image-pro"),
   },
 
   "kling-o3-image": {
@@ -408,7 +410,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsOutputFormat: false,
     editVariant: null,
     isNew: true,
-    getCost: () => 6,
+    getCost: () => getModelCredits("kling-o3-image"),
   },
 
 
@@ -425,7 +427,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsMask: false,
     supportsOutputFormat: false,
     editVariant: null,
-    getCost: () => 6,
+    getCost: () => getModelCredits("grok-imagine-image"),
   },
 
   // --- Step 3: added from handoff §11 P3 ---
@@ -467,7 +469,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsMode: true,
     modeOptions: ["normal", "fun", "spicy"],
     supportsCharacterOrientation: false,
-    getCost: () => 30,
+    getCost: ({ duration }) => getModelCredits("grok-vid", { duration }),
   },
 
 
@@ -507,10 +509,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     durationConstraints: {
       "1080p": [6],
     },
-    getCost: ({ resolution = "768p", duration = 6 }) => {
-      if (resolution === "1080p") return 70;
-      return duration === 10 ? 70 : 35;
-    },
+    getCost: ({ resolution = "768p", duration = 6 }) => getModelCredits("hailuo-2.3", { resolution, duration }),
   },
 
   "wan2.6-text-to-video": {
@@ -546,7 +545,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsMode: false,
     supportsCharacterOrientation: false,
     supportsEffectPreset: true,
-    getCost: ({ resolution = "1080p", duration = 5 }) => (resolution === "1080p" ? 30 : 15) * (duration / 5),
+    getCost: ({ resolution = "1080p", duration = 5 }) => getModelCredits("wan2.6-text-to-video", { resolution, duration }),
   },
 
 
@@ -589,14 +588,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsCharacterOrientation: false,
     supportsCharacterLock: true,
     isNew: true,
-    getCost: ({ resolution = "1080p", duration = 4 }) => {
-      const grid: Record<string, Record<number, number>> = {
-        "1080p": { 4: 20, 8: 40, 12: 60, 15: 75 },
-        "2K": { 4: 30, 8: 60, 12: 90, 15: 110 },
-        "4K": { 4: 48, 8: 96, 12: 144, 15: 180 },
-      };
-      return grid[resolution]?.[duration] ?? 20;
-    },
+    getCost: ({ resolution = "1080p", duration = 4 }) => getModelCredits("doubao-seedance-2.0", { resolution, duration }),
   },
 
   // --- Step 3: added from handoff §11 P3 ---
@@ -627,7 +619,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsMode: false,
     supportsCharacterOrientation: false,
     isNew: true,
-    getCost: () => 30,
+    getCost: () => getModelCredits("veo3.1-lite"),
   },
 
   "veo3.1-fast-official": {
@@ -657,7 +649,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsMode: false,
     supportsCharacterOrientation: false,
     isNew: true,
-    getCost: () => 60,
+    getCost: () => getModelCredits("veo3.1-fast-official"),
   },
 
   "veo3.1-quality-official": {
@@ -687,7 +679,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsMode: false,
     supportsCharacterOrientation: false,
     isNew: true,
-    getCost: () => 120,
+    getCost: () => getModelCredits("veo3.1-quality-official"),
   },
 
 
@@ -719,7 +711,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsCharacterOrientation: false,
     supportsCharacterLock: true,
     isNew: true,
-    getCost: ({ resolution = "1080p", duration = 5 }) => (resolution === "1080p" ? 40 : 24) * (duration / 5),
+    getCost: ({ resolution = "1080p", duration = 5 }) => getModelCredits("kling-v3-omni", { resolution, duration }),
   },
 
   "kling-video-o1": {
@@ -750,7 +742,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsCharacterOrientation: false,
     supportsCharacterLock: true,
     isNew: true,
-    getCost: ({ resolution = "1080p", duration = 5 }) => (resolution === "1080p" ? 36 : 22) * (duration / 5),
+    getCost: ({ resolution = "1080p", duration = 5 }) => getModelCredits("kling-video-o1", { resolution, duration }),
   },
 
 
@@ -783,7 +775,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsMode: false,
     supportsCharacterOrientation: false,
     isNew: true,
-    getCost: ({ resolution = "720p", duration = 5 }) => (resolution === "1080p" ? 44 : 28) * (duration / 5),
+    getCost: ({ resolution = "720p", duration = 5 }) => getModelCredits("wan2.6-video-to-video", { resolution, duration }),
   },
 
 
@@ -814,7 +806,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsMode: false,
     supportsCharacterOrientation: false,
     isNew: true,
-    getCost: ({ resolution = "1080p", duration = 5 }) => (resolution === "1080p" ? 50 : 30) * (duration / 5),
+    getCost: ({ resolution = "1080p", duration = 5 }) => getModelCredits("runway-gen-4.5", { resolution, duration }),
   },
 };
 
