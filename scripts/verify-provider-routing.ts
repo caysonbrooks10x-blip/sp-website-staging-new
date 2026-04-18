@@ -4,10 +4,10 @@
  * Run: npx tsx scripts/verify-provider-routing.ts
  *
  * Covers the P0 + P1 bullets from the FULL handoff §11:
- *   - 404-risk models are now Poyo-only
+ *   - routing expectations match the live Apr 18 provider handoff
  *   - Nano Banana family lands on ApiMart
  *   - Remix + character flows pin to ApiMart
- *   - Price-preferred models resolve to the cheaper provider
+ *   - Models route to the provider actually available on the wire
  *   - Param-driven gates (template, camera_movement, kling_elements,
  *     last_frame_image, generation_type=reference, mask_url) override
  *     the default primary
@@ -26,7 +26,7 @@ const cases: Case[] = [
   // --- P0: models that must NOT go to ApiMart ---
   { name: "z-image → poyo (P0)", input: { mode: "image", model: "z-image" }, expected: "poyo" },
   { name: "kling-2.5-turbo-pro → poyo (P0)", input: { mode: "video", model: "kling-2.5-turbo-pro" }, expected: "poyo" },
-  { name: "sora-2-official → poyo (P0)", input: { mode: "video", model: "sora-2-official" }, expected: "poyo" },
+  { name: "sora-2-official → apimart (P0)", input: { mode: "video", model: "sora-2-official" }, expected: "apimart" },
   { name: "kling-3.0-motion-control → poyo (P0)", input: { mode: "video", model: "kling-3.0-motion-control" }, expected: "poyo" },
   { name: "hailuo-02-pro → poyo (P0)", input: { mode: "video", model: "hailuo-02-pro" }, expected: "poyo" },
   { name: "wan-animate-move → poyo (P0)", input: { mode: "video", model: "wan-animate-move" }, expected: "poyo" },
@@ -37,6 +37,12 @@ const cases: Case[] = [
   { name: "nano-banana-2 → apimart", input: { mode: "image", model: "nano-banana-2" }, expected: "apimart" },
   { name: "nano-banana-2-new → apimart", input: { mode: "image", model: "nano-banana-2-new" }, expected: "apimart" },
   { name: "nano-banana-pro → poyo (official tier)", input: { mode: "image", model: "nano-banana-pro" }, expected: "poyo" },
+
+  // --- Sora 2 family ---
+  { name: "sora-2 default → apimart (Poyo 404, ApiMart live)", input: { mode: "video", model: "sora-2" }, expected: "apimart" },
+  { name: "sora-2 with remix → apimart (capability)", input: { mode: "video", model: "sora-2", wantsRemix: true }, expected: "apimart" },
+  { name: "sora-2 with character → apimart (capability)", input: { mode: "video", model: "sora-2", needsCharacterReference: true }, expected: "apimart" },
+  { name: "sora-2-pro → apimart (Poyo 404, ApiMart live)", input: { mode: "video", model: "sora-2-pro" }, expected: "apimart" },
 
   // --- Price-preferred wins ---
   { name: "grok-vid → apimart (21x cheaper)", input: { mode: "video", model: "grok-vid" }, expected: "apimart" },

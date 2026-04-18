@@ -107,9 +107,27 @@ const klingVideoCaps: ModelCapability = {
   mutex: [["kling_elements", "last_frame_image"]],
 }
 
+const kling30Caps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+  mutex: [["kling_elements", "last_frame_image"]],
+}
+
 const seedanceCaps: ModelCapability = {
   ...VIDEO_DEFAULT,
   durations: [5, 10, 12],
+}
+
+const seedancePoyoCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [4, 8, 12],
+  resolutions: ["720p", "1080p", "2K"],
+}
+
+const doubaoSeedanceCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [4, 8, 12, 15],
+  resolutions: ["1080p", "2K", "4K"],
 }
 
 const soraCaps: ModelCapability = {
@@ -118,10 +136,68 @@ const soraCaps: ModelCapability = {
   aspectRatios: ["9:16", "16:9"],
 }
 
+const soraStudioCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [10, 15],
+  aspectRatios: ["9:16", "16:9"],
+}
+
+const soraProStudioCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [15, 25],
+  aspectRatios: ["9:16", "16:9"],
+}
+
 const veoCaps: ModelCapability = {
   ...VIDEO_DEFAULT,
   durations: [8],
   aspectRatios: ["9:16", "16:9"],
+}
+
+const veoLiteCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [5, 8],
+  aspectRatios: ["9:16", "16:9"],
+  resolutions: ["720p", "1080p"],
+}
+
+const veoFastCaps: ModelCapability = {
+  ...veoCaps,
+  resolutions: ["720p", "1080p", "4k"],
+}
+
+const veoQualityCaps: ModelCapability = {
+  ...veoCaps,
+  resolutions: ["720p", "1080p", "4k"],
+}
+
+const grokVidCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [6, 10],
+  aspectRatios: ["1:1", "2:3", "3:2", "16:9", "9:16"],
+}
+
+const hailuoCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [6, 10],
+  resolutions: ["768p", "1080p"],
+}
+
+const wan26TextCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [5, 10, 15],
+}
+
+const wan26VideoToVideoCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [5, 8],
+}
+
+const wan26I2VFlashCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [5, 8],
+  resolutions: ["480p", "720p"],
+  requiresReferenceImage: true,
 }
 
 export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
@@ -148,16 +224,30 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
   "gemini-3.1-flash-image-preview": { ...IMAGE_DEFAULT, aspectRatios: [...COMMON_IMAGE_AR, ...EXTREME_AR] },
 
   // video family
-  "veo3.1-lite": veoCaps,
+  "sora-2": soraStudioCaps,
+  "sora-2-pro": soraProStudioCaps,
+  "veo3.1-lite": veoLiteCaps,
+  "veo3.1-fast": veoFastCaps,
+  "veo3.1-quality": veoQualityCaps,
   "veo3.1-fast-official": veoCaps,
   "veo3.1-quality-official": veoCaps,
+  "kling-2.6": klingVideoCaps,
+  "kling-3.0/standard": kling30Caps,
+  "kling-3.0/pro": kling30Caps,
   "kling-v3-omni": klingVideoCaps,
   "kling-video-o1": klingVideoCaps,
-  "doubao-seedance-2.0": seedanceCaps,
-  "hailuo-2.3": VIDEO_DEFAULT,
-  "wan2.6-text-to-video": VIDEO_DEFAULT,
-  "wan2.6-video-to-video": VIDEO_DEFAULT,
-  "grok-vid": VIDEO_DEFAULT,
+  "seedance-2": seedancePoyoCaps,
+  "seedance-2-fast": seedancePoyoCaps,
+  "doubao-seedance-2.0": doubaoSeedanceCaps,
+  "doubao-seedance-2.0-face": { ...seedancePoyoCaps, requiresReferenceImage: true },
+  "doubao-seedance-2.0-fast-face": { ...seedancePoyoCaps, requiresReferenceImage: true },
+  "hailuo-2.3": hailuoCaps,
+  "MiniMax-Hailuo-2.3-Fast": hailuoCaps,
+  "wan2.6-text-to-video": wan26TextCaps,
+  "wan2.6-image-to-video": { ...wan26TextCaps, requiresReferenceImage: true },
+  "wan2.6-video-to-video": wan26VideoToVideoCaps,
+  "wan2.6-i2v-flash": wan26I2VFlashCaps,
+  "grok-vid": grokVidCaps,
   "runway-gen-4.5": VIDEO_DEFAULT,
 }
 
