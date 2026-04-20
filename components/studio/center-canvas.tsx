@@ -388,17 +388,6 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                     </div>
                 </div>
             ) : null}
-            {}
-            <div className="lg:hidden w-full flex justify-center py-4 shrink-0 z-50 pointer-events-auto">
-                <button
-                    onClick={onOpenPanel}
-                    className="group bg-zinc-900/90 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-full flex items-center gap-3 active:scale-95 shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-all hover:bg-zinc-800"
-                >
-                    <Settings2 className="w-4 h-4 text-violet-400 group-hover:rotate-90 transition-transform duration-500" />
-                    <span className="text-[11px] font-black tracking-[0.2em] uppercase text-white/95">Open Creator Panel</span>
-                </button>
-            </div>
-
             <div ref={stageRef} className="flex-1 w-full min-h-0 relative bg-black/5">
                 <div
                     className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar touch-pan-y pointer-events-auto"
