@@ -1230,20 +1230,6 @@ function StudioLayout() {
         topOffset={studioShellTopOffset}
       />
 
-      {/* Mobile sidebar toggle */}
-      <div
-        className="lg:hidden fixed left-4 z-50"
-        style={{ top: `calc(${studioShellTopOffset} + 16px)` }}
-      >
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setMobilePanelOpen(!mobilePanelOpen)}
-          className="w-10 h-10 rounded-lg bg-[#111] border border-[#1a1a1a] text-zinc-400 hover:text-white"
-        >
-          <Settings2 className="w-5 h-5" />
-        </Button>
-      </div>
 
       {/* Main Content */}
       <div
@@ -1257,15 +1243,24 @@ function StudioLayout() {
         }}
       >
         {/* Top Bar — glass */}
-        <div className="relative h-14 flex items-center justify-center px-6 shrink-0 bg-black/20 backdrop-blur-xl overflow-hidden">
+        <div className="relative h-12 lg:h-14 flex items-center justify-center px-4 sm:px-6 shrink-0 bg-black/20 backdrop-blur-xl overflow-hidden">
           <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[140px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.22)_0%,transparent_70%)] blur-2xl" aria-hidden />
-          <h1 className="relative studio-display text-xl md:text-2xl italic text-white capitalize tracking-tight drop-shadow-[0_0_20px_rgba(6,182,212,0.35)]">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobilePanelOpen(!mobilePanelOpen)}
+            className="lg:hidden absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-white/[0.04] border border-white/10 text-zinc-300 hover:text-white hover:bg-white/[0.08]"
+            aria-label="Toggle settings"
+          >
+            <Settings2 className="w-4 h-4" />
+          </Button>
+          <h1 className="relative studio-display text-lg sm:text-xl md:text-2xl italic text-white capitalize tracking-tight drop-shadow-[0_0_20px_rgba(6,182,212,0.35)] truncate max-w-[70%]">
             {studioMode.replace(/-/g, " ")}
           </h1>
         </div>
 
         {/* Two-column content */}
-        <div className="flex h-[calc(100%-56px)] overflow-hidden flex-col lg:flex-row relative">
+        <div className="flex h-[calc(100%-48px)] lg:h-[calc(100%-56px)] overflow-hidden flex-col lg:flex-row relative">
           {/* Left: Generation Form */}
           <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-[52dvh] lg:h-full flex flex-col">
             <div className="flex-1 min-h-0">

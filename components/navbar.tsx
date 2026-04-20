@@ -134,9 +134,9 @@ export function Navbar() {
         className={cn(
           "fixed top-0 left-0 right-0 z-[100] px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-[0.32,0.72,0,1]",
           isNavVisible ? "translate-y-0" : "-translate-y-32",
-          scrolled 
-            ? "bg-black/60 backdrop-blur-2xl py-3 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]" 
-            : "bg-black/20 backdrop-blur-lg py-5 border-b border-white/5"
+          scrolled
+            ? "bg-black/60 backdrop-blur-2xl py-2 sm:py-3 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]"
+            : "bg-black/20 backdrop-blur-lg py-3 sm:py-5 border-b border-white/5"
         )}
       >
         <div className="max-w-7xl mx-auto flex items-center gap-2 sm:gap-4 relative">
@@ -157,7 +157,7 @@ export function Navbar() {
               draggable="false"
               className={cn(
                 "object-contain w-auto transition-all duration-300 opacity-90 group-hover:opacity-100 select-none filter drop-shadow-[0_0_15px_rgba(255,255,255,0.25)] origin-left",
-                scrolled ? "h-12" : "h-14"
+                scrolled ? "h-9 sm:h-12" : "h-10 sm:h-14"
               )}
             />
           </Link>
