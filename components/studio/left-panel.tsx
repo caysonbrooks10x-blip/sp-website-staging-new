@@ -72,6 +72,7 @@ interface StudioLeftPanelProps {
     studioMode?: StudioMode;
     activeGeneration?: GenerationItem | null;
     externalPrompt?: string;
+    mobileInlineCanvas?: React.ReactNode;
 }
 
 interface ModelItem {
@@ -121,7 +122,7 @@ function estimateTaskCredits(input: {
     });
 }
 
-export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt }: StudioLeftPanelProps) {
+export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt, mobileInlineCanvas }: StudioLeftPanelProps) {
     const searchParams = useSearchParams();
     const { user } = useAuth();
     const [creditBalance, setCreditBalance] = useState<number>(0);
@@ -1264,6 +1265,12 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                     </div>
                 </div>
             </div>
+
+            {mobileInlineCanvas && (
+                <div className="lg:hidden flex-none border-t border-[#1a1a1a] bg-black h-[38dvh] min-h-[240px] overflow-hidden">
+                    {mobileInlineCanvas}
+                </div>
+            )}
 
             <div className="flex-none p-4 pt-3 border-t border-[#1a1a1a] bg-[#0a0a0a] z-30 flex gap-3">
                 {isGenerating && onCancel && (

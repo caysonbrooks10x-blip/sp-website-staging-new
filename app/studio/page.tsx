@@ -1259,10 +1259,10 @@ function StudioLayout() {
           </h1>
         </div>
 
-        {/* Two-column content (mobile: canvas on top, form below with Generate) */}
-        <div className="flex h-[calc(100%-48px)] lg:h-[calc(100%-56px)] overflow-hidden flex-col-reverse lg:flex-row relative">
-          {/* Left: Generation Form */}
-          <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-[60dvh] lg:h-full flex flex-col">
+        {/* Content: desktop = two columns; mobile = single scroll with canvas inline between settings and Generate */}
+        <div className="flex h-[calc(100%-48px)] lg:h-[calc(100%-56px)] overflow-hidden flex-col lg:flex-row relative">
+          {/* Generation Form (mobile: full-width single column with inline canvas before Generate) */}
+          <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-full flex flex-col">
             <div className="flex-1 min-h-0">
               <StudioLeftPanel
                 onGenerate={(prompt, settings) => {
@@ -1277,12 +1277,22 @@ function StudioLayout() {
                 studioMode={studioMode}
                 activeGeneration={activeGeneration}
                 externalPrompt={suggestionPrompt}
+                mobileInlineCanvas={
+                  <StudioCenterCanvas
+                    activeGeneration={activeGeneration}
+                    mode={studioModeToCreationMode(studioMode)}
+                    isGenerating={isGenerating}
+                    aspectRatio={aspectRatio}
+                    onOpenPanel={() => setMobilePanelOpen(true)}
+                    onSuggestionClick={(p) => setSuggestionPrompt(p)}
+                  />
+                }
               />
             </div>
           </div>
 
-          {/* Right: Preview / Canvas (mobile: stacked above form) */}
-          <div className="flex-1 h-[40dvh] lg:h-full min-h-0 min-w-0 flex flex-col border-b border-white/5 lg:border-b-0">
+          {/* Desktop-only canvas column */}
+          <div className="hidden lg:flex flex-1 h-full min-h-0 min-w-0 flex-col">
             <StudioCenterCanvas
               activeGeneration={activeGeneration}
               mode={studioModeToCreationMode(studioMode)}
