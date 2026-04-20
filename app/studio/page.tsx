@@ -562,9 +562,13 @@ function StudioLayout() {
           if (decision.needed) {
             try {
               toast.loading(`Reframing reference to ${targetAr} via ${decision.stepOne.model}...`, { id: "gen-toast" });
+              const stepOneIdToken = user ? await user.getIdToken() : null;
               const stepOneResp = await fetch("/api/route/images/generations", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json",
+                  ...(stepOneIdToken ? { Authorization: `Bearer ${stepOneIdToken}` } : {}),
+                },
                 body: JSON.stringify({
                   model: decision.stepOne.model,
                   prompt: decision.stepOne.prompt,
@@ -679,9 +683,13 @@ function StudioLayout() {
             ? "/api/route/videos/generations"
             : "/api/route/images/generations";
 
+        const idToken = user ? await user.getIdToken() : null;
         const response = await fetch(endpoint, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+          },
           body: JSON.stringify({ model: submissionModel, ...parameters }),
         });
         const submission = await response.json();

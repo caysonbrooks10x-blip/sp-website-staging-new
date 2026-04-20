@@ -384,6 +384,7 @@ export default function ClawHubPage() {
           ))}
         </section>
 
+        {process.env.NEXT_PUBLIC_SHOW_WORKFLOWS === "true" && (
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_min(100%,380px)]">
           <div className={cn(clawCardClass, clawCardInteractiveClass, "flex flex-col overflow-hidden p-0 md:p-0")}>
             <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] px-6 pb-5 pt-6 md:px-8 md:pt-8">
@@ -469,7 +470,9 @@ export default function ClawHubPage() {
             </div>
           </div>
         </section>
+        )}
 
+        {process.env.NEXT_PUBLIC_SHOW_WORKFLOWS === "true" && (
         <section className="relative mt-16 md:mt-24">
           <div className="relative rounded-[1.65rem] border border-white/[0.08] bg-gradient-to-b from-zinc-900/55 via-zinc-950/35 to-zinc-950/20 p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/[0.05] md:p-9">
           <div className="flex flex-col gap-8 border-b border-white/[0.06] pb-10 md:flex-row md:items-end md:justify-between">
@@ -621,6 +624,7 @@ export default function ClawHubPage() {
           )}
           </div>
         </section>
+        )}
       </div>
 
       <TelegramPromptDialog

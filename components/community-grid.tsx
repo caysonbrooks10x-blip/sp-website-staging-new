@@ -101,15 +101,33 @@ export function CommunityGrid() {
     const filteredPosts = useMemo(() => {
         const combined = [...livePosts];
 
-        
+
         const uniquePostsMap = new Map<string, CommunityPost>();
         combined.forEach(post => {
             if (!uniquePostsMap.has(post.id)) {
                 uniquePostsMap.set(post.id, post);
             }
         });
-        
-        let finalArray = Array.from(uniquePostsMap.values()).filter(post => !removedPosts.has(post.id));
+
+        // Drop static image duplicates when a video with the same title exists.
+        // Video is the canonical template; the image is a still that was
+        // published alongside it and shows up as a duplicate card.
+        const dedupKey = (post: CommunityPost) =>
+            (post.title || "").trim().toLowerCase();
+        const videoTitleSet = new Set<string>();
+        for (const post of uniquePostsMap.values()) {
+            if (post.type === "video") {
+                const k = dedupKey(post);
+                if (k) videoTitleSet.add(k);
+            }
+        }
+        const dedupedValues = Array.from(uniquePostsMap.values()).filter((post) => {
+            if (post.type !== "image") return true;
+            const k = dedupKey(post);
+            return !k || !videoTitleSet.has(k);
+        });
+
+        let finalArray = dedupedValues.filter(post => !removedPosts.has(post.id));
 
         if (tagFilter) {
             finalArray = finalArray.filter(post =>
