@@ -27,14 +27,9 @@ function CommunityContent() {
 
   const filterItems = [
     { id: "all", label: "All" },
-    { id: "works", label: "Works" },
-    { id: "templates", label: "Templates" },
-    { id: "video", label: "Video" },
     { id: "image", label: "Image" },
-    { id: "remixable", label: "Open to Remix" },
-    { id: "branching", label: "Popular Branches" },
-    { id: "directed", label: "Directed" },
-    { id: "telegram", label: "Telegram" },
+    { id: "video", label: "Video" },
+    { id: "popular", label: "Popular" },
   ]
 
   const updateQuery = (updates: Record<string, string | null>) => {

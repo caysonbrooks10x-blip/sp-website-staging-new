@@ -153,30 +153,16 @@ export function CommunityGrid() {
             });
         }
 
-        if (quickFilter === "works") {
-            finalArray = finalArray.filter((post) => !isLegacyTemplatePost(post) && !isTemplatePost(post));
-        } else if (quickFilter === "templates") {
-            finalArray = finalArray.filter((post) => isTemplatePost(post));
-        } else if (quickFilter === "video") {
+        if (quickFilter === "video") {
             finalArray = finalArray.filter((post) => post.type === "video");
         } else if (quickFilter === "image") {
             finalArray = finalArray.filter((post) => post.type === "image");
-        } else if (quickFilter === "directed") {
-            finalArray = finalArray.filter((post) => Boolean(post.campaign?.directed));
-        } else if (quickFilter === "remixable") {
-            finalArray = finalArray.filter((post) => post.allowRemix);
-        } else if (quickFilter === "branching") {
-            finalArray = finalArray.filter((post) =>
-                Boolean(post.parentCreationId || post.rootCreationId || post.sourcePostId || (post.remixDepth || 0) > 0)
-            );
-        } else if (quickFilter === "telegram") {
-            finalArray = finalArray.filter((post) => {
-                const tags = (post.tags || []).map((tag) => tag.toLowerCase());
-                return tags.includes("telegram") || tags.includes("claw") || (post.generationPlatform || "").toLowerCase().includes("telegram");
-            });
+        } else if (quickFilter === "popular") {
+            finalArray = [...finalArray].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+            return finalArray;
         }
 
-        
+
         const images = finalArray.filter(p => p.type === 'image');
         const videos = finalArray.filter(p => p.type === 'video');
         
