@@ -19,6 +19,7 @@ export interface PersistedStudioGeneration {
   remixDepth?: number
   sourcePostId?: string | null
   campaign?: CommunityCampaignMeta | null
+  createdAtMs?: number
 }
 
 function readLocalStudioGenerationHistory(): PersistedStudioGeneration[] {
@@ -53,6 +54,7 @@ function readLocalStudioGenerationHistory(): PersistedStudioGeneration[] {
         remixDepth: Number(item.settings?.remixDepth || 0),
         sourcePostId: item.settings?.sourcePostId || null,
         campaign: item.settings?.campaign || null,
+        createdAtMs: typeof item.createdAtMs === "number" ? item.createdAtMs : undefined,
       })
     }
 
@@ -84,6 +86,7 @@ function writeLocalStudioGenerationHistory(items: PersistedStudioGeneration[]) {
       sourcePostId: item.sourcePostId || null,
       campaign: item.campaign || null,
     },
+    createdAtMs: item.createdAtMs || Date.now(),
   }))
 
   window.localStorage.setItem("studio_generations_history", JSON.stringify(serialized))
@@ -162,6 +165,7 @@ export async function listPersistedStudioGenerations(uid: string): Promise<Persi
         remixDepth: Number(record.remixDepth || 0),
         sourcePostId: record.sourcePostId || null,
         campaign: record.campaign || null,
+        createdAtMs: typeof record.createdAtMs === "number" ? record.createdAtMs : undefined,
       })
     }
 

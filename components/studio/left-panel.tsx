@@ -16,6 +16,7 @@ import {
     Frame,
     X,
     Loader2,
+    ChevronRight,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
+import { AnimatePresence, motion } from "framer-motion";
 import {
     IMAGE_MODEL_LIST,
     VIDEO_MODEL_LIST,
@@ -72,6 +74,10 @@ interface StudioLeftPanelProps {
     studioMode?: StudioMode;
     activeGeneration?: GenerationItem | null;
     externalPrompt?: string;
+    mobileInlineCanvas?: React.ReactNode;
+    canvasOpen?: boolean;
+    onCloseCanvas?: () => void;
+    onOpenCanvas?: () => void;
 }
 
 interface ModelItem {
@@ -121,7 +127,7 @@ function estimateTaskCredits(input: {
     });
 }
 
-export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt }: StudioLeftPanelProps) {
+export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt, mobileInlineCanvas, canvasOpen, onCloseCanvas, onOpenCanvas }: StudioLeftPanelProps) {
     const searchParams = useSearchParams();
     const { user } = useAuth();
     const [creditBalance, setCreditBalance] = useState<number>(0);
@@ -1264,6 +1270,84 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                     </div>
                 </div>
             </div>
+
+            <AnimatePresence>
+                {canvasOpen && mobileInlineCanvas && (
+                    <motion.div
+                        key="mobile-canvas-modal"
+                        className="lg:hidden fixed inset-0 z-[60] flex flex-col bg-[#050505]/95 backdrop-blur-2xl"
+                        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98, y: 8 }}
+                        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                        <div className="flex-none h-14 px-4 flex items-center justify-between bg-black/40 backdrop-blur-xl border-b border-white/5">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (isGenerating && onCancel) onCancel();
+                                    onCloseCanvas?.();
+                                }}
+                                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/90 transition-colors active:scale-95"
+                                aria-label="Close canvas"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                            {isGenerating ? (
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#06b6d4]/10 border border-[#06b6d4]/30">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#06b6d4] animate-pulse" />
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#06b6d4]">Generating</span>
+                                </div>
+                            ) : activeGeneration?.model ? (
+                                <span className="text-[11px] font-medium text-zinc-400 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 truncate max-w-[180px]">
+                                    {activeGeneration.model}
+                                </span>
+                            ) : <span />}
+                        </div>
+                        <div
+                            className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex items-center justify-center"
+                            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+                        >
+                            <div className="w-full h-full flex items-center justify-center">
+                                {mobileInlineCanvas}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {!canvasOpen && activeGeneration && !isGenerating && activeGeneration.status === "completed" && onOpenCanvas && (
+                    <motion.button
+                        key="last-gen-pill"
+                        type="button"
+                        onClick={onOpenCanvas}
+                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="lg:hidden mx-4 mb-2 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#06b6d4]/10 via-[#06b6d4]/5 to-transparent border border-[#06b6d4]/25 px-3 py-2.5 text-left active:scale-[0.98] transition-transform"
+                    >
+                        {(activeGeneration.thumbnailUrl || activeGeneration.src) && (
+                            <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-none bg-black/40">
+                                {activeGeneration.type === "video" ? (
+                                    <video src={activeGeneration.src} className="w-full h-full object-cover" muted playsInline />
+                                ) : (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={activeGeneration.thumbnailUrl || activeGeneration.src} alt="" className="w-full h-full object-cover" />
+                                )}
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#06b6d4]">
+                                {activeGeneration.type === "video" ? "Video generated" : "Image generated"}
+                            </div>
+                            <div className="text-[11px] text-zinc-400 mt-0.5">Tap to view · download · send to Claw</div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-[#06b6d4] flex-none" />
+                    </motion.button>
+                )}
+            </AnimatePresence>
 
             <div className="flex-none p-4 pt-3 border-t border-[#1a1a1a] bg-[#0a0a0a] z-30 flex gap-3">
                 {isGenerating && onCancel && (

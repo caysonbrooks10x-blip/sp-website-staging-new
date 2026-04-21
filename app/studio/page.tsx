@@ -5,7 +5,7 @@ import { ProtectedRoute } from "@/components/protected-route";
 import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { StudioLeftPanel } from "@/components/studio/left-panel";
 import { StudioCenterCanvas, type GenerationItem } from "@/components/studio/center-canvas";
-import { Loader2, Sparkles, Settings2, X } from "lucide-react";
+import { Loader2, Sparkles, Settings2, X, Menu } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import gsap from "gsap";
 import { httpsCallable } from "firebase/functions";
@@ -342,6 +342,7 @@ function StudioLayout() {
     try { localStorage.setItem("studio_aspect_ratio", val); } catch (e) {}
   };
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const [canvasOpen, setCanvasOpen] = useState(false);
 
   
   useEffect(() => {
@@ -1230,20 +1231,6 @@ function StudioLayout() {
         topOffset={studioShellTopOffset}
       />
 
-      {/* Mobile sidebar toggle */}
-      <div
-        className="lg:hidden fixed left-4 z-50"
-        style={{ top: `calc(${studioShellTopOffset} + 16px)` }}
-      >
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setMobilePanelOpen(!mobilePanelOpen)}
-          className="w-10 h-10 rounded-lg bg-[#111] border border-[#1a1a1a] text-zinc-400 hover:text-white"
-        >
-          <Settings2 className="w-5 h-5" />
-        </Button>
-      </div>
 
       {/* Main Content */}
       <div
@@ -1256,23 +1243,49 @@ function StudioLayout() {
           height: `calc(100dvh - ${studioShellTopOffset})`,
         }}
       >
-        {/* Top Bar — glass */}
-        <div className="relative h-14 flex items-center justify-center px-6 shrink-0 bg-black/20 backdrop-blur-xl overflow-hidden">
+        {/* Top Bar — desktop only keeps the glass title; mobile uses a slim header */}
+        <div className="hidden lg:flex relative h-14 items-center justify-center px-6 shrink-0 bg-black/20 backdrop-blur-xl overflow-hidden">
           <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[140px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.22)_0%,transparent_70%)] blur-2xl" aria-hidden />
           <h1 className="relative studio-display text-xl md:text-2xl italic text-white capitalize tracking-tight drop-shadow-[0_0_20px_rgba(6,182,212,0.35)]">
             {studioMode.replace(/-/g, " ")}
           </h1>
         </div>
 
-        {/* Two-column content */}
-        <div className="flex h-[calc(100%-56px)] overflow-hidden flex-col lg:flex-row relative">
-          {/* Left: Generation Form */}
-          <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-[52dvh] lg:h-full flex flex-col">
+        {/* Mobile slim header */}
+        <div className="lg:hidden relative h-12 flex items-center justify-between px-3 shrink-0 bg-black/70 backdrop-blur-xl border-b border-white/[0.06]">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobilePanelOpen(!mobilePanelOpen)}
+            className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/10 text-zinc-200 hover:text-white hover:bg-white/[0.08]"
+            aria-label="Modes"
+          >
+            <Menu className="w-4 h-4" />
+          </Button>
+          <h1 className="studio-display italic text-base text-white/90 capitalize tracking-tight truncate max-w-[60%] text-center">
+            {studioMode.replace(/-/g, " ")}
+          </h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/")}
+            className="w-9 h-9 rounded-lg text-zinc-300 hover:text-white hover:bg-white/[0.06]"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Content: desktop = two columns; mobile = single scroll */}
+        <div className="flex h-[calc(100%-48px)] lg:h-[calc(100%-56px)] overflow-hidden flex-col lg:flex-row relative">
+          {/* Generation Form (mobile: canvas slot only mounts when active/generating) */}
+          <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 h-full flex flex-col">
             <div className="flex-1 min-h-0">
               <StudioLeftPanel
                 onGenerate={(prompt, settings) => {
                   handleGenerate(prompt, settings);
                   setMobilePanelOpen(false);
+                  setCanvasOpen(true);
                 }}
                 onCancel={handleCancel}
                 isGenerating={isGenerating}
@@ -1282,12 +1295,30 @@ function StudioLayout() {
                 studioMode={studioMode}
                 activeGeneration={activeGeneration}
                 externalPrompt={suggestionPrompt}
+                mobileInlineCanvas={
+                  (isGenerating || activeGeneration) ? (
+                    <StudioCenterCanvas
+                      activeGeneration={activeGeneration}
+                      mode={studioModeToCreationMode(studioMode)}
+                      isGenerating={isGenerating}
+                      aspectRatio={aspectRatio}
+                      onOpenPanel={() => setMobilePanelOpen(true)}
+                      onSuggestionClick={(p) => setSuggestionPrompt(p)}
+                    />
+                  ) : null
+                }
+                canvasOpen={canvasOpen}
+                onOpenCanvas={() => setCanvasOpen(true)}
+                onCloseCanvas={() => {
+                  if (isGenerating) handleCancel();
+                  setCanvasOpen(false);
+                }}
               />
             </div>
           </div>
 
-          {/* Right: Preview / Canvas */}
-          <div className="flex-1 h-full min-h-0 min-w-0 flex flex-col">
+          {/* Desktop-only canvas column */}
+          <div className="hidden lg:flex flex-1 h-full min-h-0 min-w-0 flex-col">
             <StudioCenterCanvas
               activeGeneration={activeGeneration}
               mode={studioModeToCreationMode(studioMode)}

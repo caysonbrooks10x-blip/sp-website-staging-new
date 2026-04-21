@@ -117,8 +117,12 @@ function CreationsContent() {
                 c.createdAtMs ||
                 (typeof c.createdAt?.toDate === "function" ? c.createdAt.toDate().getTime() : undefined) ||
                 (c.createdAt?._seconds ? c.createdAt._seconds * 1000 : undefined) ||
-                c.createdAt ||
-                Date.now()
+                (c.createdAt?.seconds ? c.createdAt.seconds * 1000 : undefined) ||
+                (typeof c.createdAt === "string" || typeof c.createdAt === "number" ? c.createdAt : undefined)
+              const parsedDate = createdAtValue ? new Date(createdAtValue) : null
+              const dateStr = parsedDate && !Number.isNaN(parsedDate.getTime())
+                ? parsedDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                : ""
               const mappedItem = {
                 id: c.id,
                 appName: c.title || c.prompt || "Untitled Creation",
@@ -126,7 +130,7 @@ function CreationsContent() {
                 type: c.type || (c.outputUrl?.includes('.mp4') ? 'video' : 'image'),
                 remixCount: 0,
                 likes: 0,
-                date: new Date(createdAtValue).toLocaleDateString(),
+                date: dateStr,
                 model: c.model,
                 prompt: c.prompt,
                 taskId: c.taskId,

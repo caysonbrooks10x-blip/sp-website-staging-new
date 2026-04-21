@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { UploadModal } from "@/components/upload-modal"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { httpsCallable } from "firebase/functions"
 import { functions } from "@/lib/firebaseClient"
 import { toast } from "sonner"
@@ -41,6 +42,14 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
     const [isDownloading, setIsDownloading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    useEffect(() => {
+        if (!showPreview) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => { document.body.style.overflow = prev; };
+    }, [showPreview]);
 
     const getFileExtension = (url: string, type?: string): string => {
         try {
@@ -156,9 +165,11 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                 {}
                 <div className="absolute inset-x-0 bottom-0 p-5 z-20 transition-all duration-500 opacity-100 lg:opacity-0 lg:translate-y-2 lg:group-hover:translate-y-0 lg:group-hover:opacity-100">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-[11px] font-medium uppercase tracking-wider text-purple-200/90 flex items-center gap-1.5 drop-shadow-md">
-                            <Clock className="w-3 h-3" /> {item.date}
-                        </span>
+                        {item.date && item.date.toLowerCase() !== "invalid date" ? (
+                            <span className="text-[11px] font-medium uppercase tracking-wider text-purple-200/90 flex items-center gap-1.5 drop-shadow-md">
+                                <Clock className="w-3 h-3" /> {item.date}
+                            </span>
+                        ) : <span />}
                     </div>
 
                     <h3 className="font-semibold text-lg text-white leading-tight mb-4 group-hover:text-purple-100 transition-colors drop-shadow-md line-clamp-2">
@@ -213,29 +224,31 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                 />
             )}
 
-            <AnimatePresence>
-                {showPreview && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.3, ease: [0.21, 0.47, 0.32, 0.98] }}
-                        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl"
-                        onClick={() => setShowPreview(false)}
-                    >
-                        <Button
-                            variant="ghost"
-                            onClick={(e) => { e.stopPropagation(); setShowPreview(false); }}
-                            className="absolute top-6 left-6 z-[210] text-white/80 hover:text-white hover:bg-white/10 h-11 px-5 rounded-full bg-white/5 border border-white/10 flex items-center font-semibold tracking-wide"
+            {mounted && createPortal(
+                <AnimatePresence>
+                    {showPreview && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.25, ease: [0.21, 0.47, 0.32, 0.98] }}
+                            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl"
+                            onClick={() => setShowPreview(false)}
+                            style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
                         >
-                            <X className="w-4 h-4 mr-2" />
-                            Back to Gallery
-                        </Button>
-                        
-                        <div 
-                            className="relative w-full h-full max-w-[95vw] max-h-[90vh] p-8 flex mx-auto items-center justify-center pointer-events-none"
-                        >
-                            <div className="pointer-events-auto max-w-full max-h-full">
+                            <Button
+                                variant="ghost"
+                                onClick={(e) => { e.stopPropagation(); setShowPreview(false); }}
+                                className="absolute top-4 left-4 sm:top-6 sm:left-6 z-[210] text-white/80 hover:text-white hover:bg-white/10 h-10 sm:h-11 px-4 sm:px-5 rounded-full bg-white/5 border border-white/10 flex items-center font-semibold tracking-wide text-xs sm:text-sm"
+                            >
+                                <X className="w-4 h-4 mr-2" />
+                                Back to Gallery
+                            </Button>
+
+                            <div
+                                className="relative w-full h-full flex items-center justify-center p-4 sm:p-8"
+                                onClick={(e) => e.stopPropagation()}
+                            >
                                 {(item.type === 'video' || item.previewUrl.includes('.mp4')) ? (
                                     <video
                                         src={item.previewUrl}
@@ -253,10 +266,11 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                                     />
                                 )}
                             </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </motion.div>
     )
 }
