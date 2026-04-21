@@ -288,7 +288,7 @@ function ProfileContent() {
                       : ""
                     return {
                       id: c.id,
-                      appName: c.title || "Untitled Creation",
+                      appName: c.title || c.prompt || "Untitled Creation",
                       previewUrl: c.outputUrl || c.thumbnailUrl || "",
                       type: c.type || (c.outputUrl?.includes('.mp4') ? 'video' : 'image'),
                       remixCount: c.remixCount || 0,
