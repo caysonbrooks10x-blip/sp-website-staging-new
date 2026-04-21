@@ -94,6 +94,8 @@ export const MODEL_CHARGE_BY_CONFIG: Record<string, Dispatcher> = {
 
   "flux-2-pro": ({ resolution = "1K" }) => (resolution === "2K" ? 0.045 : 0.030),
   "flux-2-flex": ({ resolution = "1K" }) => (resolution === "2K" ? 0.135 : 0.090),
+  "nano-banana-2": ({ resolution = "2K" }) => (resolution === "2K" ? 0.0375 : 0.025),
+  "nano-banana-2-new": ({ resolution = "2K" }) => (resolution === "2K" ? 0.0375 : 0.025),
 
   "hailuo-2.3": ({ resolution = "768p", duration = 6 }) => {
     const d = num(duration, 6)

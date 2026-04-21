@@ -74,6 +74,7 @@ interface StudioLeftPanelProps {
     activeGeneration?: GenerationItem | null;
     externalPrompt?: string;
     mobileInlineCanvas?: React.ReactNode;
+    onCloseCanvas?: () => void;
 }
 
 interface ModelItem {
@@ -123,7 +124,7 @@ function estimateTaskCredits(input: {
     });
 }
 
-export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt, mobileInlineCanvas }: StudioLeftPanelProps) {
+export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt, mobileInlineCanvas, onCloseCanvas }: StudioLeftPanelProps) {
     const searchParams = useSearchParams();
     const { user } = useAuth();
     const [creditBalance, setCreditBalance] = useState<number>(0);
@@ -1282,8 +1283,9 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                                 type="button"
                                 onClick={() => {
                                     if (isGenerating && onCancel) onCancel();
+                                    onCloseCanvas?.();
                                 }}
-                                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/90 transition-colors"
+                                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/90 transition-colors active:scale-95"
                                 aria-label="Close canvas"
                             >
                                 <X className="w-5 h-5" />
@@ -1300,10 +1302,12 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                             ) : <span />}
                         </div>
                         <div
-                            className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+                            className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex items-center justify-center"
                             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
                         >
-                            {mobileInlineCanvas}
+                            <div className="w-full h-full flex items-center justify-center">
+                                {mobileInlineCanvas}
+                            </div>
                         </div>
                     </motion.div>
                 )}

@@ -1305,6 +1305,13 @@ function StudioLayout() {
                     />
                   ) : null
                 }
+                onCloseCanvas={() => {
+                  setActiveGeneration(null);
+                  setGenerations([]);
+                  safeRemoveLocalStorage(STUDIO_ACTIVE_STORAGE_KEY);
+                  safeRemoveLocalStorage(STUDIO_ACTIVE_TIME_KEY);
+                  safeRemoveLocalStorage(STUDIO_HISTORY_STORAGE_KEY);
+                }}
               />
             </div>
           </div>
