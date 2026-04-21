@@ -136,6 +136,23 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
 // -------------------------------------------------------------------
 
 export const MODEL_ALIASES: Record<string, Partial<Record<StudioProvider, string>>> = {
+  // ApiMart exposes the Nano Banana family under Gemini wire IDs.
+  // Studio keeps the Nano Banana names as the canonical UX IDs and
+  // translates only at submit-time when ApiMart is chosen.
+  "nano-banana": {
+    apimart: "gemini-2.5-flash-image-preview",
+  },
+  "nano-banana-2": {
+    apimart: "gemini-3.1-flash-image-preview",
+  },
+  // "Nano Banana 2 (New)" is a Studio-facing catalog label for the same
+  // ApiMart Gemini 3.1 image model while retaining a distinct UX surface.
+  "nano-banana-2-new": {
+    apimart: "gemini-3.1-flash-image-preview",
+  },
+  "nano-banana-2-official": {
+    apimart: "gemini-3.1-flash-image-preview-official",
+  },
 }
 
 export function resolveProviderModelId(
@@ -209,6 +226,15 @@ const WATCH_MODELS = new Set([
   "sora-2-official",
   "gpt-4o-image",
   "gpt-image-1.5",
+])
+
+// Nano Banana base models accept reference images on both providers, but
+// the current Studio edit flow is more reliable on Poyo for reference-image
+// jobs. Keep text-only generations on the normal price-preferred path.
+const NANO_BANANA_REFERENCE_PREFERRED_POYO = new Set([
+  "nano-banana",
+  "nano-banana-2",
+  "nano-banana-2-new",
 ])
 
 // -------------------------------------------------------------------
@@ -308,6 +334,21 @@ export function chooseProvider(input: ProviderRoutingInput): StudioProvider {
     if (input.mode === "video") {
       if (input.wantsRemix) return "apimart"
       return "poyo"
+    }
+    return "poyo"
+  }
+
+  if (
+    input.mode === "image" &&
+    input.hasReferenceImage &&
+    input.model &&
+    NANO_BANANA_REFERENCE_PREFERRED_POYO.has(input.model)
+  ) {
+    if (
+      (input.liveHealth === "down" || input.liveHealth === "degraded") &&
+      entry.also?.includes("apimart")
+    ) {
+      return "apimart"
     }
     return "poyo"
   }

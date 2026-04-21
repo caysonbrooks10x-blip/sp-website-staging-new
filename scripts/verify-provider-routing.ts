@@ -14,7 +14,11 @@
  *   - Health override flips to secondary only when one exists
  */
 
-import { chooseProvider, MODEL_PROVIDERS } from "../lib/provider-routing"
+import {
+  chooseProvider,
+  MODEL_PROVIDERS,
+  resolveProviderModelId,
+} from "../lib/provider-routing"
 
 type Case = {
   name: string
@@ -37,6 +41,9 @@ const cases: Case[] = [
   { name: "nano-banana-2 → apimart", input: { mode: "image", model: "nano-banana-2" }, expected: "apimart" },
   { name: "nano-banana-2-new → apimart", input: { mode: "image", model: "nano-banana-2-new" }, expected: "apimart" },
   { name: "nano-banana-pro → poyo (official tier)", input: { mode: "image", model: "nano-banana-pro" }, expected: "poyo" },
+  { name: "nano-banana +ref → poyo", input: { mode: "image", model: "nano-banana", hasReferenceImage: true }, expected: "poyo" },
+  { name: "nano-banana-2 +ref → poyo", input: { mode: "image", model: "nano-banana-2", hasReferenceImage: true }, expected: "poyo" },
+  { name: "nano-banana-2-new +ref → poyo", input: { mode: "image", model: "nano-banana-2-new", hasReferenceImage: true }, expected: "poyo" },
 
   // --- Sora 2 family ---
   { name: "sora-2 default → apimart (Poyo 404, ApiMart live)", input: { mode: "video", model: "sora-2" }, expected: "apimart" },
@@ -119,7 +126,39 @@ for (const c of cases) {
   }
 }
 
-console.log(`\nprovider-routing smoke: ${pass}/${cases.length} passed`)
+const aliasChecks = [
+  {
+    name: "nano-banana → ApiMart Gemini 2.5 wire id",
+    actual: resolveProviderModelId("nano-banana", "apimart"),
+    expected: "gemini-2.5-flash-image-preview",
+  },
+  {
+    name: "nano-banana-2 → ApiMart Gemini 3.1 wire id",
+    actual: resolveProviderModelId("nano-banana-2", "apimart"),
+    expected: "gemini-3.1-flash-image-preview",
+  },
+  {
+    name: "nano-banana-2-new → ApiMart Gemini 3.1 wire id",
+    actual: resolveProviderModelId("nano-banana-2-new", "apimart"),
+    expected: "gemini-3.1-flash-image-preview",
+  },
+  {
+    name: "nano-banana-2-official → ApiMart official wire id",
+    actual: resolveProviderModelId("nano-banana-2-official", "apimart"),
+    expected: "gemini-3.1-flash-image-preview-official",
+  },
+]
+
+for (const check of aliasChecks) {
+  if (check.actual === check.expected) {
+    pass++
+  } else {
+    fail++
+    failures.push(`FAIL: ${check.name}\n  expected=${check.expected} actual=${check.actual}`)
+  }
+}
+
+console.log(`\nprovider-routing smoke: ${pass}/${cases.length + aliasChecks.length} passed`)
 if (fail > 0) {
   console.log(`\n${failures.join("\n\n")}`)
 }

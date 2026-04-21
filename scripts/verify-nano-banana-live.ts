@@ -108,6 +108,7 @@ async function pollPoyo(taskId: string, deadlineMs = 180_000): Promise<{ state: 
 async function runApiMart(label: string, model: string): Promise<Result> {
   const start = Date.now()
   try {
+    const wireModel = resolveProviderModelId(model, "apimart")
     const resp = await fetch(`${APIMART_BASE}/images/generations`, {
       method: "POST",
       headers: {
@@ -115,7 +116,7 @@ async function runApiMart(label: string, model: string): Promise<Result> {
         Authorization: `Bearer ${APIMART_KEY}`,
       },
       body: JSON.stringify({
-        model,
+        model: wireModel,
         prompt: PROMPT,
         image_urls: [REF_IMAGE_URL],
         n: 1,
@@ -204,3 +205,4 @@ main().catch((e) => {
   console.error(e)
   process.exit(1)
 })
+import { resolveProviderModelId } from "../lib/provider-routing"

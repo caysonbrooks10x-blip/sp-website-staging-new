@@ -142,7 +142,10 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsReferenceImage: true,
     supportsMask: false,
     supportsOutputFormat: false,
-    editVariant: "nano-banana-edit",
+    // Keep Studio image edits on the base Nano Banana model.
+    // ApiMart accepts reference images on the base wire model; auto-
+    // switching to a synthetic edit ID breaks routing and fallback.
+    editVariant: null,
     getCost: () => getModelCredits("nano-banana"),
   },
 
@@ -163,7 +166,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsReferenceImage: true,
     supportsMask: false,
     supportsOutputFormat: false,
-    editVariant: "nano-banana-2-edit",
+    editVariant: null,
     getCost: ({ resolution = "2K" }) => getModelCredits("nano-banana-2", { resolution }),
   },
 
@@ -184,7 +187,9 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsReferenceImage: true,
     supportsMask: false,
     supportsOutputFormat: false,
-    editVariant: "nano-banana-2-new-edit",
+    // `nano-banana-2-new-edit` remains reserved for the 2-step AR helper.
+    // Normal Studio image generation should stay on the base model ID.
+    editVariant: null,
     isNew: true,
     getCost: ({ resolution = "2K" }) => getModelCredits("nano-banana-2-new", { resolution }),
   },
@@ -336,7 +341,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsReferenceImage: true,
     supportsMask: false,
     supportsOutputFormat: false,
-    editVariant: "nano-banana-pro-edit",
+    editVariant: null,
     isNew: true,
     getCost: ({ resolution = "2K" }) => getModelCredits("nano-banana-pro", { resolution }),
   },
@@ -358,7 +363,7 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     supportsReferenceImage: true,
     supportsMask: false,
     supportsOutputFormat: false,
-    editVariant: "nano-banana-2-official-edit",
+    editVariant: null,
     getCost: ({ resolution = "2K" }) => getModelCredits("nano-banana-2-official", { resolution }),
   },
 
