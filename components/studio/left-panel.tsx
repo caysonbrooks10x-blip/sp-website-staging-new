@@ -16,6 +16,7 @@ import {
     Frame,
     X,
     Loader2,
+    ChevronRight,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -74,7 +75,9 @@ interface StudioLeftPanelProps {
     activeGeneration?: GenerationItem | null;
     externalPrompt?: string;
     mobileInlineCanvas?: React.ReactNode;
+    canvasOpen?: boolean;
     onCloseCanvas?: () => void;
+    onOpenCanvas?: () => void;
 }
 
 interface ModelItem {
@@ -124,7 +127,7 @@ function estimateTaskCredits(input: {
     });
 }
 
-export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt, mobileInlineCanvas, onCloseCanvas }: StudioLeftPanelProps) {
+export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt, mobileInlineCanvas, canvasOpen, onCloseCanvas, onOpenCanvas }: StudioLeftPanelProps) {
     const searchParams = useSearchParams();
     const { user } = useAuth();
     const [creditBalance, setCreditBalance] = useState<number>(0);
@@ -1269,7 +1272,7 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
             </div>
 
             <AnimatePresence>
-                {mobileInlineCanvas && (
+                {canvasOpen && mobileInlineCanvas && (
                     <motion.div
                         key="mobile-canvas-modal"
                         className="lg:hidden fixed inset-0 z-[60] flex flex-col bg-[#050505]/95 backdrop-blur-2xl"
@@ -1310,6 +1313,39 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                             </div>
                         </div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {!canvasOpen && activeGeneration && !isGenerating && activeGeneration.status === "completed" && onOpenCanvas && (
+                    <motion.button
+                        key="last-gen-pill"
+                        type="button"
+                        onClick={onOpenCanvas}
+                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="lg:hidden mx-4 mb-2 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#06b6d4]/10 via-[#06b6d4]/5 to-transparent border border-[#06b6d4]/25 px-3 py-2.5 text-left active:scale-[0.98] transition-transform"
+                    >
+                        {(activeGeneration.thumbnailUrl || activeGeneration.src) && (
+                            <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-none bg-black/40">
+                                {activeGeneration.type === "video" ? (
+                                    <video src={activeGeneration.src} className="w-full h-full object-cover" muted playsInline />
+                                ) : (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={activeGeneration.thumbnailUrl || activeGeneration.src} alt="" className="w-full h-full object-cover" />
+                                )}
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#06b6d4]">
+                                {activeGeneration.type === "video" ? "Video generated" : "Image generated"}
+                            </div>
+                            <div className="text-[11px] text-zinc-400 mt-0.5">Tap to view · download · send to Claw</div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-[#06b6d4] flex-none" />
+                    </motion.button>
                 )}
             </AnimatePresence>
 

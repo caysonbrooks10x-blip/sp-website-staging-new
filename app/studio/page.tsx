@@ -342,6 +342,7 @@ function StudioLayout() {
     try { localStorage.setItem("studio_aspect_ratio", val); } catch (e) {}
   };
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const [canvasOpen, setCanvasOpen] = useState(false);
 
   
   useEffect(() => {
@@ -1284,6 +1285,7 @@ function StudioLayout() {
                 onGenerate={(prompt, settings) => {
                   handleGenerate(prompt, settings);
                   setMobilePanelOpen(false);
+                  setCanvasOpen(true);
                 }}
                 onCancel={handleCancel}
                 isGenerating={isGenerating}
@@ -1305,12 +1307,11 @@ function StudioLayout() {
                     />
                   ) : null
                 }
+                canvasOpen={canvasOpen}
+                onOpenCanvas={() => setCanvasOpen(true)}
                 onCloseCanvas={() => {
-                  setActiveGeneration(null);
-                  setGenerations([]);
-                  safeRemoveLocalStorage(STUDIO_ACTIVE_STORAGE_KEY);
-                  safeRemoveLocalStorage(STUDIO_ACTIVE_TIME_KEY);
-                  safeRemoveLocalStorage(STUDIO_HISTORY_STORAGE_KEY);
+                  if (isGenerating) handleCancel();
+                  setCanvasOpen(false);
                 }}
               />
             </div>
