@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
+import { AnimatePresence, motion } from "framer-motion";
 import {
     IMAGE_MODEL_LIST,
     VIDEO_MODEL_LIST,
@@ -1266,11 +1267,47 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 </div>
             </div>
 
-            {mobileInlineCanvas && (
-                <div className="lg:hidden flex-none border-t border-[#1a1a1a] bg-black h-[38dvh] min-h-[240px] overflow-hidden">
-                    {mobileInlineCanvas}
-                </div>
-            )}
+            <AnimatePresence>
+                {mobileInlineCanvas && (
+                    <motion.div
+                        key="mobile-canvas-modal"
+                        className="lg:hidden fixed inset-0 z-[60] flex flex-col bg-[#050505]/95 backdrop-blur-2xl"
+                        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98, y: 8 }}
+                        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                        <div className="flex-none h-14 px-4 flex items-center justify-between bg-black/40 backdrop-blur-xl border-b border-white/5">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (isGenerating && onCancel) onCancel();
+                                }}
+                                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/90 transition-colors"
+                                aria-label="Close canvas"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                            {isGenerating ? (
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#06b6d4]/10 border border-[#06b6d4]/30">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#06b6d4] animate-pulse" />
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#06b6d4]">Generating</span>
+                                </div>
+                            ) : activeGeneration?.model ? (
+                                <span className="text-[11px] font-medium text-zinc-400 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 truncate max-w-[180px]">
+                                    {activeGeneration.model}
+                                </span>
+                            ) : <span />}
+                        </div>
+                        <div
+                            className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+                            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+                        >
+                            {mobileInlineCanvas}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <div className="flex-none p-4 pt-3 border-t border-[#1a1a1a] bg-[#0a0a0a] z-30 flex gap-3">
                 {isGenerating && onCancel && (
