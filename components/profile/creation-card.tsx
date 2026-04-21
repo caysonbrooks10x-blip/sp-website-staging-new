@@ -156,9 +156,11 @@ export function CreationCard({ item, index, onDelete }: CreationCardProps) {
                 {}
                 <div className="absolute inset-x-0 bottom-0 p-5 z-20 transition-all duration-500 opacity-100 lg:opacity-0 lg:translate-y-2 lg:group-hover:translate-y-0 lg:group-hover:opacity-100">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-[11px] font-medium uppercase tracking-wider text-purple-200/90 flex items-center gap-1.5 drop-shadow-md">
-                            <Clock className="w-3 h-3" /> {item.date}
-                        </span>
+                        {item.date && item.date.toLowerCase() !== "invalid date" ? (
+                            <span className="text-[11px] font-medium uppercase tracking-wider text-purple-200/90 flex items-center gap-1.5 drop-shadow-md">
+                                <Clock className="w-3 h-3" /> {item.date}
+                            </span>
+                        ) : <span />}
                     </div>
 
                     <h3 className="font-semibold text-lg text-white leading-tight mb-4 group-hover:text-purple-100 transition-colors drop-shadow-md line-clamp-2">

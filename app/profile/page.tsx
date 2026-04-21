@@ -72,7 +72,7 @@ import { CreationsTab } from "@/components/profile/creations-tab"
 
 function ProfileContent() {
   const { user, logout } = useAuth()
-  const [activeTab, setActiveTab] = useState<"overview" | "creations">("overview")
+  const [activeTab, setActiveTab] = useState<"creations">("creations")
   const containerRef = useRef<HTMLDivElement>(null)
 
   const [creations, setCreations] = useState<any[]>([])
@@ -156,7 +156,6 @@ function ProfileContent() {
   }, [])
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: Grid },
     { id: "creations", label: "Creations", icon: Sparkles },
   ]
 
@@ -274,30 +273,31 @@ function ProfileContent() {
               transition={{ duration: 0.4, ease: "circOut" }}
               className="min-h-[500px]"
             >
-              {activeTab === "overview" && (
-                <div className="space-y-12">
-                  <div className="flex flex-col items-center justify-center py-20 text-center space-y-6 bg-white/5 rounded-3xl border border-white/5">
-                    <h3 className="text-2xl font-bold text-white">Welcome to your Profile</h3>
-                    <p className="text-slate-400 max-w-md">
-                      This is your personal dashboard. As you create and remix content, your highlights and stats will appear here.
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {activeTab === "creations" && (
                 <CreationsTab
-                  items={creations.map(c => ({
-                    id: c.id,
-                    appName: c.title || "Untitled Creation",
-                    previewUrl: c.outputUrl || c.thumbnailUrl || "",
-                    type: c.type || (c.outputUrl?.includes('.mp4') ? 'video' : 'image'),
-                    remixCount: c.remixCount || 0,
-                    likes: c.likes || 0,
-                    date: new Date(c.createdAt?._seconds * 1000 || c.createdAt).toLocaleDateString(),
-                    model: c.model,
-                    prompt: c.prompt
-                  }))}
+                  items={creations.map(c => {
+                    const createdAtValue =
+                      c.createdAtMs ||
+                      (typeof c.createdAt?.toDate === "function" ? c.createdAt.toDate().getTime() : undefined) ||
+                      (c.createdAt?._seconds ? c.createdAt._seconds * 1000 : undefined) ||
+                      (c.createdAt?.seconds ? c.createdAt.seconds * 1000 : undefined) ||
+                      (typeof c.createdAt === "string" || typeof c.createdAt === "number" ? c.createdAt : undefined)
+                    const parsed = createdAtValue ? new Date(createdAtValue) : null
+                    const dateStr = parsed && !Number.isNaN(parsed.getTime())
+                      ? parsed.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                      : ""
+                    return {
+                      id: c.id,
+                      appName: c.title || "Untitled Creation",
+                      previewUrl: c.outputUrl || c.thumbnailUrl || "",
+                      type: c.type || (c.outputUrl?.includes('.mp4') ? 'video' : 'image'),
+                      remixCount: c.remixCount || 0,
+                      likes: c.likes || 0,
+                      date: dateStr,
+                      model: c.model,
+                      prompt: c.prompt,
+                    }
+                  })}
                   loading={loadingCreations}
                   onDelete={(id) => setCreations(prev => prev.filter(c => c.id !== id))}
                 />
