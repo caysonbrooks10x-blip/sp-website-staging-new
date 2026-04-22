@@ -1291,11 +1291,11 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, isSubmitti
                             <button
                                 type="button"
                                 onClick={() => {
-                                    if (isGenerating && onCancel) onCancel();
                                     onCloseCanvas?.();
                                 }}
                                 className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/90 transition-colors active:scale-95"
                                 aria-label="Close canvas"
+                                title={isGenerating ? "Hide (generation keeps running in background)" : "Close"}
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -1311,14 +1311,62 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, isSubmitti
                             ) : <span />}
                         </div>
                         <div
-                            className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex items-center justify-center"
-                            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+                            className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex items-center justify-center relative"
                         >
                             <div className="w-full h-full flex items-center justify-center">
                                 {mobileInlineCanvas}
                             </div>
                         </div>
+                        <div
+                            className="flex-none px-4 pt-3 pb-4 bg-gradient-to-t from-black/90 via-black/70 to-transparent"
+                            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+                        >
+                            <button
+                                type="button"
+                                onClick={() => onCloseCanvas?.()}
+                                className={cn(
+                                    "w-full h-[52px] rounded-xl text-[13px] font-bold tracking-[0.1em] uppercase transition-all duration-300 relative overflow-hidden",
+                                    "btn-gold active:scale-[0.98] flex items-center justify-center gap-2.5"
+                                )}
+                            >
+                                <Sparkles className="w-4 h-4 text-black" />
+                                <span className="relative top-[0.5px]">
+                                    {isGenerating ? "Generate another" : "New generation"}
+                                </span>
+                            </button>
+                            <p className="mt-2 text-center text-[10px] text-zinc-500 tracking-wide">
+                                {isGenerating
+                                    ? "Current generation keeps running in the top-left stack"
+                                    : "Opens prompt panel"}
+                            </p>
+                        </div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {!canvasOpen && isGenerating && onOpenCanvas && (
+                    <motion.button
+                        key="in-flight-pill"
+                        type="button"
+                        onClick={onOpenCanvas}
+                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="lg:hidden mx-4 mb-2 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-violet-500/15 via-fuchsia-500/10 to-transparent border border-violet-400/30 px-3 py-2.5 text-left active:scale-[0.98] transition-transform"
+                    >
+                        <div className="w-10 h-10 rounded-lg bg-black/40 border border-white/10 flex-none flex items-center justify-center">
+                            <Loader2 className="w-4 h-4 text-violet-300 animate-spin" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-300">
+                                Generation running
+                            </div>
+                            <div className="text-[11px] text-zinc-400 mt-0.5 truncate">Tap to view canvas · queue another below</div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-violet-300 flex-none" />
+                    </motion.button>
                 )}
             </AnimatePresence>
 

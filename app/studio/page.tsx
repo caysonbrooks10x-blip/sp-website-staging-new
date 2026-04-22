@@ -406,6 +406,12 @@ function StudioLayout() {
     //     sync submit phase to prevent double-fire from one click.
     setIsGenerating(true);
     setIsSubmitting(true);
+    // `isSubmitting` only needs to guard against same-tap double-fire. Release
+    // it after a short window so the user isn't locked out of queuing a 3rd+
+    // generation while the 2nd POST/upload is still resolving (uploads + the
+    // executeWithFallback round-trip can take 10s+). The per-job polling is
+    // tracked independently via `isGenerating` + `backgroundJobs`.
+    window.setTimeout(() => setIsSubmitting(false), 1200);
 
     setActiveGeneration((prevHero) => {
       // Demote the prior hero regardless of status (in-flight AND completed),
@@ -1446,7 +1452,6 @@ function StudioLayout() {
                 canvasOpen={canvasOpen}
                 onOpenCanvas={() => setCanvasOpen(true)}
                 onCloseCanvas={() => {
-                  if (isGenerating) handleCancel();
                   setCanvasOpen(false);
                 }}
               />
