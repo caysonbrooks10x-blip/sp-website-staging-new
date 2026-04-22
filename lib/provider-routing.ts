@@ -108,6 +108,13 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   "kling-o3-image":         { primary: "poyo" },
 
   // VIDEO
+  // Sora 2: ApiMart publishes `sora-2` / `sora-2-pro` / `sora-2-preview`
+  // / `sora-2-vip`. Poyo only publishes `sora-2-official`. Treated as
+  // strictly one-sided — no `also` fallback; a 404 on the primary is a
+  // hard failure rather than a silent cross-provider swap.
+  "sora-2":                 { primary: "apimart" },
+  "sora-2-pro":             { primary: "apimart" },
+  "sora-2-official":        { primary: "poyo" },
   "veo3.1-lite":            { primary: "apimart" },
   "veo3.1-fast-official":   { primary: "apimart" },
   "veo3.1-quality-official":{ primary: "apimart" },
@@ -125,7 +132,7 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
 // MODEL_ALIASES — cross-provider wire name translation.
 //
 // Some upstream models exist on both providers under different canonical
-// IDs (verified 2026-04-17 against https://apimart.ai/api/pricing). The
+// IDs (verified 2026-04-22 against https://apimart.ai/api/pricing). The
 // studio picks ONE canonical ID per upstream model (the Poyo name by
 // convention); the dispatcher translates to the opposite provider's wire
 // name when the router chooses ApiMart / falls back to ApiMart.
@@ -146,12 +153,37 @@ export const MODEL_ALIASES: Record<string, Partial<Record<StudioProvider, string
     apimart: "gemini-3.1-flash-image-preview",
   },
   // "Nano Banana 2 (New)" is a Studio-facing catalog label for the same
-  // ApiMart Gemini 3.1 image model while retaining a distinct UX surface.
+  // upstream Gemini 3.1 image model as `nano-banana-2`; both rows resolve
+  // to the identical ApiMart wire name. Kept as a distinct Studio entry
+  // only for UX surfacing. On Poyo the two do currently ship under
+  // separate doc pages, so no Poyo alias is needed.
   "nano-banana-2-new": {
     apimart: "gemini-3.1-flash-image-preview",
   },
   "nano-banana-2-official": {
     apimart: "gemini-3.1-flash-image-preview-official",
+  },
+
+  // Hailuo: Poyo uses plain `hailuo-2.3`; ApiMart canonicalizes under the
+  // MiniMax vendor prefix.
+  "hailuo-2.3": {
+    apimart: "MiniMax-Hailuo-2.3",
+  },
+
+  // Grok video / image: ApiMart publishes the xAI family with explicit
+  // version + `-apimart` suffix. Studio keeps the short marketing names.
+  "grok-vid": {
+    apimart: "grok-imagine-1.0-video-apimart",
+  },
+  "grok-imagine-image": {
+    apimart: "grok-imagine-1.0-apimart",
+  },
+
+  // Wan 2.6: Poyo splits by modality (`wan2.6-text-to-video`,
+  // `wan2.6-image-to-video`); ApiMart collapses text-to-video under plain
+  // `wan2.6` (image-to-video is `wan2.6-i2v`, Poyo-only in Studio today).
+  "wan2.6-text-to-video": {
+    apimart: "wan2.6",
   },
 }
 

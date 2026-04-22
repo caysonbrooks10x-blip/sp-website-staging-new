@@ -30,7 +30,7 @@ const cases: Case[] = [
   // --- P0: models that must NOT go to ApiMart ---
   { name: "z-image → poyo (P0)", input: { mode: "image", model: "z-image" }, expected: "poyo" },
   { name: "kling-2.5-turbo-pro → poyo (P0)", input: { mode: "video", model: "kling-2.5-turbo-pro" }, expected: "poyo" },
-  { name: "sora-2-official → apimart (P0)", input: { mode: "video", model: "sora-2-official" }, expected: "apimart" },
+  { name: "sora-2-official → poyo (Poyo-only; ApiMart lacks this ID)", input: { mode: "video", model: "sora-2-official" }, expected: "poyo" },
   { name: "kling-3.0-motion-control → poyo (P0)", input: { mode: "video", model: "kling-3.0-motion-control" }, expected: "poyo" },
   { name: "hailuo-02-pro → poyo (P0)", input: { mode: "video", model: "hailuo-02-pro" }, expected: "poyo" },
   { name: "wan-animate-move → poyo (P0)", input: { mode: "video", model: "wan-animate-move" }, expected: "poyo" },
