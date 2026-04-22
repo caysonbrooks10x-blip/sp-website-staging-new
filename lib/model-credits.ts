@@ -55,6 +55,8 @@ export const MODEL_CHARGE_USD: Record<string, number> = {
   "wan-2.7-image-pro": 0.052,
   "kling-o3-image": 0.018,
   "grok-imagine-image": 0.030,
+  // added 2026-04-22 — Poyo $0.025 / ApiMart $0.050; policy charges max.
+  "gpt-image-2": 0.050,
   // video — 11 models
   "grok-vid": 0.150,
   "hailuo-2.3": 0.175,                // varies by duration+res

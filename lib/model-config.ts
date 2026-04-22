@@ -323,6 +323,23 @@ export const IMAGE_MODELS: Record<string, ImageModelConfig> = {
     getCost: () => getModelCredits("z-image"),
   },
 
+  "gpt-image-2": {
+    type: "image",
+    id: "gpt-image-2",
+    name: "GPT Image 2",
+    baseCost: 10,
+    sizeOptions: GPT_SIZES,
+    supportsN: true,
+    maxN: 4,
+    supportsResolution: false,
+    supportsReferenceImage: true,
+    supportsMask: false,
+    supportsOutputFormat: false,
+    editVariant: null,
+    isNew: true,
+    getCost: ({ n = 1 }) => getModelCredits("gpt-image-2", { n }),
+  },
+
   "nano-banana-pro": {
     type: "image",
     id: "nano-banana-pro",

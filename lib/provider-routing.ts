@@ -106,6 +106,9 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   "grok-imagine-image":     { primary: "apimart", also: ["poyo"] },
   "wan-2.7-image-pro":      { primary: "poyo" },
   "kling-o3-image":         { primary: "poyo" },
+  // Added 2026-04-22 — verified against https://poyo.ai/pricing.
+  // gpt-image-2 is $0.025 on Poyo vs $0.050 on ApiMart → Poyo primary.
+  "gpt-image-2":            { primary: "poyo", also: ["apimart"] },
 
   // VIDEO
   // Sora 2: ApiMart publishes `sora-2` / `sora-2-pro` / `sora-2-preview`
@@ -185,6 +188,15 @@ export const MODEL_ALIASES: Record<string, Partial<Record<StudioProvider, string
   "wan2.6-text-to-video": {
     apimart: "wan2.6",
   },
+
+  // Seedream 5 Lite: ApiMart publishes the ByteDance vendor ID
+  // `doubao-seedream-5-0-lite`; Studio keeps the Poyo short name as
+  // canonical. Fixes a prior drift where submits to ApiMart were sending
+  // the literal `seedream-5.0-lite` and hitting a 404.
+  "seedream-5.0-lite": {
+    apimart: "doubao-seedream-5-0-lite",
+  },
+
 }
 
 export function resolveProviderModelId(
@@ -208,6 +220,7 @@ const IMAGE_MODEL_IDS = new Set<string>([
   "z-image", "qwen-image-2.0-pro",
   "grok-imagine-image", "wan-2.7-image-pro",
   "kling-o3-image",
+  "gpt-image-2",
 ])
 
 export const APIMART_IMAGE_MODELS = new Set<string>(
