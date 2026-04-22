@@ -815,7 +815,16 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
   },
 };
 
-export const IMAGE_MODEL_LIST: ImageModelConfig[] = Object.values(IMAGE_MODELS);
+// Customer-facing Studio image picker list.
+// Keep provider-specific official tiers routable internally, but avoid
+// exposing duplicate/confusing variants as separate visible choices.
+const HIDDEN_IMAGE_MODEL_IDS = new Set<string>([
+  "nano-banana-2-official",
+]);
+
+export const IMAGE_MODEL_LIST: ImageModelConfig[] = Object.values(IMAGE_MODELS).filter(
+  (model) => !HIDDEN_IMAGE_MODEL_IDS.has(model.id)
+);
 
 // Public Studio video surface — keep this order explicit.
 // The web app renders `VIDEO_MODEL_LIST`, and Telegram should mirror this
