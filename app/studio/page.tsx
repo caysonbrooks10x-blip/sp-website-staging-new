@@ -29,6 +29,7 @@ import { adaptApimartStatus, adaptApimartSubmission, newRequestId, type Canonica
 import { executeWithFallback, buildProviderCall } from "@/lib/provider-execution";
 import { persistStudioGeneration } from "@/lib/studio-generations";
 import { StudioSidebar, type StudioMode } from "@/components/studio/sidebar";
+import { GenerationStack } from "@/components/studio/generation-stack";
 
 interface NormalizedJobStatus {
   status: "processing" | "completed" | "failed";
@@ -252,8 +253,13 @@ function StudioLayout() {
   });
   const [mode] = useState<"image" | "video">(initMode);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [generations, setGenerations] = useState<GenerationItem[]>([]);
   const [activeGeneration, setActiveGeneration] = useState<GenerationItem | null>(null);
+  // Concurrent in-flight jobs that aren't in the hero slot. Newest generation
+  // always takes hero; prior still-running ones are demoted here. Oldest-first
+  // in the array (so the stack renders left→right oldest→newest).
+  const [backgroundJobs, setBackgroundJobs] = useState<GenerationItem[]>([]);
   const [showBillingAlert, setShowBillingAlert] = useState(false);
   const processedJobIdRef = useRef<string | null>(null);
   const cancelledJobsRef = useRef<Set<string>>(new Set());
@@ -390,13 +396,29 @@ function StudioLayout() {
   };
 
   const handleGenerate = async (prompt: string, settings: any) => {
+    // Concurrent-generations model (2026-04-22):
+    //   - Newest generation always wins the hero (center-canvas) slot.
+    //   - If the prior hero is still in-flight, it gets demoted into the
+    //     top-left `backgroundJobs` stack. Completed heroes are replaced
+    //     directly (user can still see it in my-creations / Firestore).
+    //   - `isGenerating` stays true while ANY job is in-flight. A separate
+    //     `isSubmitting` flag gates the Generate button only during the
+    //     sync submit phase to prevent double-fire from one click.
     setIsGenerating(true);
-    
-    setGenerations([]);
-    setActiveGeneration(null);
-    safeRemoveLocalStorage(STUDIO_HISTORY_STORAGE_KEY);
-    safeRemoveLocalStorage(STUDIO_ACTIVE_STORAGE_KEY);
-    safeRemoveLocalStorage(STUDIO_ACTIVE_TIME_KEY);
+    setIsSubmitting(true);
+
+    setActiveGeneration((prevHero) => {
+      // Demote the prior hero regardless of status (in-flight AND completed),
+      // so the user can still see & return to it from the stack. Only "failed"
+      // is dropped — nothing worth keeping.
+      if (prevHero && prevHero.status !== "failed") {
+        setBackgroundJobs((prev) => {
+          if (prev.some((j) => j.id === prevHero.id)) return prev;
+          return [...prev, prevHero];
+        });
+      }
+      return null;
+    });
 
     let telemetryProvider: StudioProvider | null = null;
 
@@ -641,6 +663,7 @@ function StudioLayout() {
               console.error("[two-step] step 1 failed, aborting:", twoStepError);
               toast.error(`Could not reframe reference to ${targetAr}: ${msg}. Try a different reference or target AR.`, { id: "gen-toast", duration: 8000 });
               setIsGenerating(false);
+              setIsSubmitting(false);
               return;
             }
           }
@@ -835,8 +858,13 @@ function StudioLayout() {
 
       if (submission.directCompletedItem) {
         setActiveGeneration(submission.directCompletedItem);
-        setGenerations([submission.directCompletedItem]);
-        setIsGenerating(false);
+        setGenerations((prev) => {
+          const cleaned = prev.filter((g) => g.id !== submission.directCompletedItem!.id);
+          return [submission.directCompletedItem!, ...cleaned];
+        });
+        // `isGenerating` remains true if there are still background jobs polling.
+        setIsGenerating(backgroundJobs.length > 0);
+        setIsSubmitting(false);
         recordProviderTelemetryEvent({ provider: finalProvider, outcome: "success" });
         toast.success(
           execution.usedFallback
@@ -871,11 +899,16 @@ function StudioLayout() {
       };
 
       setActiveGeneration(newItem);
-      setGenerations([newItem]);
+      setGenerations((prev) => {
+        const cleaned = prev.filter((g) => g.id !== newItem.id);
+        return [newItem, ...cleaned];
+      });
+      setIsSubmitting(false);
       startJobPoller(jobId, newItem);
 
     } catch (error: any) {
       setIsGenerating(false);
+      setIsSubmitting(false);
       toast.dismiss('gen-toast');
 
       const appCode = error.details?.code;
@@ -912,11 +945,32 @@ function StudioLayout() {
     // The server owns provider routing; the client just tells it which
     // provider actually queued this task (which may differ from the
     // originally-requested provider if executeWithFallback flipped it).
+    //
+    // 2026-04-22 concurrent-gens: this poller may be running for a job that
+    // is either the hero (activeGeneration) or a background tile. Every
+    // state write uses `updateJobSlot` which targets the right slot.
     const provider = (item.generationPlatform || item.settings?.provider || "poyo") as StudioProvider;
     const maxPollAttempts = provider === "apimart" ? 240 : 200;
     const maxConsecutiveErrors = 6;
     let pollAttempts = 0;
     let consecutiveErrors = 0;
+
+    const updateJobSlot = (patch: GenerationItem) => {
+      setActiveGeneration((prev) => (prev && prev.id === patch.id ? patch : prev));
+      setBackgroundJobs((prev) => prev.map((j) => (j.id === patch.id ? patch : j)));
+    };
+
+    const removeFromBackground = (id: string) => {
+      setBackgroundJobs((prev) => prev.filter((j) => j.id !== id));
+    };
+
+    const stillInFlight = () => {
+      // Used to decide whether to keep `isGenerating` true after a job ends.
+      // We read from DOM-refs-free state via setter-callback form elsewhere,
+      // but here we can use a coarse check: assume any remaining bg job keeps
+      // the flag; the setter below re-derives it.
+      return false;
+    };
 
     const markTerminalFailure = (message: string) => {
       const failedItem: GenerationItem = {
@@ -926,11 +980,16 @@ function StudioLayout() {
         status: "failed" as const,
         error: message,
       };
-      setActiveGeneration(failedItem);
+      updateJobSlot(failedItem);
       setGenerations((prev: GenerationItem[]) => prev.map((g) => (g.id === jobId ? failedItem : g)));
-      setIsGenerating(false);
+      setBackgroundJobs((prev) => {
+        const next = prev.filter((j) => j.id !== jobId);
+        setIsGenerating(next.length > 0);
+        return next;
+      });
       recordProviderTelemetryEvent({ provider, outcome: "failure", message });
       toast.error(message, { id: "gen-toast" });
+      void stillInFlight;
     };
 
     const scheduleNextPoll = (isError: boolean) => {
@@ -1034,13 +1093,16 @@ function StudioLayout() {
               thumbnailUrl: data.thumbnailUrl,
             };
 
-            setActiveGeneration(batchItem);
+            updateJobSlot(batchItem);
 
-            
+
             setGenerations((prev: GenerationItem[]) => {
               const cleaned = prev.filter(g => g.id !== jobId);
               return [...completedItems, ...cleaned];
             });
+            // Background jobs stay in the stack with a "completed" (green)
+            // state so the user can click to bring the result into the
+            // hero slot. updateJobSlot above already patched the tile.
             recordProviderTelemetryEvent({ provider, outcome: "success" });
             void persistCompletedGeneration(batchItem);
           } else {
@@ -1056,12 +1118,27 @@ function StudioLayout() {
               creationId: data.creationId || data.taskId || item.creationId || jobId,
               thumbnailUrl: data.thumbnailUrl,
             };
-            setActiveGeneration(completedItem);
-            setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? completedItem : g));
+            updateJobSlot(completedItem);
+            setGenerations((prev: GenerationItem[]) => {
+              if (prev.some((g) => g.id === jobId)) {
+                return prev.map(g => g.id === jobId ? completedItem : g);
+              }
+              return [completedItem, ...prev];
+            });
+            // Background jobs stay in the stack as "completed" tiles; user
+            // clicks them to bring the result into the hero.
             recordProviderTelemetryEvent({ provider, outcome: "success" });
             void persistCompletedGeneration(completedItem);
           }
-          setIsGenerating(false);
+          // Any still-IN-FLIGHT background tiles keep the flag true. Completed
+          // tiles remain visible but no longer count as "generating".
+          setBackgroundJobs((prev) => {
+            const anyInFlight = prev.some(
+              (j) => j.status === "queued" || j.status === "generating",
+            );
+            setIsGenerating(anyInFlight);
+            return prev;
+          });
         } else if (data.status === "failed" || data.status === "cancelled") {
           console.log("Task Failed, internal backend already refunded tokens!", data.error);
           const failedItem: GenerationItem = {
@@ -1071,9 +1148,13 @@ function StudioLayout() {
             status: "failed" as const,
             error: data.error || (data.status === "cancelled" ? "Generation was cancelled." : "Generation failed."),
           };
-          setActiveGeneration(failedItem);
+          updateJobSlot(failedItem);
           setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? failedItem : g));
-          setIsGenerating(false);
+          setBackgroundJobs((prev) => {
+            const next = prev.filter((j) => j.id !== jobId);
+            setIsGenerating(next.length > 0);
+            return next;
+          });
           recordProviderTelemetryEvent({
             provider,
             outcome: "failure",
@@ -1087,11 +1168,19 @@ function StudioLayout() {
           const completedCount = data.completedCount || 0;
           const totalCount = data.totalCount || item.settings?.n || 1;
 
-          setActiveGeneration((prev: GenerationItem | null) =>
-            prev ? { ...prev, generationPlatform: provider, taskId: data.taskId || prev.taskId || jobId, status: "generating", progress, completedCount, totalCount } : null
-          );
+          const makePatch = (g: GenerationItem) => ({
+            ...g,
+            generationPlatform: provider,
+            taskId: data.taskId || g.taskId || jobId,
+            status: "generating" as const,
+            progress,
+            completedCount,
+            totalCount,
+          });
+          setActiveGeneration((prev) => (prev && prev.id === jobId ? makePatch(prev) : prev));
+          setBackgroundJobs((prev) => prev.map((g) => (g.id === jobId ? makePatch(g) : g)));
           setGenerations((prev: GenerationItem[]) =>
-            prev.map(g => g.id === jobId ? { ...g, generationPlatform: provider, taskId: data.taskId || g.taskId || jobId, status: "generating", progress, completedCount, totalCount } : g)
+            prev.map(g => g.id === jobId ? makePatch(g) : g)
           );
           scheduleNextPoll(false);
         }
@@ -1110,36 +1199,74 @@ function StudioLayout() {
     checkStatus();
   };
 
-  const handleCancel = async () => {
-    if (activeGeneration?.id) {
-      const jobId = activeGeneration.id;
-      const provider = (activeGeneration.generationPlatform || activeGeneration.settings?.provider || "poyo") as StudioProvider;
-      cancelledJobsRef.current.add(jobId);
+  // Cancel + remove any job (hero or background) by id. Used by the stack X
+  // button and by handleCancel for the hero slot.
+  const cancelJobById = async (jobId: string, source: "hero" | "background") => {
+    const jobFromState =
+      (activeGeneration && activeGeneration.id === jobId ? activeGeneration : null) ||
+      backgroundJobs.find((j) => j.id === jobId) ||
+      null;
+    const provider = (jobFromState?.generationPlatform || jobFromState?.settings?.provider || "poyo") as StudioProvider;
+    cancelledJobsRef.current.add(jobId);
 
-      const cancelledItem: GenerationItem = { ...activeGeneration, status: "failed" };
-      setActiveGeneration(null); 
-      setGenerations((prev) => prev.map(g => g.id === jobId ? cancelledItem : g));
-      setIsGenerating(false);
-
-      
+    if (source === "hero") {
+      setActiveGeneration(null);
       safeRemoveLocalStorage(STUDIO_ACTIVE_STORAGE_KEY);
       safeRemoveLocalStorage(STUDIO_ACTIVE_TIME_KEY);
-
-      console.log("Job marked as cancelled locally, syncing with backend...");
-
-      if (provider === "apimart") {
-        toast.info("ApiMart cancellation is not wired yet, so the job was removed locally only.");
-        return;
-      }
-
-      try {
-        const cancelJob = httpsCallable(functions, "cancelStudioJob");
-        await cancelJob({ jobId });
-        console.log("Successfully securely cancelled backend job and refunded tokens.");
-      } catch (err) {
-        console.error("Warning: Could not officially cancel backend job, it may still render.", err);
-      }
     }
+    setBackgroundJobs((prev) => {
+      const next = prev.filter((j) => j.id !== jobId);
+      // If source is "hero" the active slot is now empty, so in-flight state
+      // is purely a function of background jobs remaining.
+      // If source is "background", activeGeneration may still be in-flight.
+      if (source === "hero") {
+        setIsGenerating(next.length > 0);
+      }
+      return next;
+    });
+    setGenerations((prev) => prev.map((g) => (g.id === jobId ? { ...g, status: "failed" as const } : g)));
+
+    if (provider === "apimart") {
+      if (source === "hero") {
+        toast.info("ApiMart cancellation is not wired yet, so the job was removed locally only.");
+      }
+      return;
+    }
+
+    try {
+      const cancelJob = httpsCallable(functions, "cancelStudioJob");
+      await cancelJob({ jobId });
+    } catch (err) {
+      console.error("Warning: Could not officially cancel backend job, it may still render.", err);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!activeGeneration?.id) return;
+    await cancelJobById(activeGeneration.id, "hero");
+  };
+
+  // Stack: user clicked X on a background tile.
+  const handleDismissBackgroundJob = (jobId: string) => {
+    void cancelJobById(jobId, "background");
+  };
+
+  // Stack: user clicked a background tile → swap it into the hero slot.
+  // The current hero (if any, and still in-flight) gets demoted to the stack.
+  const handleSwapHero = (jobId: string) => {
+    const target = backgroundJobs.find((j) => j.id === jobId);
+    if (!target) return;
+
+    setBackgroundJobs((prev) => prev.filter((j) => j.id !== jobId));
+    setActiveGeneration((prevHero) => {
+      if (prevHero && prevHero.id !== jobId && prevHero.status !== "failed") {
+        setBackgroundJobs((prev) => {
+          if (prev.some((j) => j.id === prevHero.id)) return prev;
+          return [...prev, prevHero];
+        });
+      }
+      return target;
+    });
   };
 
   
@@ -1289,6 +1416,7 @@ function StudioLayout() {
                 }}
                 onCancel={handleCancel}
                 isGenerating={isGenerating}
+                isSubmitting={isSubmitting}
                 mode={studioModeToCreationMode(studioMode)}
                 aspectRatio={aspectRatio}
                 setAspectRatio={setAspectRatio}
@@ -1297,14 +1425,22 @@ function StudioLayout() {
                 externalPrompt={suggestionPrompt}
                 mobileInlineCanvas={
                   (isGenerating || activeGeneration) ? (
-                    <StudioCenterCanvas
-                      activeGeneration={activeGeneration}
-                      mode={studioModeToCreationMode(studioMode)}
-                      isGenerating={isGenerating}
-                      aspectRatio={aspectRatio}
-                      onOpenPanel={() => setMobilePanelOpen(true)}
-                      onSuggestionClick={(p) => setSuggestionPrompt(p)}
-                    />
+                    <div className="relative w-full h-full">
+                      <StudioCenterCanvas
+                        activeGeneration={activeGeneration}
+                        mode={studioModeToCreationMode(studioMode)}
+                        isGenerating={isGenerating}
+                        aspectRatio={aspectRatio}
+                        onOpenPanel={() => setMobilePanelOpen(true)}
+                        onSuggestionClick={(p) => setSuggestionPrompt(p)}
+                      />
+                      <GenerationStack
+                        jobs={backgroundJobs}
+                        onSwapHero={handleSwapHero}
+                        onDismiss={handleDismissBackgroundJob}
+                        visibleMax={2}
+                      />
+                    </div>
                   ) : null
                 }
                 canvasOpen={canvasOpen}
@@ -1318,7 +1454,7 @@ function StudioLayout() {
           </div>
 
           {/* Desktop-only canvas column */}
-          <div className="hidden lg:flex flex-1 h-full min-h-0 min-w-0 flex-col">
+          <div className="hidden lg:flex flex-1 h-full min-h-0 min-w-0 flex-col relative">
             <StudioCenterCanvas
               activeGeneration={activeGeneration}
               mode={studioModeToCreationMode(studioMode)}
@@ -1326,6 +1462,12 @@ function StudioLayout() {
               aspectRatio={aspectRatio}
               onOpenPanel={() => setMobilePanelOpen(true)}
               onSuggestionClick={(p) => setSuggestionPrompt(p)}
+            />
+            <GenerationStack
+              jobs={backgroundJobs}
+              onSwapHero={handleSwapHero}
+              onDismiss={handleDismissBackgroundJob}
+              visibleMax={4}
             />
           </div>
         </div>

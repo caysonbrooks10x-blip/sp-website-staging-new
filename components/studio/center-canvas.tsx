@@ -397,7 +397,15 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                         "w-full flex flex-col items-center px-4 sm:px-0",
                         !activeGeneration
                             ? "min-h-full justify-center py-6 lg:py-10"
-                            : "min-h-full pb-20 lg:pb-32"
+                            // 2026-04-22: previously top-aligned while any gen
+                            // was active. With concurrent gens we want the
+                            // in-flight or completed hero kept centered so
+                            // multi-tile stacks don't visually ride the top.
+                            // Multi-image completed grids still need more
+                            // space so keep them top-aligned.
+                            : activeGeneration.status === "completed" && isMultiImage
+                                ? "min-h-full pb-20 lg:pb-32"
+                                : "min-h-full justify-center py-6 lg:py-10"
                     )}>
                         {activeGeneration?.status === "completed" && isMultiImage ? (
                             <div

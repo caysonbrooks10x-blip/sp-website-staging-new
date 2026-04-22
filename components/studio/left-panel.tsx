@@ -68,6 +68,12 @@ interface StudioLeftPanelProps {
     onGenerate: (prompt: string, settings: any) => void;
     onCancel?: () => void;
     isGenerating: boolean;
+    /**
+     * Transient flag true only during the synchronous submit phase of a new
+     * job (uploads + POST). Button is gated on this — NOT on `isGenerating`
+     * — so users can stack concurrent generations while older jobs poll.
+     */
+    isSubmitting?: boolean;
     mode?: "image" | "video" | "remix" | string;
     aspectRatio: string;
     setAspectRatio: (val: string) => void;
@@ -127,7 +133,7 @@ function estimateTaskCredits(input: {
     });
 }
 
-export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt, mobileInlineCanvas, canvasOpen, onCloseCanvas, onOpenCanvas }: StudioLeftPanelProps) {
+export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, isSubmitting = false, mode: initialMode, aspectRatio, setAspectRatio, studioMode, activeGeneration, externalPrompt, mobileInlineCanvas, canvasOpen, onCloseCanvas, onOpenCanvas }: StudioLeftPanelProps) {
     const searchParams = useSearchParams();
     const { user } = useAuth();
     const [creditBalance, setCreditBalance] = useState<number>(0);
@@ -1361,25 +1367,35 @@ export function StudioLeftPanel({ onGenerate, onCancel, isGenerating, mode: init
                 )}
                 <Button
                     onClick={handleGenerate}
-                    disabled={isGenerating || !prompt || (requiresInputImage && !sourceFile && !startImageFile && !previewUrl)}
+                    disabled={isSubmitting || !prompt || (requiresInputImage && !sourceFile && !startImageFile && !previewUrl)}
                     title={requiresInputImage && !sourceFile && !startImageFile && !previewUrl ? "Attach a source image to continue" : undefined}
                     className={cn(
                         "flex-1 h-[52px] rounded-xl text-[13px] font-bold tracking-[0.1em] uppercase transition-all duration-300 group relative overflow-hidden",
-                        (isGenerating || !prompt || (requiresInputImage && !sourceFile && !startImageFile && !previewUrl))
+                        (isSubmitting || !prompt || (requiresInputImage && !sourceFile && !startImageFile && !previewUrl))
                             ? "bg-[#111] text-zinc-600 cursor-not-allowed border border-[#222]"
                             : "btn-gold hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                     )}
                 >
-                    {isGenerating ? (
+                    {isSubmitting ? (
                         <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#06b6d4]/10 rounded-full border border-[#06b6d4]/20 animate-pulse">
                                 <Loader2 className="w-3.5 h-3.5 text-[#06b6d4] animate-spin" />
-                                <span className="text-[10px] font-black text-[#06b6d4] uppercase tracking-widest">Generating</span>
+                                <span className="text-[10px] font-black text-[#06b6d4] uppercase tracking-widest">Submitting</span>
                             </div>
                         </div>
+                    ) : isGenerating ? (
+                        <span className="flex items-center justify-center gap-2.5 relative z-10">
+                            <Sparkles className={cn("w-4 h-4 transition-all duration-700 group-hover:rotate-12 group-hover:scale-110", !prompt ? "opacity-50" : "text-black")} />
+                            <span className="relative top-[0.5px]">
+                                Generate another
+                                {currentTaskCredits > 0 && (
+                                    <span className="ml-2 opacity-80">· {currentTaskCredits} credit{currentTaskCredits === 1 ? "" : "s"}</span>
+                                )}
+                            </span>
+                        </span>
                     ) : (
                         <span className="flex items-center justify-center gap-2.5 relative z-10">
-                            <Sparkles className={cn("w-4 h-4 transition-all duration-700 group-hover:rotate-12 group-hover:scale-110", isGenerating || !prompt ? "opacity-50" : "text-black")} />
+                            <Sparkles className={cn("w-4 h-4 transition-all duration-700 group-hover:rotate-12 group-hover:scale-110", !prompt ? "opacity-50" : "text-black")} />
                             <span className="relative top-[0.5px]">
                                 Generate
                                 {currentTaskCredits > 0 && (
