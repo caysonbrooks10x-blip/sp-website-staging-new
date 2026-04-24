@@ -960,6 +960,7 @@ function StudioLayout() {
     const maxConsecutiveErrors = 6;
     let pollAttempts = 0;
     let consecutiveErrors = 0;
+    let completedWithoutOutputPolls = 0;
 
     const updateJobSlot = (patch: GenerationItem) => {
       setActiveGeneration((prev) => (prev && prev.id === patch.id ? patch : prev));
@@ -1070,6 +1071,20 @@ function StudioLayout() {
             data.result_urls ||
             (Array.isArray(data.outputUrl) ? data.outputUrl : data.outputUrl ? [data.outputUrl] : null);
           const urls = flattenOutputUrls(rawUrls);
+          if (urls.length === 0) {
+            completedWithoutOutputPolls += 1;
+            if (completedWithoutOutputPolls < 10) {
+              console.warn("Provider marked task completed before output URL was available; continuing to poll.", {
+                jobId,
+                provider,
+                completedWithoutOutputPolls,
+              });
+              scheduleNextPoll(false);
+              return;
+            }
+            markTerminalFailure("The provider finished the job but did not return a downloadable output. Please retry or switch models.");
+            return;
+          }
 
           if (urls.length > 1) {
             
