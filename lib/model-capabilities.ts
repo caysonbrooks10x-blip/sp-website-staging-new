@@ -120,14 +120,18 @@ const seedanceCaps: ModelCapability = {
 
 const seedancePoyoCaps: ModelCapability = {
   ...VIDEO_DEFAULT,
-  durations: [4, 8, 12],
-  resolutions: ["720p", "1080p", "2K"],
+  durations: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+  aspectRatios: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"],
+  resolutions: ["480p", "720p", "1080p"],
+  maxReferenceImages: 2,
 }
 
 const doubaoSeedanceCaps: ModelCapability = {
   ...VIDEO_DEFAULT,
-  durations: [4, 8, 12, 15],
-  resolutions: ["1080p", "2K", "4K"],
+  durations: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+  aspectRatios: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"],
+  resolutions: ["480p", "720p", "1080p"],
+  maxReferenceImages: 2,
 }
 
 const soraCaps: ModelCapability = {
@@ -146,6 +150,13 @@ const soraProStudioCaps: ModelCapability = {
   ...VIDEO_DEFAULT,
   durations: [15, 25],
   aspectRatios: ["9:16", "16:9"],
+}
+
+const soraOfficialCaps: ModelCapability = {
+  ...VIDEO_DEFAULT,
+  durations: [4, 8, 12, 16, 20],
+  aspectRatios: ["9:16", "16:9"],
+  maxReferenceImages: 1,
 }
 
 const veoCaps: ModelCapability = {
@@ -210,6 +221,7 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
   "nano-banana-pro": { ...IMAGE_DEFAULT, resolutions: ["1K", "2K", "4K"] },
   "gpt-4o-image": { ...IMAGE_DEFAULT, nMax: 4 },
   "gpt-image-1.5": { ...IMAGE_DEFAULT, nMax: 4 },
+  "gpt-image-2": { ...IMAGE_DEFAULT, nMax: 4 },
   "flux-2-pro": IMAGE_DEFAULT,
   "flux-2-flex": IMAGE_DEFAULT,
   "flux-kontext-pro": { ...IMAGE_DEFAULT, requiresReferenceImage: true },
@@ -226,6 +238,7 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
   // video family
   "sora-2": soraStudioCaps,
   "sora-2-pro": soraProStudioCaps,
+  "sora-2-official": soraOfficialCaps,
   "veo3.1-lite": veoLiteCaps,
   "veo3.1-fast": veoFastCaps,
   "veo3.1-quality": veoQualityCaps,

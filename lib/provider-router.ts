@@ -145,7 +145,7 @@ async function submitVideo(
 ): Promise<{ task_id: string; raw: unknown }> {
   const wirePayload = translateModelForProvider(provider, payload)
   if (provider === "apimart") {
-    const raw = await submitApiMartVideoGeneration(wirePayload)
+    const raw = await submitApiMartVideoGeneration(normalizeApiMartVideoPayload(wirePayload))
     return { task_id: extractTaskIdFromApiMart(raw), raw }
   }
   const normalized = normalizePoyoVideoPayload(wirePayload)
@@ -170,16 +170,80 @@ async function submitVideo(
  */
 function normalizePoyoVideoPayload(payload: Record<string, unknown>): Record<string, unknown> {
   const model = typeof payload.model === "string" ? payload.model : ""
-  const out: Record<string, unknown> = { ...payload }
+  const out: Record<string, unknown> = normalizeReferenceMediaPayload(payload)
 
   if (model === "seedance-2" || model === "seedance-2-fast") {
+    if (out.duration === undefined) out.duration = 5
+    if (out.resolution === undefined) out.resolution = "720p"
+    if (Array.isArray(out.image_urls)) out.image_urls = out.image_urls.slice(0, 2)
+  }
+
+  if (model === "sora-2-official") {
     if (out.duration === undefined) out.duration = 4
+    if (Array.isArray(out.image_urls)) out.image_urls = out.image_urls.slice(0, 1)
+    delete out.resolution
+  }
+
+  if (model === "hailuo-2.3") {
+    const imageUrls = flattenUrlList(out.image_urls)
+    if (!out.start_image_url && imageUrls[0]) out.start_image_url = imageUrls[0]
+    delete out.image_url
+    delete out.image_urls
   }
 
   if (model.startsWith("veo3.1")) {
     out.seconds = 8
     delete out.duration
   }
+
+  return out
+}
+
+function normalizeApiMartVideoPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const model = typeof payload.model === "string" ? payload.model : ""
+  const out: Record<string, unknown> = normalizeReferenceMediaPayload(payload)
+  const aspect = typeof out.aspect_ratio === "string" ? out.aspect_ratio : typeof out.size === "string" ? out.size : undefined
+
+  if (model === "doubao-seedance-2.0") {
+    if (aspect) out.size = aspect
+    delete out.aspect_ratio
+    if (out.duration === undefined) out.duration = 5
+    if (out.resolution === undefined) out.resolution = "720p"
+    if (Array.isArray(out.image_urls)) out.image_urls = out.image_urls.slice(0, 2)
+  }
+
+  if (model === "grok-imagine-1.0-video-apimart") {
+    if (aspect) out.size = aspect
+    delete out.aspect_ratio
+  }
+
+  if (model.includes("sora-2")) {
+    if (Array.isArray(out.image_urls)) out.image_urls = out.image_urls.slice(0, 1)
+  }
+
+  return out
+}
+
+function normalizeReferenceMediaPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...payload }
+  const imageUrls = [
+    ...flattenUrlList(out.image_urls),
+    ...flattenUrlList(out.image_url),
+    ...flattenUrlList(out.start_image_url),
+    ...flattenUrlList(out.end_image_url),
+    ...flattenUrlList(out.reference_image_url),
+    ...flattenUrlList(out.source_image_url),
+  ].filter(Boolean)
+
+  const videoUrls = [
+    ...flattenUrlList(out.video_urls),
+    ...flattenUrlList(out.video_url),
+    ...flattenUrlList(out.reference_video_url),
+    ...flattenUrlList(out.source_video_url),
+  ].filter(Boolean)
+
+  if (imageUrls.length > 0) out.image_urls = Array.from(new Set(imageUrls))
+  if (videoUrls.length > 0 && !out.reference_video_urls) out.reference_video_urls = Array.from(new Set(videoUrls))
 
   return out
 }
@@ -252,7 +316,14 @@ export async function routeVideoSubmit(
   const routingInput: ProviderRoutingInput = {
     mode: "video",
     model,
-    hasReferenceImage: Boolean(payload.image_url),
+    hasReferenceImage: Boolean(
+      payload.image_url ||
+        (payload as any).image_urls ||
+        payload.start_image_url ||
+        payload.end_image_url ||
+        payload.reference_image_url ||
+        payload.source_image_url,
+    ),
     params: buildRoutingParams(payload),
   }
   const provider = chooseProvider(routingInput)

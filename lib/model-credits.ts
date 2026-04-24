@@ -61,7 +61,9 @@ export const MODEL_CHARGE_USD: Record<string, number> = {
   "grok-vid": 0.150,
   "hailuo-2.3": 0.175,                // varies by duration+res
   "wan2.6-text-to-video": 0.400,      // varies by duration+res
+  "seedance-2": 0.050,                // Poyo standard Seedance 2; ApiMart mirror is doubao-seedance-2.0
   "doubao-seedance-2.0": 0.100,       // varies by res
+  "sora-2-official": 0.080,
   "veo3.1-lite": 0.040,
   "veo3.1-fast-official": 0.080,
   "veo3.1-quality-official": 0.160,
@@ -118,10 +120,8 @@ export const MODEL_CHARGE_BY_CONFIG: Record<string, Dispatcher> = {
   },
 
   "doubao-seedance-2.0": ({ resolution = "1080p" }) => {
-    if (resolution === "4K") return 0.800
-    if (resolution === "2K") return 0.400
     if (resolution === "1080p") return 0.200
-    return 0.100 // 720p and below
+    return 0.100 // 480p / 720p
   },
 
   "runway-gen-4.5": ({ duration = 5 }) => {
