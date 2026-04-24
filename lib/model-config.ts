@@ -676,7 +676,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsReferenceImage: true,
     maxReferenceImages: 1,
     supportsReferenceVideo: false,
-    supportsSound: true,
+    supportsSound: false,
     supportsMultiShots: false,
     supportsFixedLens: false,
     supportsGenerateAudio: false,

@@ -91,7 +91,8 @@ async function phase1(mockApimart: MockProvider, mockPoyo: MockProvider) {
 
   // Scenario B — invalid input rejected pre-submit.
   {
-    const invalid = validateModelParams("sora-2", { aspect_ratio: "1:4" })
+    // Use sora-2-official (Poyo-primary replacement for deprecated sora-2)
+    const invalid = validateModelParams("sora-2-official", { aspect_ratio: "1:4" })
     const unknown = validateModelParams("made-up-model", { n: 99 })
     record(
       "B/wrapper: validator rejects invalid AR on registered model",
