@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Stripe-supported payment methods relevant to a global SaaS audience.
 // Source: https://stripe.com/docs/payments/payment-methods/integration-options
-// Uses Simple Icons CDN; no Next/Image domain config needed because <img>
-// loads cross-origin SVGs without going through next/image.
+// Icons via jsdelivr's simple-icons mirror (the cdn.simpleicons.org host has
+// per-slug restrictions that 404 on common methods like amazonpay/ideal).
+// Black SVG is recolored to white with a CSS invert filter on the dark bg.
 const PAYMENT_METHODS = [
   { name: "Visa", slug: "visa" },
   { name: "Mastercard", slug: "mastercard" },
@@ -26,20 +27,23 @@ const PAYMENT_METHODS = [
   { name: "WeChat Pay", slug: "wechat" },
   { name: "iDEAL", slug: "ideal" },
   { name: "Bancontact", slug: "bancontact" },
-  { name: "SEPA", slug: "sepa" },
 ] as const
 
 function MethodTile({ name, slug }: { name: string; slug: string }) {
+  const [broken, setBroken] = useState(false)
+  if (broken) return null
   return (
     <div
       className="shrink-0 w-20 h-12 sm:w-24 sm:h-14 bg-[#111111] border border-white/10 rounded-xl flex items-center justify-center p-2.5 sm:p-3"
       title={name}
     >
       <img
-        src={`https://cdn.simpleicons.org/${slug}/ffffff`}
+        src={`https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${slug}.svg`}
         alt={name}
         className="w-full h-full object-contain opacity-80"
+        style={{ filter: "invert(1)" }}
         loading="lazy"
+        onError={() => setBroken(true)}
       />
     </div>
   )

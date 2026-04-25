@@ -49,7 +49,7 @@ export function PricingTopUp() {
             >
               {pack.badge && (
                 <div className={cn(
-                  "absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border",
+                  "absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-[0.14em] border whitespace-nowrap",
                   pack.highlight
                     ? "bg-cyan-500 text-black border-cyan-500"
                     : "bg-white/10 text-zinc-200 border-white/20"

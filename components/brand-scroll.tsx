@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Globally-recognized brands rendered via Simple Icons CDN. Mix of AI/creative
 // leaders (the platform's actual peer set) and household names so the strip
@@ -25,16 +25,19 @@ const BRANDS: { name: string; slug: string }[] = [
 ]
 
 function BrandIcon({ slug, name }: { slug: string; name: string }) {
+    const [broken, setBroken] = useState(false)
+    if (broken) return null
     return (
         <div
             className="w-7 h-7 md:w-9 md:h-9 flex-shrink-0 flex items-center justify-center"
             title={name}
         >
             <img
-                src={`https://cdn.simpleicons.org/${slug}/000000`}
+                src={`https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${slug}.svg`}
                 alt={name}
                 className="w-full h-full object-contain opacity-50 hover:opacity-90 transition-opacity"
                 loading="lazy"
+                onError={() => setBroken(true)}
             />
         </div>
     )

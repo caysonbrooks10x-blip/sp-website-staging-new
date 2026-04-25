@@ -5,92 +5,83 @@ import { useEffect, useRef } from "react"
 type Review = {
   name: string
   role: string
-  initials: string
-  accent: string
+  avatar: string
   body: string
   rating: number
 }
 
 // Hand-curated to read as genuine creator voices: specific use cases, real
 // pain points solved, varied tone. No fictional company brand-claims.
+// Avatar photos via randomuser.me public CDN — diverse, license-free portraits
+// indexed by stable seeds so each card always renders the same face.
 const REVIEWS: Review[] = [
   {
     name: "Maya R.",
     role: "Indie filmmaker",
-    initials: "MR",
-    accent: "from-rose-400 to-fuchsia-500",
+    avatar: "https://randomuser.me/api/portraits/women/68.jpg",
     body: "Cut my pre-viz cycle from a week to an afternoon. The Seedance pass on storyboard frames is wild — I get usable motion without ever opening After Effects.",
     rating: 5,
   },
   {
     name: "Daniel K.",
     role: "Brand designer @ Series A startup",
-    initials: "DK",
-    accent: "from-indigo-400 to-violet-500",
+    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
     body: "Switched our entire mockup pipeline over. Nano Banana 2 + the Seedream remixes feel a tier above what I was paying $200/mo for elsewhere.",
     rating: 5,
   },
   {
     name: "Priya N.",
     role: "Content creator, 480K subs",
-    initials: "PN",
-    accent: "from-amber-400 to-orange-500",
+    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
     body: "Finally something that doesn't make my Reels look like every other AI video. The Hailuo + Wan combo is my secret weapon for product spots.",
     rating: 5,
   },
   {
     name: "Jonas W.",
     role: "Solo founder",
-    initials: "JW",
-    accent: "from-emerald-400 to-teal-500",
+    avatar: "https://randomuser.me/api/portraits/men/85.jpg",
     body: "Replaced four subscriptions in a single afternoon. The credit model is honest — top-ups don't expire and it shows costs upfront, no surprise burns.",
     rating: 5,
   },
   {
     name: "Aiko S.",
     role: "Art director, agency",
-    initials: "AS",
-    accent: "from-sky-400 to-cyan-500",
+    avatar: "https://randomuser.me/api/portraits/women/12.jpg",
     body: "We onboarded the whole team in a day. The community gallery alone is worth it for moodboarding — clients respond way faster to live remixes than static decks.",
     rating: 5,
   },
   {
     name: "Marcus L.",
     role: "Game studio TA",
-    initials: "ML",
-    accent: "from-pink-400 to-rose-500",
+    avatar: "https://randomuser.me/api/portraits/men/56.jpg",
     body: "Concept-to-promo pipeline is finally one app. Generated a full key-art set + 6s teaser for a pitch deck in 40 minutes. Pitch landed.",
     rating: 5,
   },
   {
     name: "Sofia G.",
     role: "Photographer turned director",
-    initials: "SG",
-    accent: "from-lime-400 to-emerald-500",
+    avatar: "https://randomuser.me/api/portraits/women/23.jpg",
     body: "The image-to-video on Seedance keeps lighting and lens character. That alone moved me off the three other tools I was hopping between.",
     rating: 5,
   },
   {
     name: "Hassan T.",
     role: "Marketing lead, DTC brand",
-    initials: "HT",
-    accent: "from-violet-400 to-purple-500",
+    avatar: "https://randomuser.me/api/portraits/men/41.jpg",
     body: "Doubled our weekly creative output without adding headcount. Telegram bot pairing is genuinely useful — I brief on the train, results land before I'm at the office.",
     rating: 5,
   },
   {
     name: "Rin A.",
     role: "Freelance illustrator",
-    initials: "RA",
-    accent: "from-blue-400 to-indigo-500",
+    avatar: "https://randomuser.me/api/portraits/women/77.jpg",
     body: "I was the AI skeptic on my team. The Flux Kontext quality finally crossed the line where I'm using it for client comps, not just for memes.",
     rating: 5,
   },
   {
     name: "Eli B.",
     role: "Creator-economy operator",
-    initials: "EB",
-    accent: "from-yellow-400 to-amber-500",
+    avatar: "https://randomuser.me/api/portraits/men/14.jpg",
     body: "The model router is the killer feature. I never have to think \"which API is up today?\" — it just picks the working one.",
     rating: 5,
   },
@@ -123,11 +114,12 @@ function ReviewCard({ review }: { review: Review }) {
       style={{ scrollSnapAlign: "start" }}
     >
       <div className="flex items-center gap-3 mb-4">
-        <div
-          className={`w-10 h-10 rounded-full bg-gradient-to-br ${review.accent} flex items-center justify-center text-sm font-bold text-white shadow-lg shrink-0`}
-        >
-          {review.initials}
-        </div>
+        <img
+          src={review.avatar}
+          alt={review.name}
+          className="w-10 h-10 rounded-full object-cover shadow-lg shrink-0 ring-1 ring-white/10"
+          loading="lazy"
+        />
         <div className="min-w-0">
           <div className="text-sm font-semibold text-white truncate">{review.name}</div>
           <div className="text-[11px] text-white/50 truncate">{review.role}</div>

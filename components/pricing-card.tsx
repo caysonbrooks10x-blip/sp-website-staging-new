@@ -140,9 +140,10 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
         )}
 
         {}
-        <div className="mb-2 h-14">
-          <div className="flex items-baseline gap-2 h-full">
-            <div className="relative inline-flex items-baseline h-full overflow-hidden">
+        <div className="mb-2 min-h-14">
+          {/* Top row: price + strikethrough + /Month — let the bonus pill wrap to its own line so 3-digit prices like $199 don't overlap it on narrow widths. */}
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <div className="relative inline-flex items-baseline">
               <AnimatePresence mode="popLayout">
                 <motion.span
                   key={`${billingCycle}-${activePrice}`}
@@ -150,7 +151,7 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -20, opacity: 0 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="text-5xl font-bold text-white tracking-tight"
+                  className="text-5xl font-bold text-white tracking-tight whitespace-nowrap"
                 >
                   ${billingCycle === "yearly" ? effectiveMonthlyPrice.toFixed(0) : activePrice}
                 </motion.span>
@@ -165,7 +166,7 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="text-lg text-zinc-500 line-through font-medium"
+                  className="text-lg text-zinc-500 line-through font-medium whitespace-nowrap"
                 >
                   ${activePrice}
                 </motion.span>
@@ -176,20 +177,24 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="text-lg text-zinc-500 line-through font-medium"
+                  className="text-lg text-zinc-500 line-through font-medium whitespace-nowrap"
                 >
                   ${Math.round(activePrice / 0.85)}
                 </motion.span>
               )}
             </AnimatePresence>
-            <span className="text-zinc-500 text-sm font-medium">/Month</span>
+            <span className="text-zinc-500 text-sm font-medium whitespace-nowrap">/Month</span>
 
-            {}
+            {/* Bonus pill: own basis so it wraps cleanly to a new line on cramped layouts. */}
             {activeCredits >= 48000 && activeCredits < 60000 && (
-              <span className="ml-2 text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">+7% Bonus</span>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+                +7% Bonus
+              </span>
             )}
             {activeCredits >= 60000 && (
-              <span className="ml-2 text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">+15% Bonus</span>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+                +15% Bonus
+              </span>
             )}
           </div>
         </div>
