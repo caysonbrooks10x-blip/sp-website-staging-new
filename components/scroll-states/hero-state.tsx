@@ -2,8 +2,7 @@
 
 import { useRef, useLayoutEffect, useEffect, useState, useMemo, useCallback } from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowRight, Play, Plus, Workflow, SlidersHorizontal, MessageCircle, History, LayoutGrid, RotateCcw } from "lucide-react"
+import { Plus, Workflow, SlidersHorizontal, MessageCircle, History, LayoutGrid, RotateCcw } from "lucide-react"
 import { ASSET_BASE } from "@/lib/assets"
 import { gsap } from "gsap"
 import { BrandScroll } from "@/components/brand-scroll"
@@ -23,7 +22,6 @@ export function HeroState({ register }: HeroStateProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const contentRef = useRef<HTMLDivElement>(null)
     const headingRef = useRef<HTMLHeadingElement>(null)
-    const buttonsRef = useRef<HTMLDivElement>(null)
     const canvasRef = useRef<HTMLDivElement>(null)
     const canvasInnerRef = useRef<HTMLDivElement>(null)
     const dotCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -274,9 +272,8 @@ export function HeroState({ register }: HeroStateProps) {
     useLayoutEffect(() => {
         const ctx = gsap.context(() => {
             const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
-            gsap.set([headingRef.current, buttonsRef.current], { opacity: 0, y: 30 })
+            gsap.set(headingRef.current, { opacity: 0, y: 30 })
             tl.to(headingRef.current, { opacity: 1, y: 0, duration: 0.9 })
-                .to(buttonsRef.current, { opacity: 1, y: 0, duration: 0.7 }, "-=0.4")
         }, containerRef)
         return () => ctx.revert()
     }, [])
@@ -502,24 +499,13 @@ export function HeroState({ register }: HeroStateProps) {
                 <div className="mb-5 md:mb-4 2xl:mb-10 flex flex-col items-start text-left">
                     <h1
                         ref={headingRef}
-                        className="opacity-0 text-[2.8rem] sm:text-5xl md:text-6xl lg:text-[4.5rem] font-semibold tracking-[-0.04em] leading-[1.05] text-[#0a0a0a] mb-4"
+                        className="opacity-0 text-[2.8rem] sm:text-5xl md:text-6xl lg:text-[4.5rem] font-semibold tracking-[-0.04em] leading-[1.05] text-[#0a0a0a]"
                         style={{ fontFamily: 'var(--font-sans)' }}
                     >
                         Lightning fast creation
                         <br className="hidden md:block" />
                         meets cinematic motion.
                     </h1>
-                    <p className="text-base md:text-xl text-zinc-800/80 max-w-2xl mb-8 font-normal leading-relaxed tracking-tight">
-                        Half the cost and twice the quality in every single frame.
-                    </p>
-                    <div ref={buttonsRef} className="opacity-0 flex flex-wrap items-center gap-4" style={{ pointerEvents: 'auto', position: 'relative', zIndex: 50 }}>
-                        <Button size="lg" className="h-12 px-8 rounded-full text-sm bg-[#0a0a0a] text-white hover:bg-zinc-800 hover:scale-[1.02] transition-all duration-300 font-semibold group shadow-lg" asChild>
-                            <a href="/studio">Start Creating<ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" /></a>
-                        </Button>
-                        <Button size="lg" variant="outline" className="h-12 px-8 rounded-full text-sm bg-black/5 backdrop-blur-md border-black/10 hover:bg-black/10 transition-all duration-300 font-medium group text-zinc-700" asChild>
-                            <a href="#collective"><Play className="mr-2 h-4 w-4 fill-zinc-500 group-hover:fill-zinc-800 transition-all" />Watch Demo</a>
-                        </Button>
-                    </div>
                 </div>
 
                 {}
