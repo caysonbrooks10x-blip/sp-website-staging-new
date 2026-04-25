@@ -1094,6 +1094,8 @@ function StudioLayout() {
           if (item.type === "video") {
             try {
               const idToken = user ? await user.getIdToken() : null;
+              const finalizeCtl = new AbortController();
+              const finalizeTimer = setTimeout(() => finalizeCtl.abort(), 50_000);
               const finalizeResp = await fetch("/api/route/videos/finalize", {
                 method: "POST",
                 headers: {
@@ -1105,7 +1107,8 @@ function StudioLayout() {
                   sourceUrl: urls[0],
                   provider,
                 }),
-              });
+                signal: finalizeCtl.signal,
+              }).finally(() => clearTimeout(finalizeTimer));
               const finalized = await finalizeResp.json().catch(() => null);
               if (finalizeResp.ok && finalized?.url && !finalized.fallback) {
                 urls = [finalized.url];

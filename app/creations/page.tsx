@@ -48,6 +48,57 @@ function CreationsContent() {
     return () => { isMounted = false }
   }, [user])
 
+  // Background backfill: for any video creation without a thumbnail (or
+  // pointing at a third-party CDN that Chrome can't render), call the
+  // finalize pipeline server-side. Updates Firestore + patches local state.
+  useEffect(() => {
+    if (!user || creations.length === 0) return
+    let cancelled = false
+    const queue = creations.filter((c) => {
+      const isVideo = c.type === "video" || c.outputUrl?.includes(".mp4")
+      if (!isVideo) return false
+      const isFirebase = typeof c.outputUrl === "string" && c.outputUrl.includes("storage.googleapis.com")
+      const hasThumb = Boolean(c.thumbnailUrl)
+      return !(isFirebase && hasThumb)
+    })
+    if (queue.length === 0) return
+
+    const runBackfill = async () => {
+      const idToken = await user.getIdToken().catch(() => null)
+      if (!idToken) return
+      const concurrency = 3
+      let cursor = 0
+      const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+        while (!cancelled && cursor < queue.length) {
+          const item = queue[cursor++]
+          try {
+            const resp = await fetch("/api/route/videos/backfill", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({ creationId: item.id }),
+            })
+            if (!resp.ok) continue
+            const result = await resp.json().catch(() => null)
+            if (cancelled || !result?.url) continue
+            setCreations((prev) =>
+              prev.map((c) =>
+                c.id === item.id
+                  ? { ...c, outputUrl: result.url, thumbnailUrl: result.thumbnailUrl || c.thumbnailUrl }
+                  : c,
+              ),
+            )
+          } catch {}
+        }
+      })
+      await Promise.all(workers)
+    }
+    void runBackfill()
+    return () => { cancelled = true }
+  }, [user, creations.length])
+
   const handleDeleteCreation = (id: string) => {
     setCreations(prev => prev.filter(c => c.id !== id))
   }
@@ -126,7 +177,12 @@ function CreationsContent() {
               const mappedItem = {
                 id: c.id,
                 appName: c.title || c.prompt || "Untitled Creation",
-                previewUrl: c.outputUrl || c.thumbnailUrl || "",
+                // For videos prefer the JPG thumbnail (renderable by <Image>);
+                // for images outputUrl is itself the image.
+                previewUrl:
+                  (c.type === "video" || c.outputUrl?.includes('.mp4'))
+                    ? (c.thumbnailUrl || c.outputUrl || "")
+                    : (c.outputUrl || c.thumbnailUrl || ""),
                 type: c.type || (c.outputUrl?.includes('.mp4') ? 'video' : 'image'),
                 remixCount: 0,
                 likes: 0,
