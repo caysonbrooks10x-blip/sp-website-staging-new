@@ -4,7 +4,12 @@ import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-type BackfillBody = { creationId?: string };
+type BackfillBody = {
+  creationId?: string;
+  sourceUrl?: string;
+  taskId?: string;
+  provider?: string;
+};
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get("Authorization") || "";
@@ -31,35 +36,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "remux not configured" }, { status: 500 });
   }
 
+  // Try Firestore first; fall back to caller-supplied data for localStorage-only
+  // legacy entries that never reached the server.
   const docRef = getAdminDb()
     .collection("users").doc(uid)
     .collection("creations").doc(creationId);
-
   const snap = await docRef.get();
-  if (!snap.exists) {
-    return NextResponse.json({ error: "not found" }, { status: 404 });
-  }
-  const data = snap.data() || {};
+  const docData = snap.exists ? snap.data() || {} : null;
+
+  const sourceUrl: string | undefined = docData?.outputUrl || body?.sourceUrl;
+  const taskId: string | undefined = docData?.taskId || body?.taskId || creationId;
+  const platformRaw: string | undefined =
+    docData?.generationPlatform || body?.provider;
+  const docType: string | undefined = docData?.type;
+  const docThumb: string | undefined = docData?.thumbnailUrl;
+
   const isVideo =
-    data.type === "video" ||
-    (typeof data.outputUrl === "string" && data.outputUrl.includes(".mp4"));
+    docType === "video" ||
+    (typeof sourceUrl === "string" && sourceUrl.includes(".mp4"));
   if (!isVideo) {
     return NextResponse.json({ skipped: "not a video", id: creationId });
   }
-
-  const sourceUrl: string | undefined = data.outputUrl;
   if (!sourceUrl || !/^https:\/\//.test(sourceUrl)) {
     return NextResponse.json({ error: "no source url" }, { status: 400 });
   }
 
   // If already finalised AND has thumbnail, skip (idempotent).
   const isFirebaseStorage = sourceUrl.includes("storage.googleapis.com");
-  const hasThumb = Boolean(data.thumbnailUrl);
+  const hasThumb = Boolean(docThumb);
   if (isFirebaseStorage && hasThumb) {
     return NextResponse.json({ skipped: "already finalised", id: creationId });
   }
 
-  const provider = data.generationPlatform === "apimart" ? "apimart" : "poyo";
+  const provider = platformRaw === "apimart" ? "apimart" : "poyo";
 
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 50_000);
@@ -72,7 +81,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         url: sourceUrl,
-        taskId: data.taskId || creationId,
+        taskId,
         userId: uid,
         provider,
       }),
@@ -85,14 +94,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "remux failed" }, { status: 502 });
     }
 
-    const update: Record<string, unknown> = { outputUrl: payload.url };
-    if (Array.isArray(data.outputUrls) && data.outputUrls.length > 0) {
-      update.outputUrls = [payload.url, ...data.outputUrls.slice(1)];
-    } else {
-      update.outputUrls = [payload.url];
+    if (docData) {
+      const update: Record<string, unknown> = { outputUrl: payload.url };
+      if (Array.isArray(docData.outputUrls) && docData.outputUrls.length > 0) {
+        update.outputUrls = [payload.url, ...docData.outputUrls.slice(1)];
+      } else {
+        update.outputUrls = [payload.url];
+      }
+      if (payload.thumbnailUrl) update.thumbnailUrl = payload.thumbnailUrl;
+      await docRef.update(update).catch((e) =>
+        console.warn("[backfill] firestore update skipped:", e?.message),
+      );
     }
-    if (payload.thumbnailUrl) update.thumbnailUrl = payload.thumbnailUrl;
-    await docRef.update(update);
 
     return NextResponse.json({
       id: creationId,

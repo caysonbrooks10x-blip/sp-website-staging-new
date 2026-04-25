@@ -54,9 +54,16 @@ function CreationsContent() {
   useEffect(() => {
     if (!user || creations.length === 0) return
     let cancelled = false
+    const giveUpKey = "studio_backfill_giveup"
+    const giveUp = new Set<string>(
+      typeof window !== "undefined"
+        ? (JSON.parse(window.localStorage.getItem(giveUpKey) || "[]") as string[])
+        : [],
+    )
     const queue = creations.filter((c) => {
       const isVideo = c.type === "video" || c.outputUrl?.includes(".mp4")
       if (!isVideo) return false
+      if (giveUp.has(c.id)) return false
       const isFirebase = typeof c.outputUrl === "string" && c.outputUrl.includes("storage.googleapis.com")
       const hasThumb = Boolean(c.thumbnailUrl)
       return !(isFirebase && hasThumb)
@@ -78,11 +85,26 @@ function CreationsContent() {
                 "content-type": "application/json",
                 Authorization: `Bearer ${idToken}`,
               },
-              body: JSON.stringify({ creationId: item.id }),
+              body: JSON.stringify({
+                creationId: item.id,
+                sourceUrl: item.outputUrl,
+                taskId: item.taskId,
+                provider: item.generationPlatform,
+              }),
             })
-            if (!resp.ok) continue
+            if (!resp.ok) {
+              // Permanent failure — mark to never retry on this device
+              if (resp.status === 502 || resp.status === 400 || resp.status === 404) {
+                giveUp.add(item.id)
+              }
+              continue
+            }
             const result = await resp.json().catch(() => null)
-            if (cancelled || !result?.url) continue
+            if (cancelled) continue
+            if (!result?.url) {
+              giveUp.add(item.id)
+              continue
+            }
             setCreations((prev) =>
               prev.map((c) =>
                 c.id === item.id
@@ -90,10 +112,15 @@ function CreationsContent() {
                   : c,
               ),
             )
-          } catch {}
+          } catch {
+            giveUp.add(item.id)
+          }
         }
       })
       await Promise.all(workers)
+      if (typeof window !== "undefined" && giveUp.size > 0) {
+        window.localStorage.setItem(giveUpKey, JSON.stringify(Array.from(giveUp)))
+      }
     }
     void runBackfill()
     return () => { cancelled = true }
