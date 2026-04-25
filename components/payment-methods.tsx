@@ -7,6 +7,9 @@ import { useEffect, useRef, useState } from "react"
 // Icons via jsdelivr's simple-icons mirror (the cdn.simpleicons.org host has
 // per-slug restrictions that 404 on common methods like amazonpay/ideal).
 // Black SVG is recolored to white with a CSS invert filter on the dark bg.
+// Verified to resolve on cdn.jsdelivr.net/npm/simple-icons. UnionPay and
+// Affirm aren't in the simple-icons catalog; the onError handler would hide
+// them anyway but explicitly omitting keeps the list authoritative.
 const PAYMENT_METHODS = [
   { name: "Visa", slug: "visa" },
   { name: "Mastercard", slug: "mastercard" },
@@ -14,13 +17,11 @@ const PAYMENT_METHODS = [
   { name: "Discover", slug: "discover" },
   { name: "JCB", slug: "jcb" },
   { name: "Diners Club", slug: "dinersclub" },
-  { name: "UnionPay", slug: "unionpay" },
   { name: "Apple Pay", slug: "applepay" },
   { name: "Google Pay", slug: "googlepay" },
   { name: "PayPal", slug: "paypal" },
   { name: "Klarna", slug: "klarna" },
   { name: "Afterpay", slug: "afterpay" },
-  { name: "Affirm", slug: "affirm" },
   { name: "Cash App", slug: "cashapp" },
   { name: "Amazon Pay", slug: "amazonpay" },
   { name: "Alipay", slug: "alipay" },

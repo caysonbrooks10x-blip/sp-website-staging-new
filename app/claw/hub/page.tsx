@@ -9,6 +9,7 @@ import {
   Clock3,
   Coins,
   Compass,
+  ImageIcon,
   LayoutGrid,
   Layers,
   Link2,
@@ -18,6 +19,7 @@ import {
   ShieldCheck,
   TimerReset,
   Video,
+  Wallet,
   Workflow,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -320,10 +322,12 @@ export default function ClawHubPage() {
         </section>
 
         {/* ── Quick Actions → Telegram Bot ── */}
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             {
-              icon: "🖼️",
+              Icon: ImageIcon,
+              iconWrap:
+                "from-violet-500/25 to-fuchsia-500/15 border-violet-400/30 text-violet-200 ring-violet-400/15",
               label: "Image Gen",
               desc: "Generate any image from text",
               action: "/image [prompt]",
@@ -338,7 +342,9 @@ export default function ClawHubPage() {
               },
             },
             {
-              icon: "🎬",
+              Icon: Video,
+              iconWrap:
+                "from-rose-500/25 to-orange-500/15 border-rose-400/30 text-rose-200 ring-rose-400/15",
               label: "Video Gen",
               desc: "Create cinematic AI videos",
               action: "/video [prompt]",
@@ -353,7 +359,9 @@ export default function ClawHubPage() {
               },
             },
             {
-              icon: "💰",
+              Icon: Wallet,
+              iconWrap:
+                "from-emerald-500/25 to-teal-500/15 border-emerald-400/30 text-emerald-200 ring-emerald-400/15",
               label: "Credits",
               desc: creditBalance > 0 ? `${creditBalance} available` : "Check balance",
               action: "/credits",
@@ -366,32 +374,42 @@ export default function ClawHubPage() {
                 requiresPrompt: false,
               },
             },
-          ].map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() => setTelegramDialogConfig(item.dialog)}
-              className={cn(
-                clawCardClass,
-                "group relative flex flex-col gap-3 p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-500/25 hover:shadow-[0_20px_56px_-22px_rgba(0,0,0,0.55),0_0_0_1px_rgba(6,182,212,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-2xl">{item.icon}</span>
-                <ArrowUpRight className="h-3.5 w-3.5 text-zinc-600 transition-all duration-300 group-hover:text-cyan-300" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">{item.label}</p>
-                <p className="mt-1 text-xs leading-snug text-zinc-500">{item.desc}</p>
-              </div>
-              <code className="mt-auto rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 text-[10px] font-medium text-zinc-500 ring-1 ring-inset ring-white/[0.03]">
-                {item.action}
-              </code>
-            </button>
-          ))}
+          ].map((item) => {
+            const ItemIcon = item.Icon;
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => setTelegramDialogConfig(item.dialog)}
+                className={cn(
+                  clawCardClass,
+                  "group relative flex flex-col gap-4 p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-500/25 hover:shadow-[0_20px_56px_-22px_rgba(0,0,0,0.55),0_0_0_1px_rgba(6,182,212,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+                )}
+              >
+                <div className="flex items-start justify-between">
+                  <div
+                    className={cn(
+                      "inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-gradient-to-br ring-1 ring-inset transition-transform duration-300 group-hover:scale-105",
+                      item.iconWrap,
+                    )}
+                  >
+                    <ItemIcon className="h-5 w-5" strokeWidth={1.6} />
+                  </div>
+                  <ArrowUpRight className="mt-1.5 h-3.5 w-3.5 text-zinc-600 transition-all duration-300 group-hover:text-cyan-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">{item.label}</p>
+                  <p className="mt-1 text-xs leading-snug text-zinc-500">{item.desc}</p>
+                </div>
+                <code className="mt-auto rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 text-[10px] font-medium text-zinc-500 ring-1 ring-inset ring-white/[0.03]">
+                  {item.action}
+                </code>
+              </button>
+            );
+          })}
         </section>
 
-        {process.env.NEXT_PUBLIC_SHOW_WORKFLOWS === "true" && (
+        {process.env.NEXT_PUBLIC_CLAW_WORKFLOWS_ENABLED === "1" && (
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_min(100%,380px)]">
           <div className={cn(clawCardClass, clawCardInteractiveClass, "flex flex-col overflow-hidden p-0 md:p-0")}>
             <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] px-6 pb-5 pt-6 md:px-8 md:pt-8">
@@ -479,7 +497,7 @@ export default function ClawHubPage() {
         </section>
         )}
 
-        {process.env.NEXT_PUBLIC_SHOW_WORKFLOWS === "true" && (
+        {process.env.NEXT_PUBLIC_CLAW_WORKFLOWS_ENABLED === "1" && (
         <section className="relative mt-16 md:mt-24">
           <div className="relative rounded-[1.65rem] border border-white/[0.08] bg-gradient-to-b from-zinc-900/55 via-zinc-950/35 to-zinc-950/20 p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/[0.05] md:p-9">
           <div className="flex flex-col gap-8 border-b border-white/[0.06] pb-10 md:flex-row md:items-end md:justify-between">
