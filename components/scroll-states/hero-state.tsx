@@ -2,7 +2,7 @@
 
 import { useRef, useLayoutEffect, useEffect, useState, useMemo, useCallback } from "react"
 import Link from "next/link"
-import { Plus, Workflow, SlidersHorizontal, MessageCircle, History, LayoutGrid, RotateCcw } from "lucide-react"
+import { Plus, Video, ImageIcon, Layers, GalleryHorizontalEnd, Users, Bot, RotateCcw } from "lucide-react"
 import { ASSET_BASE } from "@/lib/assets"
 import { gsap } from "gsap"
 import { BrandScroll } from "@/components/brand-scroll"
@@ -536,12 +536,14 @@ export function HeroState({ register }: HeroStateProps) {
                             borderRight: '1px solid rgba(255,255,255,0.05)',
                         }}
                     >
+                        {/* Mirrors the real Studio sidebar items so the canvas demo isn't selling features that no longer exist (Workflow / Settings / Messages were removed when the dashboard was simplified). */}
                         <SidebarBtn icon={<Plus className="w-4 h-4" />} active label="Create New" href="/studio" />
-                        <SidebarBtn icon={<Workflow className="w-3.5 h-3.5" />} label="Workflow" href="/studio" />
-                        <SidebarBtn icon={<SlidersHorizontal className="w-3.5 h-3.5" />} label="Settings" href="/profile" />
-                        <SidebarBtn icon={<MessageCircle className="w-3.5 h-3.5" />} label="Messages" href="/community" />
-                        <SidebarBtn icon={<History className="w-3.5 h-3.5" />} label="History" href="/creations" />
-                        <SidebarBtn icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Studio" href="/studio" />
+                        <SidebarBtn icon={<Video className="w-3.5 h-3.5" />} label="Text to Video" href="/studio" />
+                        <SidebarBtn icon={<ImageIcon className="w-3.5 h-3.5" />} label="Text to Image" href="/studio" />
+                        <SidebarBtn icon={<Layers className="w-3.5 h-3.5" />} label="Image to Image" href="/studio" />
+                        <SidebarBtn icon={<GalleryHorizontalEnd className="w-3.5 h-3.5" />} label="My Creations" href="/creations" />
+                        <SidebarBtn icon={<Users className="w-3.5 h-3.5" />} label="Community" href="/community" />
+                        <SidebarBtn icon={<Bot className="w-3.5 h-3.5" />} label="Claw Bot" href="/claw/hub" />
                         {}
                         <div className="mt-auto group flex items-center justify-center p-1 cursor-pointer">
                             <div

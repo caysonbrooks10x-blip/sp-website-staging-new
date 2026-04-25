@@ -20,6 +20,7 @@ import {
   Video,
   Workflow,
 } from "lucide-react";
+import { ImageGenArt, VideoGenArt, CreditsArt } from "@/components/claw/quick-action-art";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -320,10 +321,13 @@ export default function ClawHubPage() {
         </section>
 
         {/* ── Quick Actions → Telegram Bot ── */}
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             {
-              icon: "🖼️",
+              Art: ImageGenArt,
+              tileBg:
+                "bg-[radial-gradient(120%_120%_at_30%_20%,rgba(167,139,250,0.18),rgba(236,72,153,0.05)_60%,transparent_100%)] ring-violet-400/15 border-violet-400/15",
+              accent: "text-violet-200/80",
               label: "Image Gen",
               desc: "Generate any image from text",
               action: "/image [prompt]",
@@ -338,7 +342,10 @@ export default function ClawHubPage() {
               },
             },
             {
-              icon: "🎬",
+              Art: VideoGenArt,
+              tileBg:
+                "bg-[radial-gradient(120%_120%_at_30%_20%,rgba(251,113,133,0.18),rgba(249,115,22,0.05)_60%,transparent_100%)] ring-rose-400/15 border-rose-400/15",
+              accent: "text-rose-200/80",
               label: "Video Gen",
               desc: "Create cinematic AI videos",
               action: "/video [prompt]",
@@ -353,7 +360,10 @@ export default function ClawHubPage() {
               },
             },
             {
-              icon: "💰",
+              Art: CreditsArt,
+              tileBg:
+                "bg-[radial-gradient(120%_120%_at_30%_20%,rgba(52,211,153,0.18),rgba(14,165,233,0.05)_60%,transparent_100%)] ring-emerald-400/15 border-emerald-400/15",
+              accent: "text-emerald-200/80",
               label: "Credits",
               desc: creditBalance > 0 ? `${creditBalance} available` : "Check balance",
               action: "/credits",
@@ -366,32 +376,42 @@ export default function ClawHubPage() {
                 requiresPrompt: false,
               },
             },
-          ].map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() => setTelegramDialogConfig(item.dialog)}
-              className={cn(
-                clawCardClass,
-                "group relative flex flex-col gap-3 p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-500/25 hover:shadow-[0_20px_56px_-22px_rgba(0,0,0,0.55),0_0_0_1px_rgba(6,182,212,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-2xl">{item.icon}</span>
-                <ArrowUpRight className="h-3.5 w-3.5 text-zinc-600 transition-all duration-300 group-hover:text-cyan-300" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">{item.label}</p>
-                <p className="mt-1 text-xs leading-snug text-zinc-500">{item.desc}</p>
-              </div>
-              <code className="mt-auto rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 text-[10px] font-medium text-zinc-500 ring-1 ring-inset ring-white/[0.03]">
-                {item.action}
-              </code>
-            </button>
-          ))}
+          ].map((item) => {
+            const Art = item.Art;
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => setTelegramDialogConfig(item.dialog)}
+                className={cn(
+                  clawCardClass,
+                  "group relative flex flex-col gap-4 p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-500/25 hover:shadow-[0_20px_56px_-22px_rgba(0,0,0,0.55),0_0_0_1px_rgba(6,182,212,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+                )}
+              >
+                <div className="flex items-start justify-between">
+                  <div
+                    className={cn(
+                      "relative inline-flex h-16 w-16 items-center justify-center rounded-2xl border ring-1 ring-inset overflow-hidden transition-transform duration-300 group-hover:scale-[1.04] group-hover:rotate-[-2deg]",
+                      item.tileBg,
+                    )}
+                  >
+                    <Art className="absolute inset-1.5 w-[calc(100%-12px)] h-[calc(100%-12px)] drop-shadow-[0_4px_10px_rgba(0,0,0,0.35)]" />
+                  </div>
+                  <ArrowUpRight className={cn("mt-1.5 h-3.5 w-3.5 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 text-zinc-600 group-hover:" + item.accent)} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">{item.label}</p>
+                  <p className="mt-1 text-xs leading-snug text-zinc-500">{item.desc}</p>
+                </div>
+                <code className="mt-auto rounded-lg border border-white/[0.06] bg-black/30 px-2.5 py-1.5 text-[10px] font-medium text-zinc-500 ring-1 ring-inset ring-white/[0.03]">
+                  {item.action}
+                </code>
+              </button>
+            );
+          })}
         </section>
 
-        {process.env.NEXT_PUBLIC_SHOW_WORKFLOWS === "true" && (
+        {process.env.NEXT_PUBLIC_CLAW_WORKFLOWS_ENABLED === "1" && (
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_min(100%,380px)]">
           <div className={cn(clawCardClass, clawCardInteractiveClass, "flex flex-col overflow-hidden p-0 md:p-0")}>
             <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] px-6 pb-5 pt-6 md:px-8 md:pt-8">
@@ -479,7 +499,7 @@ export default function ClawHubPage() {
         </section>
         )}
 
-        {process.env.NEXT_PUBLIC_SHOW_WORKFLOWS === "true" && (
+        {process.env.NEXT_PUBLIC_CLAW_WORKFLOWS_ENABLED === "1" && (
         <section className="relative mt-16 md:mt-24">
           <div className="relative rounded-[1.65rem] border border-white/[0.08] bg-gradient-to-b from-zinc-900/55 via-zinc-950/35 to-zinc-950/20 p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/[0.05] md:p-9">
           <div className="flex flex-col gap-8 border-b border-white/[0.06] pb-10 md:flex-row md:items-end md:justify-between">

@@ -7,6 +7,7 @@ import { ScrollExperience } from "@/components/scroll-experience"
 const MarketplaceSection = dynamic(() => import("@/components/marketplace-section").then(mod => mod.MarketplaceSection), { ssr: false })
 const CommunitySection = dynamic(() => import("@/components/community-section").then(mod => mod.CommunitySection), { ssr: false })
 const CTASection = dynamic(() => import("@/components/cta-section").then(mod => mod.CTASection), { ssr: false })
+const ReviewsCarousel = dynamic(() => import("@/components/reviews-carousel").then(mod => mod.ReviewsCarousel), { ssr: false })
 const Footer = dynamic(() => import("@/components/footer").then(mod => mod.Footer), { ssr: false })
 
 function ExplorePage() {
@@ -17,6 +18,7 @@ function ExplorePage() {
         <MarketplaceSection />
         <CommunitySection />
         <CTASection />
+        <ReviewsCarousel />
         <Footer />
       </main>
     </Suspense>
