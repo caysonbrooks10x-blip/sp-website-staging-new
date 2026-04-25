@@ -19,13 +19,19 @@ export function MediaRenderer({ url, altText = "Generated Media", className, fil
         url.toLowerCase().includes('video'); 
 
     if (isVideo) {
+        // crossOrigin="anonymous" forces the request through the CORS pipeline,
+        // ensuring the bucket's Access-Control-Allow-Origin headers attach to
+        // the cached response. Without it, a prior no-CORS fetch (e.g. via a
+        // <Image> probe) can poison Chrome's cache and silently break playback
+        // for cross-origin Firebase Storage videos.
         return (
             <video
                 src={url}
                 className={cn("generated-video object-cover", className)}
+                crossOrigin="anonymous"
                 autoPlay
                 loop
-                muted 
+                muted
                 controls={false}
                 playsInline
                 style={fill ? { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 } : undefined}
