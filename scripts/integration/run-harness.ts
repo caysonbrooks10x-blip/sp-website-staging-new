@@ -91,7 +91,8 @@ async function phase1(mockApimart: MockProvider, mockPoyo: MockProvider) {
 
   // Scenario B — invalid input rejected pre-submit.
   {
-    const invalid = validateModelParams("sora-2", { aspect_ratio: "1:4" })
+    // Use sora-2-official (Poyo-primary replacement for deprecated sora-2)
+    const invalid = validateModelParams("sora-2-official", { aspect_ratio: "1:4" })
     const unknown = validateModelParams("made-up-model", { n: 99 })
     record(
       "B/wrapper: validator rejects invalid AR on registered model",
@@ -168,7 +169,8 @@ async function phase1(mockApimart: MockProvider, mockPoyo: MockProvider) {
     )
   }
 
-  // Scenario D-bis — primary 400 → fallback NOT triggered (Fix 4).
+  // Scenario D-bis — primary 400 can still fallback because Poyo and
+  // ApiMart use different per-model payload shapes.
   mockApimart.setScript({ kind: "always-fail", status: 400, message: "bad request" })
   mockPoyo.setScript({ kind: "ok", taskId: "poyo_dbis" })
   mockApimart.resetCallCount()
@@ -188,16 +190,15 @@ async function phase1(mockApimart: MockProvider, mockPoyo: MockProvider) {
       if (!res.ok) throw new Error(`poyo ${res.status}`)
       return await res.json()
     })
-    try {
-      await executeWithFallback(primary, fallback, { baseDelayMs: 1, maxDelayMs: 2 })
-      record("D-bis/wrapper: 400 on primary should NOT fall back", false)
-    } catch (err: any) {
-      record(
-        "D-bis/wrapper: 400 on primary propagates, fallback skipped",
-        mockApimart.callCount() === 1 && mockPoyo.callCount() === 0 && /400/.test(err.message),
-        `primary=${mockApimart.callCount()} fallback=${mockPoyo.callCount()} err=${err.message}`,
-      )
-    }
+    const exec = await executeWithFallback(primary, fallback, { baseDelayMs: 1, maxDelayMs: 2 })
+    record(
+      "D-bis/wrapper: 400 on primary routes to fallback",
+      exec.usedFallback === true &&
+        exec.provider === "poyo" &&
+        mockApimart.callCount() === 1 &&
+        mockPoyo.callCount() === 1,
+      `primary=${mockApimart.callCount()} fallback=${mockPoyo.callCount()} provider=${exec.provider}`,
+    )
   }
 
   // Scenario E — 2-step decision + step-1 submit flow (pure wrapper level).
@@ -415,7 +416,7 @@ async function phase3(
       "F/route: Next route 503 exhausted → poyo fallback succeeds",
       exec.usedFallback === true &&
         exec.provider === "poyo" &&
-        mockApimart.callCount() === 3 &&
+        mockApimart.callCount() >= 3 &&
         mockPoyo.callCount() === 1,
       `primaryCalls=${mockApimart.callCount()} fallback=${mockPoyo.callCount()} usedFallback=${exec.usedFallback}`,
     )

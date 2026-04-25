@@ -111,10 +111,9 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   "gpt-image-2":            { primary: "poyo", also: ["apimart"] },
 
   // VIDEO
-  // Sora 2: ApiMart publishes `sora-2` / `sora-2-pro` / `sora-2-preview`
-  // / `sora-2-vip`. Poyo only publishes `sora-2-official`. Treated as
-  // strictly one-sided — no `also` fallback; a 404 on the primary is a
-  // hard failure rather than a silent cross-provider swap.
+  // Sora 2: keep generic Sora IDs on ApiMart, and expose Poyo's official
+  // tier as its own customer-facing model because it has a different
+  // duration matrix (4/8/12/16/20s).
   "sora-2":                 { primary: "apimart" },
   "sora-2-pro":             { primary: "apimart" },
   "sora-2-official":        { primary: "poyo" },
@@ -123,7 +122,8 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   "veo3.1-quality-official":{ primary: "apimart" },
   "kling-v3-omni":          { primary: "apimart" },
   "kling-video-o1":         { primary: "apimart" },
-  "doubao-seedance-2.0":    { primary: "apimart" },
+  "seedance-2":             { primary: "poyo", also: ["apimart"] },
+  "doubao-seedance-2.0":    { primary: "apimart", also: ["poyo"] },
   "hailuo-2.3":             { primary: "apimart", also: ["poyo"], gateToApimart: ["camera_movement_set"] },
   "wan2.6-text-to-video":   { primary: "apimart", also: ["poyo"], gateToApimart: ["template_set"] },
   "wan2.6-video-to-video":  { primary: "poyo" },
@@ -187,6 +187,15 @@ export const MODEL_ALIASES: Record<string, Partial<Record<StudioProvider, string
   // `wan2.6` (image-to-video is `wan2.6-i2v`, Poyo-only in Studio today).
   "wan2.6-text-to-video": {
     apimart: "wan2.6",
+  },
+
+  // Seedance 2: Studio exposes the clean customer name while ApiMart uses
+  // ByteDance/Doubao's upstream wire ID for the same generation family.
+  "seedance-2": {
+    apimart: "doubao-seedance-2.0",
+  },
+  "doubao-seedance-2.0": {
+    poyo: "seedance-2",
   },
 
   // Seedream 5 Lite: ApiMart publishes the ByteDance vendor ID

@@ -241,6 +241,35 @@ export async function chargeUserForSubmit(params: {
 }
 
 /**
+ * Internal server-to-server debit path used by the StudioX Claw gateway.
+ * The gateway already resolved the Telegram user to a Firebase UID; the
+ * internal route authenticates with CLAW_BOT_SECRET and then calls this
+ * function so bot jobs use the same credits as web jobs without requiring
+ * an end-user Firebase ID token in Telegram.
+ */
+export async function chargeUidForSubmit(params: {
+  uid: string
+  model: string
+  config?: CreditConfigInput
+}): Promise<ChargeResult> {
+  const { uid, model, config } = params
+  if (!uid.trim()) throw new CreditsAuthError("Missing Firebase UID")
+  assertConfig()
+
+  const charge = getModelCredits(model, config ?? {})
+  if (charge <= 0) {
+    return { uid, charged: 0, newBalance: 0 }
+  }
+  const accessToken = await getGoogleAccessToken()
+  if (!accessToken) throw new CreditsConfigError("Failed to mint Google access token")
+
+  const { newBalance } = await applyBalanceDelta(uid, accessToken, -charge, {
+    requireBalance: charge,
+  })
+  return { uid, charged: charge, newBalance }
+}
+
+/**
  * Refund credits previously charged by chargeUserForSubmit. Best-effort:
  * logs and swallows errors so refund failures never mask the original error.
  */

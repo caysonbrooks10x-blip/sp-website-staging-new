@@ -48,6 +48,84 @@ function CreationsContent() {
     return () => { isMounted = false }
   }, [user])
 
+  // Background backfill: for any video creation without a thumbnail (or
+  // pointing at a third-party CDN that Chrome can't render), call the
+  // finalize pipeline server-side. Updates Firestore + patches local state.
+  useEffect(() => {
+    if (!user || creations.length === 0) return
+    let cancelled = false
+    const giveUpKey = "studio_backfill_giveup"
+    const giveUp = new Set<string>(
+      typeof window !== "undefined"
+        ? (JSON.parse(window.localStorage.getItem(giveUpKey) || "[]") as string[])
+        : [],
+    )
+    const queue = creations.filter((c) => {
+      const isVideo = c.type === "video" || c.outputUrl?.includes(".mp4")
+      if (!isVideo) return false
+      if (giveUp.has(c.id)) return false
+      const isFirebase = typeof c.outputUrl === "string" && c.outputUrl.includes("storage.googleapis.com")
+      const hasThumb = Boolean(c.thumbnailUrl)
+      return !(isFirebase && hasThumb)
+    })
+    if (queue.length === 0) return
+
+    const runBackfill = async () => {
+      const idToken = await user.getIdToken().catch(() => null)
+      if (!idToken) return
+      const concurrency = 3
+      let cursor = 0
+      const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+        while (!cancelled && cursor < queue.length) {
+          const item = queue[cursor++]
+          try {
+            const resp = await fetch("/api/route/videos/backfill", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({
+                creationId: item.id,
+                sourceUrl: item.outputUrl,
+                taskId: item.taskId,
+                provider: item.generationPlatform,
+              }),
+            })
+            if (!resp.ok) {
+              // Permanent failure — mark to never retry on this device
+              if (resp.status === 502 || resp.status === 400 || resp.status === 404) {
+                giveUp.add(item.id)
+              }
+              continue
+            }
+            const result = await resp.json().catch(() => null)
+            if (cancelled) continue
+            if (!result?.url) {
+              giveUp.add(item.id)
+              continue
+            }
+            setCreations((prev) =>
+              prev.map((c) =>
+                c.id === item.id
+                  ? { ...c, outputUrl: result.url, thumbnailUrl: result.thumbnailUrl || c.thumbnailUrl }
+                  : c,
+              ),
+            )
+          } catch {
+            giveUp.add(item.id)
+          }
+        }
+      })
+      await Promise.all(workers)
+      if (typeof window !== "undefined" && giveUp.size > 0) {
+        window.localStorage.setItem(giveUpKey, JSON.stringify(Array.from(giveUp)))
+      }
+    }
+    void runBackfill()
+    return () => { cancelled = true }
+  }, [user, creations.length])
+
   const handleDeleteCreation = (id: string) => {
     setCreations(prev => prev.filter(c => c.id !== id))
   }
@@ -126,7 +204,12 @@ function CreationsContent() {
               const mappedItem = {
                 id: c.id,
                 appName: c.title || c.prompt || "Untitled Creation",
-                previewUrl: c.outputUrl || c.thumbnailUrl || "",
+                // For videos prefer the JPG thumbnail (renderable by <Image>);
+                // for images outputUrl is itself the image.
+                previewUrl:
+                  (c.type === "video" || c.outputUrl?.includes('.mp4'))
+                    ? (c.thumbnailUrl || c.outputUrl || "")
+                    : (c.outputUrl || c.thumbnailUrl || ""),
                 type: c.type || (c.outputUrl?.includes('.mp4') ? 'video' : 'image'),
                 remixCount: 0,
                 likes: 0,
