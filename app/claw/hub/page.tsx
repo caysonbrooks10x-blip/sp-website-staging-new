@@ -9,7 +9,6 @@ import {
   Clock3,
   Coins,
   Compass,
-  ImageIcon,
   LayoutGrid,
   Layers,
   Link2,
@@ -19,9 +18,9 @@ import {
   ShieldCheck,
   TimerReset,
   Video,
-  Wallet,
   Workflow,
 } from "lucide-react";
+import { ImageGenArt, VideoGenArt, CreditsArt } from "@/components/claw/quick-action-art";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -325,9 +324,10 @@ export default function ClawHubPage() {
         <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             {
-              Icon: ImageIcon,
-              iconWrap:
-                "from-violet-500/25 to-fuchsia-500/15 border-violet-400/30 text-violet-200 ring-violet-400/15",
+              Art: ImageGenArt,
+              tileBg:
+                "bg-[radial-gradient(120%_120%_at_30%_20%,rgba(167,139,250,0.18),rgba(236,72,153,0.05)_60%,transparent_100%)] ring-violet-400/15 border-violet-400/15",
+              accent: "text-violet-200/80",
               label: "Image Gen",
               desc: "Generate any image from text",
               action: "/image [prompt]",
@@ -342,9 +342,10 @@ export default function ClawHubPage() {
               },
             },
             {
-              Icon: Video,
-              iconWrap:
-                "from-rose-500/25 to-orange-500/15 border-rose-400/30 text-rose-200 ring-rose-400/15",
+              Art: VideoGenArt,
+              tileBg:
+                "bg-[radial-gradient(120%_120%_at_30%_20%,rgba(251,113,133,0.18),rgba(249,115,22,0.05)_60%,transparent_100%)] ring-rose-400/15 border-rose-400/15",
+              accent: "text-rose-200/80",
               label: "Video Gen",
               desc: "Create cinematic AI videos",
               action: "/video [prompt]",
@@ -359,9 +360,10 @@ export default function ClawHubPage() {
               },
             },
             {
-              Icon: Wallet,
-              iconWrap:
-                "from-emerald-500/25 to-teal-500/15 border-emerald-400/30 text-emerald-200 ring-emerald-400/15",
+              Art: CreditsArt,
+              tileBg:
+                "bg-[radial-gradient(120%_120%_at_30%_20%,rgba(52,211,153,0.18),rgba(14,165,233,0.05)_60%,transparent_100%)] ring-emerald-400/15 border-emerald-400/15",
+              accent: "text-emerald-200/80",
               label: "Credits",
               desc: creditBalance > 0 ? `${creditBalance} available` : "Check balance",
               action: "/credits",
@@ -375,7 +377,7 @@ export default function ClawHubPage() {
               },
             },
           ].map((item) => {
-            const ItemIcon = item.Icon;
+            const Art = item.Art;
             return (
               <button
                 key={item.label}
@@ -389,13 +391,13 @@ export default function ClawHubPage() {
                 <div className="flex items-start justify-between">
                   <div
                     className={cn(
-                      "inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-gradient-to-br ring-1 ring-inset transition-transform duration-300 group-hover:scale-105",
-                      item.iconWrap,
+                      "relative inline-flex h-16 w-16 items-center justify-center rounded-2xl border ring-1 ring-inset overflow-hidden transition-transform duration-300 group-hover:scale-[1.04] group-hover:rotate-[-2deg]",
+                      item.tileBg,
                     )}
                   >
-                    <ItemIcon className="h-5 w-5" strokeWidth={1.6} />
+                    <Art className="absolute inset-1.5 w-[calc(100%-12px)] h-[calc(100%-12px)] drop-shadow-[0_4px_10px_rgba(0,0,0,0.35)]" />
                   </div>
-                  <ArrowUpRight className="mt-1.5 h-3.5 w-3.5 text-zinc-600 transition-all duration-300 group-hover:text-cyan-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  <ArrowUpRight className={cn("mt-1.5 h-3.5 w-3.5 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 text-zinc-600 group-hover:" + item.accent)} />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white">{item.label}</p>
