@@ -488,7 +488,10 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsNegativePrompt: false,
     supportsStartImage: false,
     supportsEndImage: false,
-    supportsMode: true,
+    // `mode` is in STUDIO_INTERNAL_PAYLOAD_FIELDS (server-side strip list),
+    // so the toggle's value never reaches the provider. Keep the flag off
+    // until the wire field is actually plumbed through.
+    supportsMode: false,
     modeOptions: ["normal", "fun", "spicy"],
     supportsCharacterOrientation: false,
     getCost: ({ duration }) => getModelCredits("grok-vid", { duration }),
@@ -594,13 +597,16 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
       { value: "1080p", label: "1080p" },
     ],
     defaultResolution: "720p",
+    // Same upstream model as `seedance-2` (Poyo wire name); ApiMart is primary
+    // here, Poyo is fallback. Intersection of both providers' wire specs is
+    // identical to seedance-2's, so flags must match exactly.
     supportsReferenceImage: true,
     maxReferenceImages: 2,
-    supportsReferenceVideo: true,
-    supportsSound: false,
+    supportsReferenceVideo: false,    // Poyo strips video_urls
+    supportsSound: false,              // duplicated Audio Synthesis toggle
     supportsMultiShots: false,
     supportsFixedLens: false,
-    supportsGenerateAudio: false,
+    supportsGenerateAudio: true,       // both providers accept generate_audio
     supportsPromptOptimizer: false,
     supportsPrompt: true,
     supportsStyle: false,
@@ -610,7 +616,7 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsEndImage: false,
     supportsMode: false,
     supportsCharacterOrientation: false,
-    supportsCharacterLock: true,
+    supportsCharacterLock: false,      // characterLock is stripped server-side
     isNew: true,
     getCost: ({ resolution = "720p", duration = 5 }) => getModelCredits("doubao-seedance-2.0", { resolution, duration }),
   },
@@ -637,10 +643,13 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
       { value: "1080p", label: "1080p" },
     ],
     defaultResolution: "720p",
+    // Capability flags below mirror Poyo's seedance-2 wire spec exactly.
+    // Anything else gets stripped by normalizePoyoVideoPayload, so showing UI
+    // for it would be misleading (silent no-op + stranded uploaded media).
     supportsReferenceImage: true,
     maxReferenceImages: 2,
-    supportsReferenceVideo: true,
-    supportsSound: true,
+    supportsReferenceVideo: false,
+    supportsSound: false,            // would duplicate Audio Synthesis toggle
     supportsMultiShots: false,
     supportsFixedLens: false,
     supportsGenerateAudio: true,
@@ -649,11 +658,11 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsStyle: false,
     supportsStoryboard: false,
     supportsNegativePrompt: false,
-    supportsStartImage: true,
-    supportsEndImage: true,
+    supportsStartImage: false,
+    supportsEndImage: false,
     supportsMode: false,
     supportsCharacterOrientation: false,
-    supportsCharacterLock: true,
+    supportsCharacterLock: false,
     isNew: true,
     getCost: ({ resolution = "720p", duration = 5 }) => getModelCredits("seedance-2", { resolution, duration }),
   },
@@ -672,6 +681,9 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
       { value: 20, label: "20s" },
     ],
     defaultDuration: 4,
+    // Aligned with Poyo sora-2-official wire spec: prompt, duration,
+    // aspect_ratio, image_urls (max 1). No fallback registered, so any flag
+    // mapping to a stripped/unrecognised field would silently no-op.
     supportsResolution: false,
     supportsReferenceImage: true,
     maxReferenceImages: 1,
@@ -685,11 +697,11 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsStyle: false,
     supportsStoryboard: false,
     supportsNegativePrompt: false,
-    supportsStartImage: true,
+    supportsStartImage: false,
     supportsEndImage: false,
     supportsMode: false,
     supportsCharacterOrientation: false,
-    supportsCharacterLock: true,
+    supportsCharacterLock: false,
     isNew: true,
     getCost: ({ duration = 4 }) => getModelCredits("sora-2-official", { duration }),
   },
@@ -812,7 +824,9 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsEndImage: false,
     supportsMode: false,
     supportsCharacterOrientation: false,
-    supportsCharacterLock: true,
+    // characterLock is in STUDIO_INTERNAL_PAYLOAD_FIELDS server-side, so
+    // the toggle never reaches the provider. Disabled until plumbed through.
+    supportsCharacterLock: false,
     isNew: true,
     getCost: ({ resolution = "1080p", duration = 5 }) => getModelCredits("kling-v3-omni", { resolution, duration }),
   },
@@ -843,7 +857,9 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsEndImage: false,
     supportsMode: false,
     supportsCharacterOrientation: false,
-    supportsCharacterLock: true,
+    // characterLock is in STUDIO_INTERNAL_PAYLOAD_FIELDS server-side, so
+    // the toggle never reaches the provider. Disabled until plumbed through.
+    supportsCharacterLock: false,
     isNew: true,
     getCost: ({ resolution = "1080p", duration = 5 }) => getModelCredits("kling-video-o1", { resolution, duration }),
   },

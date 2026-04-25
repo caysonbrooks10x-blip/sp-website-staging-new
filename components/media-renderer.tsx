@@ -19,13 +19,22 @@ export function MediaRenderer({ url, altText = "Generated Media", className, fil
         url.toLowerCase().includes('video'); 
 
     if (isVideo) {
+        // For Firebase-hosted videos, append a one-time cache-buster so
+        // pre-CORS-fix cached responses (from before the bucket's CORS config
+        // was set) can't poison playback. crossOrigin="anonymous" then locks
+        // the request to the CORS pipeline going forward.
+        const isFirebaseHost = url.includes("storage.googleapis.com");
+        const playbackSrc = isFirebaseHost
+            ? url + (url.includes("?") ? "&" : "?") + "v=1"
+            : url;
         return (
             <video
-                src={url}
+                src={playbackSrc}
                 className={cn("generated-video object-cover", className)}
+                crossOrigin="anonymous"
                 autoPlay
                 loop
-                muted 
+                muted
                 controls={false}
                 playsInline
                 style={fill ? { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 } : undefined}
