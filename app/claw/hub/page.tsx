@@ -184,6 +184,13 @@ export default function ClawHubPage() {
   }, [user?.uid]);
 
   const filteredWorkflows = useMemo(() => {
+    // Workflow cards are intentionally hidden until each card's underlying
+    // model + input/output expectations have been re-validated against the
+    // current routing strategy (primary + fallback intersection). The audit
+    // showed several workflows promise capabilities the underlying provider
+    // does not actually accept (e.g. start+end image on kling-v3-omni).
+    // Flip to the original CLAW_WORKFLOWS-derived filter to re-enable.
+    if (process.env.NEXT_PUBLIC_CLAW_WORKFLOWS_ENABLED !== "1") return [];
     const text = search.toLowerCase().trim();
     return CLAW_WORKFLOWS.filter((workflow) => {
       const matchesSearch =

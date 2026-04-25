@@ -1199,12 +1199,20 @@ function StudioLayout() {
           });
         } else if (data.status === "failed" || data.status === "cancelled") {
           console.log("Task Failed, internal backend already refunded tokens!", data.error);
+          const fallback = data.status === "cancelled" ? "Generation was cancelled." : "Generation failed.";
+          const errorMsg = typeof data.error === "string" && data.error ? data.error : fallback;
+          // Map known provider safety errors to clearer wording.
+          const isContentPolicy =
+            /sensitive content|likenesses? of real people|private information|content policy|nsfw|policy violat/i.test(errorMsg);
+          const userMessage = isContentPolicy
+            ? `Provider rejected this generation: ${errorMsg}`
+            : errorMsg;
           const failedItem: GenerationItem = {
             ...item,
             taskId: data.taskId || item.taskId || jobId,
             generationPlatform: provider,
             status: "failed" as const,
-            error: data.error || (data.status === "cancelled" ? "Generation was cancelled." : "Generation failed."),
+            error: userMessage,
           };
           updateJobSlot(failedItem);
           setGenerations((prev: GenerationItem[]) => prev.map(g => g.id === jobId ? failedItem : g));
@@ -1213,10 +1221,14 @@ function StudioLayout() {
             setIsGenerating(next.length > 0);
             return next;
           });
+          // Surface to user — previously this branch was silent, leaving the
+          // canvas blank with no explanation when Poyo's safety filter rejected
+          // a real-person likeness or NSFW output.
+          toast.error(userMessage, { id: `gen-toast-${jobId}`, duration: 8000 });
           recordProviderTelemetryEvent({
             provider,
             outcome: "failure",
-            message: data.error || (data.status === "cancelled" ? "Generation was cancelled." : "Generation failed."),
+            message: errorMsg,
           });
         } else {
           console.log("Still processing, polling again in 1.5 seconds...");
