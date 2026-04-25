@@ -116,13 +116,19 @@ export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   // duration matrix (4/8/12/16/20s).
   "sora-2":                 { primary: "apimart" },
   "sora-2-pro":             { primary: "apimart" },
-  "sora-2-official":        { primary: "poyo" },
+  // Flipped 2026-04-25: Poyo's wrapper-level moderation rejects real-person
+  // likenesses on this model with "may contain likenesses of real people".
+  // ApiMart's same-tier endpoint (sora-2-pro via alias) doesn't add that
+  // wrapper, so it's now primary. Poyo stays as fallback.
+  "sora-2-official":        { primary: "apimart", also: ["poyo"] },
   "veo3.1-lite":            { primary: "apimart" },
   "veo3.1-fast-official":   { primary: "apimart" },
   "veo3.1-quality-official":{ primary: "apimart" },
   "kling-v3-omni":          { primary: "apimart" },
   "kling-video-o1":         { primary: "apimart" },
-  "seedance-2":             { primary: "poyo", also: ["apimart"] },
+  // Flipped 2026-04-25: same Poyo moderation issue affects this model. ApiMart
+  // (doubao-seedance-2.0 via alias) accepts likeness references.
+  "seedance-2":             { primary: "apimart", also: ["poyo"] },
   "doubao-seedance-2.0":    { primary: "apimart", also: ["poyo"] },
   "hailuo-2.3":             { primary: "apimart", also: ["poyo"], gateToApimart: ["camera_movement_set"] },
   "wan2.6-text-to-video":   { primary: "apimart", also: ["poyo"], gateToApimart: ["template_set"] },
@@ -196,6 +202,14 @@ export const MODEL_ALIASES: Record<string, Partial<Record<StudioProvider, string
   },
   "doubao-seedance-2.0": {
     poyo: "seedance-2",
+  },
+
+  // Sora 2 Official: Studio keeps the customer-facing name. ApiMart hosts
+  // the same OpenAI Sora 2 endpoint under `sora-2-pro` (`sora-2-official`
+  // and the bare `sora-2` slug both 404 there as of 2026-04). Poyo still
+  // accepts `sora-2-official` natively, so no Poyo alias is needed.
+  "sora-2-official": {
+    apimart: "sora-2-pro",
   },
 
   // Seedream 5 Lite: ApiMart publishes the ByteDance vendor ID
