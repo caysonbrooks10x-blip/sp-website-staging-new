@@ -1070,7 +1070,7 @@ function StudioLayout() {
             data.urls ||
             data.result_urls ||
             (Array.isArray(data.outputUrl) ? data.outputUrl : data.outputUrl ? [data.outputUrl] : null);
-          const urls = flattenOutputUrls(rawUrls);
+          let urls = flattenOutputUrls(rawUrls);
           if (urls.length === 0) {
             completedWithoutOutputPolls += 1;
             if (completedWithoutOutputPolls < 10) {
@@ -1084,6 +1084,36 @@ function StudioLayout() {
             }
             markTerminalFailure("The provider finished the job but did not return a downloadable output. Please retry or switch models.");
             return;
+          }
+
+          // Finalize videos through our Firebase-Storage remux pipeline.
+          // Poyo's CDN serves mp4 with `moov` at the end, which Chrome's
+          // HTML5 video element stalls on. ApiMart output is moov-at-front
+          // but we still persist to Firebase so URLs survive provider rotation.
+          if (item.type === "video") {
+            try {
+              const idToken = user ? await user.getIdToken() : null;
+              const finalizeResp = await fetch("/api/route/videos/finalize", {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+                },
+                body: JSON.stringify({
+                  taskId: data.taskId || jobId,
+                  sourceUrl: urls[0],
+                  provider,
+                }),
+              });
+              const finalized = await finalizeResp.json().catch(() => null);
+              if (finalizeResp.ok && finalized?.url && !finalized.fallback) {
+                urls = [finalized.url];
+              } else if (finalized?.fallback) {
+                console.warn("Video finalize fell back to raw URL:", finalized.reason);
+              }
+            } catch (err) {
+              console.warn("Video finalize errored; using raw URL.", err);
+            }
           }
 
           if (urls.length > 1) {
