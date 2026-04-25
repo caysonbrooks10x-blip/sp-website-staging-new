@@ -637,10 +637,13 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
       { value: "1080p", label: "1080p" },
     ],
     defaultResolution: "720p",
+    // Capability flags below mirror Poyo's seedance-2 wire spec exactly.
+    // Anything else gets stripped by normalizePoyoVideoPayload, so showing UI
+    // for it would be misleading (silent no-op + stranded uploaded media).
     supportsReferenceImage: true,
     maxReferenceImages: 2,
-    supportsReferenceVideo: true,
-    supportsSound: true,
+    supportsReferenceVideo: false,
+    supportsSound: false,            // would duplicate Audio Synthesis toggle
     supportsMultiShots: false,
     supportsFixedLens: false,
     supportsGenerateAudio: true,
@@ -649,11 +652,11 @@ export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
     supportsStyle: false,
     supportsStoryboard: false,
     supportsNegativePrompt: false,
-    supportsStartImage: true,
-    supportsEndImage: true,
+    supportsStartImage: false,
+    supportsEndImage: false,
     supportsMode: false,
     supportsCharacterOrientation: false,
-    supportsCharacterLock: true,
+    supportsCharacterLock: false,
     isNew: true,
     getCost: ({ resolution = "720p", duration = 5 }) => getModelCredits("seedance-2", { resolution, duration }),
   },

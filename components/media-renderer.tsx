@@ -19,14 +19,17 @@ export function MediaRenderer({ url, altText = "Generated Media", className, fil
         url.toLowerCase().includes('video'); 
 
     if (isVideo) {
-        // crossOrigin="anonymous" forces the request through the CORS pipeline,
-        // ensuring the bucket's Access-Control-Allow-Origin headers attach to
-        // the cached response. Without it, a prior no-CORS fetch (e.g. via a
-        // <Image> probe) can poison Chrome's cache and silently break playback
-        // for cross-origin Firebase Storage videos.
+        // For Firebase-hosted videos, append a one-time cache-buster so
+        // pre-CORS-fix cached responses (from before the bucket's CORS config
+        // was set) can't poison playback. crossOrigin="anonymous" then locks
+        // the request to the CORS pipeline going forward.
+        const isFirebaseHost = url.includes("storage.googleapis.com");
+        const playbackSrc = isFirebaseHost
+            ? url + (url.includes("?") ? "&" : "?") + "v=1"
+            : url;
         return (
             <video
-                src={url}
+                src={playbackSrc}
                 className={cn("generated-video object-cover", className)}
                 crossOrigin="anonymous"
                 autoPlay
