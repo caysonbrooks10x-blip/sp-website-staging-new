@@ -72,6 +72,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({
       url: payload.url,
+      thumbnailUrl: payload.thumbnailUrl,
       cached: Boolean(payload.cached),
     });
   } catch (err) {

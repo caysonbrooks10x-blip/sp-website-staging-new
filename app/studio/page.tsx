@@ -1090,6 +1090,7 @@ function StudioLayout() {
           // Poyo's CDN serves mp4 with `moov` at the end, which Chrome's
           // HTML5 video element stalls on. ApiMart output is moov-at-front
           // but we still persist to Firebase so URLs survive provider rotation.
+          // Also captures a JPG poster frame for tile/grid thumbnails.
           if (item.type === "video") {
             try {
               const idToken = user ? await user.getIdToken() : null;
@@ -1108,6 +1109,9 @@ function StudioLayout() {
               const finalized = await finalizeResp.json().catch(() => null);
               if (finalizeResp.ok && finalized?.url && !finalized.fallback) {
                 urls = [finalized.url];
+                if (finalized.thumbnailUrl) {
+                  data.thumbnailUrl = finalized.thumbnailUrl;
+                }
               } else if (finalized?.fallback) {
                 console.warn("Video finalize fell back to raw URL:", finalized.reason);
               }
