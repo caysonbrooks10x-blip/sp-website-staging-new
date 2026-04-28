@@ -21,7 +21,7 @@ import { auth } from "@/lib/firebaseClient";
 import { createUserDoc, INITIAL_TOKEN_BALANCE, completeUserOnboarding, ONBOARDING_FLOW_VERSION } from "@/lib/db";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebaseClient";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 interface AuthContextType {
     user: User | null;
@@ -97,14 +97,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
+        // Track the per-user Firestore listener so we can dispose it on
+        // sign-out / user switch and avoid a stale subscription leaking
+        // another user's balance into UI state.
+        let unsubUserDoc: (() => void) | null = null;
+
         // Register onAuthStateChanged FIRST so we never miss a state change.
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
+            if (unsubUserDoc) {
+                unsubUserDoc();
+                unsubUserDoc = null;
+            }
             if (currentUser) {
                 const profile = await createUserDoc(currentUser);
                 setCredits(profile?.tokenBalance ?? INITIAL_TOKEN_BALANCE);
                 setOnboardingCompleted(profile?.onboardingCompleted ?? true);
                 fetchCredits(currentUser.uid);
+                // Live-subscribe so every consumer of useAuth().credits stays
+                // in sync with token deductions/refunds (matches navbar's
+                // direct onSnapshot at components/navbar.tsx:40).
+                unsubUserDoc = onSnapshot(
+                    doc(db, "users", currentUser.uid),
+                    (snap) => {
+                        const data = snap.data();
+                        if (data && typeof data.tokenBalance === "number") {
+                            setCredits(data.tokenBalance);
+                        }
+                    },
+                    (err) => console.warn("credits onSnapshot error:", err),
+                );
             } else {
                 setCredits(null);
                 setOnboardingCompleted(null);
@@ -118,7 +140,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error("Pending redirect sign-in error:", error?.code, error?.message);
         });
 
-        return () => unsubscribe();
+        return () => {
+            if (unsubUserDoc) unsubUserDoc();
+            unsubscribe();
+        };
     }, []);
 
     const signInWithGoogle = async () => {

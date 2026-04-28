@@ -1023,9 +1023,14 @@ function StudioLayout() {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15_000);
+        const pollIdToken = user ? await user.getIdToken().catch(() => null) : null;
         const response = await fetch(
           `/api/route/tasks/${encodeURIComponent(jobId)}?provider=${encodeURIComponent(provider)}&language=en`,
-          { cache: "no-store", signal: controller.signal },
+          {
+            cache: "no-store",
+            signal: controller.signal,
+            headers: pollIdToken ? { Authorization: `Bearer ${pollIdToken}` } : undefined,
+          },
         ).finally(() => {
           clearTimeout(timeout);
         });
@@ -1120,6 +1125,41 @@ function StudioLayout() {
               }
             } catch (err) {
               console.warn("Video finalize errored; using raw URL.", err);
+            }
+          } else if (item.type === "image") {
+            // Rehost provider image URLs to Firebase Storage so they
+            // survive provider CDN expiry. Mirror of the video finalize
+            // pattern; idempotent on the VPS side.
+            try {
+              const idToken = user ? await user.getIdToken() : null;
+              const finalizeCtl = new AbortController();
+              const finalizeTimer = setTimeout(() => finalizeCtl.abort(), 60_000);
+              const finalizeResp = await fetch("/api/route/images/finalize", {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+                },
+                body: JSON.stringify({
+                  taskId: data.taskId || jobId,
+                  sourceUrls: urls,
+                  provider,
+                }),
+                signal: finalizeCtl.signal,
+              }).finally(() => clearTimeout(finalizeTimer));
+              const finalized = await finalizeResp.json().catch(() => null);
+              if (
+                finalizeResp.ok &&
+                Array.isArray(finalized?.urls) &&
+                finalized.urls.length === urls.length &&
+                !finalized.fallback
+              ) {
+                urls = finalized.urls;
+              } else if (finalized?.fallback) {
+                console.warn("Image finalize fell back to raw URLs:", finalized.reason);
+              }
+            } catch (err) {
+              console.warn("Image finalize errored; using raw URLs.", err);
             }
           }
 
