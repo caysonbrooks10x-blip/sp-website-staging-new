@@ -57,9 +57,9 @@ export async function GET(request: Request, context: { params: Promise<{ taskId:
     const { searchParams } = new URL(request.url)
     const { taskId } = await context.params
     const providerParam = searchParams.get("provider") || "apimart"
-    if (providerParam !== "apimart" && providerParam !== "poyo") {
+    if (providerParam !== "apimart" && providerParam !== "poyo" && providerParam !== "fal") {
       return NextResponse.json(
-        { error: "provider query param must be 'apimart' or 'poyo'" },
+        { error: "provider query param must be 'apimart', 'poyo', or 'fal'" },
         { status: 400 },
       )
     }

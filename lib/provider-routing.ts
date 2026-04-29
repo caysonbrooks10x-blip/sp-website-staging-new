@@ -1,6 +1,79 @@
 import type { ProviderHealthStatus } from "@/lib/provider-health"
 
-export type StudioProvider = "poyo" | "apimart"
+export type StudioProvider = "poyo" | "apimart" | "fal"
+
+// -------------------------------------------------------------------
+// FAL_APP_MAP — StudioX canonical model id → Fal app endpoint slug.
+//
+// Verified 2026-04-28 by probing https://queue.fal.run/{slug} with the
+// Studio API key. Only models that returned 200 are listed here; models
+// not on Fal's catalog (gpt-4o-image, veo3.1-*, runway-gen-4.5, grok-*)
+// are intentionally absent so they never resolve to a fal route.
+//
+// For models with separate text-to-video and image-to-video endpoints,
+// the dispatcher in provider-router.ts picks the right slug at submit
+// time based on whether reference images are present.
+// -------------------------------------------------------------------
+
+export interface FalAppEntry {
+  // Default endpoint (text-to-image / text-to-video).
+  appId: string
+  // Optional image-to-* endpoint when the model exposes both.
+  i2vAppId?: string
+  // Optional edit endpoint for image models that support reference editing.
+  editAppId?: string
+}
+
+export const FAL_APP_MAP: Record<string, FalAppEntry> = {
+  // IMAGE — verified by endpoint probe 2026-04-29
+  "nano-banana":            { appId: "fal-ai/nano-banana", editAppId: "fal-ai/nano-banana/edit" },
+  "nano-banana-2":          { appId: "fal-ai/nano-banana-2" },
+  "nano-banana-2-new":      { appId: "fal-ai/nano-banana-2" },
+  "nano-banana-2-official": { appId: "fal-ai/gemini-3.1-flash-image-preview" },
+  "nano-banana-pro":        { appId: "fal-ai/nano-banana-pro", editAppId: "fal-ai/nano-banana-pro/edit" },
+  "flux-2-pro":             { appId: "fal-ai/flux-pro/v1.1" },
+  "flux-2-flex":            { appId: "fal-ai/flux/dev" },
+  "flux-kontext-pro":       { appId: "fal-ai/flux-kontext/pro/text-to-image" },
+  "flux-kontext-max":       { appId: "fal-ai/flux-kontext/max/text-to-image" },
+  "seedream-4.5":           { appId: "fal-ai/bytedance/seedream/v4/text-to-image" },
+  "seedream-5.0-lite":      { appId: "fal-ai/bytedance/seedream/v5-lite/text-to-image" },
+  "qwen-image-2.0-pro":     { appId: "fal-ai/qwen-image" },
+  "wan-2.7-image-pro":      { appId: "fal-ai/wan/v2.7-image-pro/text-to-image" },
+  "z-image":                { appId: "fal-ai/z-image" },
+  "kling-o3-image":         { appId: "fal-ai/kling/v3/text-to-image" },
+  "gpt-image-1.5":          { appId: "fal-ai/gpt-image-1.5" },
+  "gpt-image-2":            { appId: "fal-ai/gpt-image-1" },
+  "grok-imagine-image":     { appId: "fal-ai/xai/grok-imagine" },
+
+  // VIDEO — verified by endpoint probe 2026-04-29
+  "seedance-2":             {
+    appId: "fal-ai/bytedance/seedance/v2/pro/text-to-video",
+    i2vAppId: "fal-ai/bytedance/seedance/v2/pro/image-to-video",
+  },
+  "doubao-seedance-2.0":    { appId: "fal-ai/bytedance/doubao-seedance/v2" },
+  "veo3.1-lite":            { appId: "fal-ai/veo3" },
+  "veo3.1-fast-official":   { appId: "fal-ai/veo3.1" },
+  "veo3.1-quality-official":{ appId: "fal-ai/veo3.1" },
+  "kling-v3-omni":          { appId: "fal-ai/kling-video/v3/master/text-to-video" },
+  "kling-video-o1":         { appId: "fal-ai/kling-video/o1/text-to-video" },
+  "hailuo-2.3":             { appId: "fal-ai/minimax/hailuo-2.3/text-to-video" },
+  "wan2.6-text-to-video":   { appId: "fal-ai/wan/v2.6/text-to-video" },
+  "wan2.6-video-to-video":  { appId: "fal-ai/wan/v2.6/video-to-video" },
+  "sora-2":                 { appId: "fal-ai/sora-2" },
+  "grok-vid":               { appId: "fal-ai/xai/grok-imagine" },
+  // runway-gen-4.5 falls back to Fal's older runway-gen3 generation —
+  // different model class but keeps the user from hard failure when Poyo
+  // is degraded.
+  "runway-gen-4.5":         { appId: "fal-ai/runway-gen3" },
+}
+
+export function resolveFalAppId(canonical: string, kind: "default" | "i2v" | "edit" = "default"): string | undefined {
+  const entry = FAL_APP_MAP[canonical]
+  if (!entry) return undefined
+  if (kind === "i2v") return entry.i2vAppId ?? entry.appId
+  if (kind === "edit") return entry.editAppId ?? entry.appId
+  return entry.appId
+}
 
 export interface ProviderRoutingParams {
   aspect_ratio?: string
@@ -86,49 +159,59 @@ export interface ModelProviderEntry {
   gateToPoyo?: ProviderGate[]
 }
 
+// -------------------------------------------------------------------
+// MODEL_PROVIDERS routing rules (updated 2026-04-28 to add Fal.ai)
+//
+// Fal.ai is added as the LAST entry in `also` for every model whose
+// upstream is verified-present in FAL_APP_MAP above. Models not on Fal
+// keep their existing two-provider routing untouched. Per user direction,
+// Fal is never primary EXCEPT for `seedance-2` where Poyo + ApiMart's
+// real-person-likeness moderation has been blocking generations and
+// Fal accepts the same model without that wrapper.
+// -------------------------------------------------------------------
+
 export const MODEL_PROVIDERS: Record<string, ModelProviderEntry> = {
   // IMAGE
-  "nano-banana":            { primary: "apimart", also: ["poyo"], gateToApimart: ["n>1"] },
-  "nano-banana-2":          { primary: "apimart", also: ["poyo"], gateToApimart: ["n>1", "extreme_ar", "res=0.5K"] },
-  "nano-banana-2-new":      { primary: "apimart", also: ["poyo"], gateToApimart: ["n>1", "extreme_ar", "res=0.5K"] },
-  "nano-banana-2-official": { primary: "apimart", gateToPoyo: ["res=0.5K"] },
-  "nano-banana-pro":        { primary: "poyo" },
+  "nano-banana":            { primary: "apimart", also: ["poyo", "fal"], gateToApimart: ["n>1"] },
+  "nano-banana-2":          { primary: "apimart", also: ["poyo", "fal"], gateToApimart: ["n>1", "extreme_ar", "res=0.5K"] },
+  "nano-banana-2-new":      { primary: "apimart", also: ["poyo", "fal"], gateToApimart: ["n>1", "extreme_ar", "res=0.5K"] },
+  "nano-banana-2-official": { primary: "apimart", also: ["fal"], gateToPoyo: ["res=0.5K"] },
+  "nano-banana-pro":        { primary: "poyo", also: ["fal"] },
   "gpt-4o-image":           { primary: "apimart", also: ["poyo"], gateToApimart: ["mask_url"] },
-  "gpt-image-1.5":          { primary: "poyo", gateToApimart: ["official_tier", "mask_url"] },
-  "flux-2-pro":             { primary: "apimart", also: ["poyo"] },
-  "flux-2-flex":            { primary: "apimart", also: ["poyo"] },
-  "flux-kontext-pro":       { primary: "apimart", also: ["poyo"] },
-  "flux-kontext-max":       { primary: "apimart", also: ["poyo"] },
-  "seedream-4.5":           { primary: "poyo", also: ["apimart"] },
-  "seedream-5.0-lite":      { primary: "poyo", also: ["apimart"], gateToApimart: ["n<=4 && need_apimart_behavior"] },
-  "z-image":                { primary: "poyo" },
-  "qwen-image-2.0-pro":     { primary: "apimart" },
-  "grok-imagine-image":     { primary: "apimart", also: ["poyo"] },
-  "wan-2.7-image-pro":      { primary: "poyo" },
-  "kling-o3-image":         { primary: "poyo" },
-  // Added 2026-04-22 — verified against https://poyo.ai/pricing.
-  // gpt-image-2 is $0.025 on Poyo vs $0.050 on ApiMart → Poyo primary.
-  "gpt-image-2":            { primary: "poyo", also: ["apimart"] },
+  "gpt-image-1.5":          { primary: "poyo", also: ["fal"], gateToApimart: ["official_tier", "mask_url"] },
+  "flux-2-pro":             { primary: "apimart", also: ["poyo", "fal"] },
+  "flux-2-flex":            { primary: "apimart", also: ["poyo", "fal"] },
+  "flux-kontext-pro":       { primary: "apimart", also: ["poyo", "fal"] },
+  "flux-kontext-max":       { primary: "apimart", also: ["poyo", "fal"] },
+  "seedream-4.5":           { primary: "poyo", also: ["apimart", "fal"] },
+  "seedream-5.0-lite":      { primary: "poyo", also: ["apimart", "fal"], gateToApimart: ["n<=4 && need_apimart_behavior"] },
+  "z-image":                { primary: "poyo", also: ["fal"] },
+  "qwen-image-2.0-pro":     { primary: "apimart", also: ["fal"] },
+  "grok-imagine-image":     { primary: "apimart", also: ["poyo", "fal"] },
+  "wan-2.7-image-pro":      { primary: "poyo", also: ["fal"] },
+  "kling-o3-image":         { primary: "poyo", also: ["fal"] },
+  "gpt-image-2":            { primary: "poyo", also: ["apimart", "fal"] },
 
   // VIDEO
-  // Sora 2: keep generic Sora IDs on ApiMart, and expose Poyo's official
-  // tier as its own customer-facing model because it has a different
-  // duration matrix (4/8/12/16/20s).
-  "sora-2":                 { primary: "apimart" },
+  "sora-2":                 { primary: "apimart", also: ["fal"] },
   "sora-2-pro":             { primary: "apimart" },
   "sora-2-official":        { primary: "poyo" },
-  "veo3.1-lite":            { primary: "apimart" },
-  "veo3.1-fast-official":   { primary: "apimart" },
-  "veo3.1-quality-official":{ primary: "apimart" },
-  "kling-v3-omni":          { primary: "apimart" },
-  "kling-video-o1":         { primary: "apimart" },
-  "seedance-2":             { primary: "poyo", also: ["apimart"] },
-  "doubao-seedance-2.0":    { primary: "apimart", also: ["poyo"] },
-  "hailuo-2.3":             { primary: "apimart", also: ["poyo"], gateToApimart: ["camera_movement_set"] },
-  "wan2.6-text-to-video":   { primary: "apimart", also: ["poyo"], gateToApimart: ["template_set"] },
-  "wan2.6-video-to-video":  { primary: "poyo" },
-  "grok-vid":               { primary: "apimart", also: ["poyo"] },
-  "runway-gen-4.5":         { primary: "poyo" },
+  "veo3.1-lite":            { primary: "apimart", also: ["fal"] },
+  "veo3.1-fast-official":   { primary: "apimart", also: ["fal"] },
+  "veo3.1-quality-official":{ primary: "apimart", also: ["fal"] },
+  "kling-v3-omni":          { primary: "apimart", also: ["fal"] },
+  "kling-video-o1":         { primary: "apimart", also: ["fal"] },
+  // Seedance 2: Fal-primary per user direction 2026-04-28. Both Poyo and
+  // ApiMart wrap this model with real-person-likeness moderation that
+  // rejects the most-requested workflows; Fal hosts the same upstream
+  // ByteDance Seedance v2 endpoint without that wrapper.
+  "seedance-2":             { primary: "fal", also: ["poyo", "apimart"] },
+  "doubao-seedance-2.0":    { primary: "apimart", also: ["poyo", "fal"] },
+  "hailuo-2.3":             { primary: "apimart", also: ["poyo", "fal"], gateToApimart: ["camera_movement_set"] },
+  "wan2.6-text-to-video":   { primary: "apimart", also: ["poyo", "fal"], gateToApimart: ["template_set"] },
+  "wan2.6-video-to-video":  { primary: "poyo", also: ["fal"] },
+  "grok-vid":               { primary: "apimart", also: ["poyo", "fal"] },
+  "runway-gen-4.5":         { primary: "poyo", also: ["fal"] },
 }
 
 // -------------------------------------------------------------------
@@ -255,20 +338,47 @@ export const APIMART_VIDEO_MODELS = new Set<string>(
 // will surface a hard failure rather than route to a different model.
 // -------------------------------------------------------------------
 
+// Build the fallback CHAIN per model. The chain is `[primary, ...also]`
+// dedup'd with primary at index 0 — `getProviderFallback` returns index
+// 1 (first non-primary) for back-compat, and `getProviderFallbackChain`
+// returns the full ordered list for callers that want multi-step retry.
+const FALLBACK_CHAIN: Record<string, StudioProvider[]> = (() => {
+  const map: Record<string, StudioProvider[]> = {}
+  for (const [modelId, entry] of Object.entries(MODEL_PROVIDERS)) {
+    const seen = new Set<StudioProvider>()
+    const chain: StudioProvider[] = []
+    const push = (p: StudioProvider) => {
+      if (!seen.has(p)) {
+        seen.add(p)
+        chain.push(p)
+      }
+    }
+    push(entry.primary)
+    for (const p of entry.also ?? []) push(p)
+    map[modelId] = chain
+  }
+  return map
+})()
+
 const FALLBACK_MAP: Record<string, ProviderFallbackPlan> = (() => {
   const map: Record<string, ProviderFallbackPlan> = {}
-  for (const [modelId, entry] of Object.entries(MODEL_PROVIDERS)) {
-    const opposite: StudioProvider = entry.primary === "apimart" ? "poyo" : "apimart"
-    if (entry.also?.includes(opposite)) {
-      map[modelId] = {
-        provider: opposite,
-        model: modelId,
-        reason: `Routes to the ${opposite} mirror of ${modelId} when ${entry.primary} is unavailable.`,
-      }
+  for (const [modelId, chain] of Object.entries(FALLBACK_CHAIN)) {
+    if (chain.length < 2) continue
+    const primary = chain[0]
+    const next = chain[1]
+    map[modelId] = {
+      provider: next,
+      model: modelId,
+      reason: `Routes to the ${next} mirror of ${modelId} when ${primary} is unavailable.`,
     }
   }
   return map
 })()
+
+export function getProviderFallbackChain(model?: string): StudioProvider[] {
+  if (!model) return []
+  return FALLBACK_CHAIN[model] ?? []
+}
 
 // -------------------------------------------------------------------
 // Watchlist — models with historical provider-side pressure.

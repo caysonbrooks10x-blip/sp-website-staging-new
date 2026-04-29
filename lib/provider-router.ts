@@ -34,9 +34,16 @@ import {
   type PoyoSubmitResponse,
 } from "@/lib/poyo"
 import {
+  submitFalGeneration,
+  queryFalQueueStatus,
+  queryFalResult,
+  FalRequestError,
+} from "@/lib/fal"
+import {
   chooseProvider,
   getProviderFallback,
   resolveProviderModelId,
+  resolveFalAppId,
   type ProviderRoutingInput,
   type StudioProvider,
 } from "@/lib/provider-routing"
@@ -134,6 +141,17 @@ async function submitImage(
     const raw = await submitApiMartImageGeneration(wirePayload)
     return { task_id: extractTaskIdFromApiMart(raw), raw }
   }
+  if (provider === "fal") {
+    const canonical = typeof payload.model === "string" ? payload.model : ""
+    const hasReferenceImage = Boolean(payload.image_url || (payload as any).image_urls)
+    const appId = resolveFalAppId(canonical, hasReferenceImage ? "edit" : "default")
+    if (!appId) {
+      throw new Error(`Fal: no app endpoint mapped for model "${canonical}"`)
+    }
+    const input = normalizeFalImageInput(wirePayload)
+    const submission = await submitFalGeneration(appId, input)
+    return { task_id: encodeFalTaskId(submission.queue_base, submission.request_id), raw: submission.raw }
+  }
   const { model, ...rest } = wirePayload as { model: string } & Record<string, unknown>
   const raw = await submitPoyoGeneration({ model, inputs: rest })
   return { task_id: extractTaskIdFromPoyo(raw), raw }
@@ -148,10 +166,96 @@ async function submitVideo(
     const raw = await submitApiMartVideoGeneration(normalizeApiMartVideoPayload(wirePayload))
     return { task_id: extractTaskIdFromApiMart(raw), raw }
   }
+  if (provider === "fal") {
+    const canonical = typeof payload.model === "string" ? payload.model : ""
+    const hasReferenceImage = Boolean(
+      payload.image_url ||
+        (payload as any).image_urls ||
+        payload.start_image_url ||
+        payload.reference_image_url,
+    )
+    const appId = resolveFalAppId(canonical, hasReferenceImage ? "i2v" : "default")
+    if (!appId) {
+      throw new Error(`Fal: no app endpoint mapped for model "${canonical}"`)
+    }
+    const input = normalizeFalVideoInput(wirePayload)
+    const submission = await submitFalGeneration(appId, input)
+    return { task_id: encodeFalTaskId(submission.queue_base, submission.request_id), raw: submission.raw }
+  }
   const normalized = normalizePoyoVideoPayload(wirePayload)
   const { model, ...rest } = normalized as { model: string } & Record<string, unknown>
   const raw = await submitPoyoGeneration({ model, inputs: rest })
   return { task_id: extractTaskIdFromPoyo(raw), raw }
+}
+
+// -------------------------------------------------------------------
+// Fal helpers — task id encoding + payload normalization + status fetch
+//
+// Fal's queue API namespaces requests under each app endpoint, so the
+// status route needs both `app_id` and `request_id`. We pack them into
+// a single `task_id` string ("fal:{appId}:{requestId}") so the rest of
+// the provider abstraction stays the same shape across all providers.
+// -------------------------------------------------------------------
+
+function encodeFalTaskId(queueBase: string, requestId: string): string {
+  return `fal:${queueBase}:${requestId}`
+}
+
+function decodeFalTaskId(taskId: string): { queueBase: string; requestId: string } | null {
+  if (!taskId.startsWith("fal:")) return null
+  const rest = taskId.slice(4)
+  const lastColon = rest.lastIndexOf(":")
+  if (lastColon < 1) return null
+  return { queueBase: rest.slice(0, lastColon), requestId: rest.slice(lastColon + 1) }
+}
+
+const FAL_PRESERVED_FIELDS = new Set([
+  "prompt",
+  "negative_prompt",
+  "image_size",
+  "aspect_ratio",
+  "num_inference_steps",
+  "guidance_scale",
+  "seed",
+  "num_images",
+  "image_url",
+  "image_urls",
+  "duration",
+  "resolution",
+  "enable_safety_checker",
+  "expand_prompt",
+])
+
+function normalizeFalImageInput(payload: Record<string, unknown>): Record<string, unknown> {
+  const cleaned = stripStudioInternalFields(payload)
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(cleaned)) {
+    if (k === "model") continue
+    if (FAL_PRESERVED_FIELDS.has(k) && v !== undefined && v !== null && v !== "") {
+      out[k] = v
+    }
+  }
+  // Fal commonly accepts `num_images` for the count param; map `n` if present.
+  if (typeof (cleaned as any).n === "number" && out.num_images === undefined) {
+    out.num_images = (cleaned as any).n
+  }
+  return out
+}
+
+function normalizeFalVideoInput(payload: Record<string, unknown>): Record<string, unknown> {
+  const cleaned = normalizeReferenceMediaPayload(payload)
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(cleaned)) {
+    if (k === "model") continue
+    if (FAL_PRESERVED_FIELDS.has(k) && v !== undefined && v !== null && v !== "") {
+      out[k] = v
+    }
+  }
+  // Fal seedance i2v expects single image_url; collapse arrays.
+  if (Array.isArray(out.image_urls) && out.image_urls.length > 0 && !out.image_url) {
+    out.image_url = (out.image_urls as string[])[0]
+  }
+  return out
 }
 
 /**
@@ -462,6 +566,9 @@ export async function routeTaskStatus(
     const raw = await queryApiMartTaskStatus(taskId, language)
     return normalizeApiMartStatus(taskId, raw)
   }
+  if (provider === "fal") {
+    return normalizeFalStatus(taskId)
+  }
   const raw = await queryPoyoTaskStatus(taskId)
   return normalizePoyoStatus(taskId, raw)
 }
@@ -500,6 +607,59 @@ function normalizeApiMartStatus(
     thumbnail_url: thumbnail,
     error: d?.error ? { message: d.error.message, code: d.error.code } : undefined,
     raw,
+  }
+}
+
+async function normalizeFalStatus(taskId: string): Promise<NormalizedTaskStatus> {
+  const decoded = decodeFalTaskId(taskId)
+  if (!decoded) {
+    return {
+      provider: "fal",
+      task_id: taskId,
+      status: "failed",
+      output_urls: [],
+      error: { message: "Invalid Fal task id (expected fal:{appId}:{requestId})" },
+      raw: null,
+    }
+  }
+  const { queueBase, requestId } = decoded
+  const queue = await queryFalQueueStatus(queueBase, requestId)
+  const statusMap: Record<string, NormalizedStatus> = {
+    IN_QUEUE: "pending",
+    IN_PROGRESS: "processing",
+    COMPLETED: "completed",
+    FAILED: "failed",
+    CANCELLED: "failed",
+  }
+  const status: NormalizedStatus = statusMap[queue.status] ?? "pending"
+
+  if (status !== "completed") {
+    return {
+      provider: "fal",
+      task_id: taskId,
+      status,
+      output_urls: [],
+      raw: queue.raw,
+    }
+  }
+
+  // Completed → fetch the final result payload for output URLs.
+  const result = await queryFalResult(queueBase, requestId)
+  const imageUrls = (result.images ?? [])
+    .map((i) => i?.url)
+    .filter((u): u is string => typeof u === "string")
+  if (result.image?.url) imageUrls.push(result.image.url)
+  const videoUrls: string[] = []
+  if (result.video?.url) videoUrls.push(result.video.url)
+  for (const v of result.videos ?? []) {
+    if (v?.url) videoUrls.push(v.url)
+  }
+  return {
+    provider: "fal",
+    task_id: taskId,
+    status: "completed",
+    output_urls: [...imageUrls, ...videoUrls],
+    raw: result.raw,
   }
 }
 
@@ -635,6 +795,15 @@ function unwrapProviderError(error: unknown): {
   if (error instanceof PoyoRequestError) {
     return {
       provider: "poyo",
+      status: error.status,
+      code: error.code,
+      retriable: error.retriable,
+      rawMessage: error.message,
+    }
+  }
+  if (error instanceof FalRequestError) {
+    return {
+      provider: "fal",
       status: error.status,
       code: error.code,
       retriable: error.retriable,
