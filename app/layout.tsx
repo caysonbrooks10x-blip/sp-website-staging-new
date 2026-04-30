@@ -57,6 +57,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        {/* Preconnect hints — measured 1.5–6s tail latency on these hosts in
+            the perf audit. Pre-warming the TLS handshake shaves ~200–400ms
+            off the first asset request from each. */}
+        <link rel="preconnect" href="https://storage.googleapis.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://storage.googleapis.com" />
+        <link rel="preconnect" href="https://app.partnero.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://app.partnero.com" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
+      </head>
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`} suppressHydrationWarning>
         {/* Partnero affiliate tracking — fires on every page view, attributes
             referrals to the active partner cookie. afterInteractive so it

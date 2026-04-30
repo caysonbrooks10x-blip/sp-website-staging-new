@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import JSZip from "jszip"
+// jszip is dynamically-imported inside handleDownloadPack to keep
+// it out of the per-route initial chunk (~167 KB).
 import { useSearchParams } from "next/navigation"
 import { Download, Loader2, Package, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -146,6 +147,7 @@ export default function ExportPackPage() {
     setStatus("Preparing your export pack...")
 
     try {
+      const { default: JSZip } = await import("jszip")
       const zip = new JSZip()
       const sourceAssets = payload.assets.length > 0 ? payload.assets : [{ url: payload.assetUrl, creationId: payload.creationId }]
       const filenameSeed = buildExportPackFilename(payload.title, payload.creationId)

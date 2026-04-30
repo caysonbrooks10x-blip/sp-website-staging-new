@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import JSZip from "jszip";
+// jszip is dynamically-imported at the only call-site below to keep
+// it out of the studio's initial chunk (~167 KB).
 import { Bot, Download, Loader2, Maximize2, Package, Share, Sparkles, Wand2, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
@@ -201,6 +202,7 @@ export function StudioCenterCanvas({ activeGeneration, mode, isGenerating, aspec
                 window.URL.revokeObjectURL(objUrl);
                 return;
             }
+            const { default: JSZip } = await import("jszip");
             const zip = new JSZip();
             const pad = urls.length > 9 ? 2 : 1;
             const blobs = await Promise.all(urls.map((u) => fetchBlobViaProxy(u)));

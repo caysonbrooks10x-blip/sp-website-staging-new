@@ -213,7 +213,12 @@ export function BackgroundSystem({ register }: BackgroundSystemProps) {
                                 muted
                                 loop
                                 playsInline
-                                preload="auto"
+                                // Was preload="auto" — measured 2.0s of main-thread blocking on
+                                // the homepage. "metadata" lets the browser fetch only enough
+                                // to know dimensions/duration, then load the rest after first
+                                // paint. The component still autoplays via .play() in its
+                                // intersection-observer effect, so behavior is unchanged.
+                                preload="metadata"
                                 className="absolute inset-0 w-full h-full object-cover bg-black grayscale-[0.3]"
                                 style={{ opacity: env.opacity }}
                             >
