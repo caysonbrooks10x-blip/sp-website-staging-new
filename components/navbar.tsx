@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Menu, X, LogOut, ChevronRight, Sparkles, CreditCard, User, Bot } from "lucide-react"
+import { Menu, X, LogOut, ChevronRight, Sparkles, CreditCard, User, Bot, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -269,6 +269,23 @@ export function Navbar() {
                         <Sparkles className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
                         <span className="text-sm text-zinc-400 group-hover:text-white font-medium transition-colors">My Creations</span>
                       </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator className="bg-white/5 mx-2 my-2" />
+
+                    <DropdownMenuItem asChild className="group cursor-pointer focus:bg-cyan-500/10 rounded-xl px-3 py-2.5 transition-colors">
+                      <a
+                        href={process.env.NEXT_PUBLIC_AFFILIATE_PROGRAM_URL || "https://gaiagenx.partneroapp.com"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3"
+                      >
+                        <Gift className="w-4 h-4 text-cyan-400/80 group-hover:text-cyan-300 transition-colors" />
+                        <div className="flex flex-col">
+                          <span className="text-sm text-zinc-200 group-hover:text-white font-medium transition-colors">Refer & Earn</span>
+                          <span className="text-[11px] text-zinc-500 group-hover:text-zinc-400 transition-colors">Share StudioX, earn on every signup</span>
+                        </div>
+                      </a>
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator className="bg-white/5 mx-2 my-2" />

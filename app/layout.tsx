@@ -1,12 +1,17 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
+import Script from "next/script"
 import { Playfair_Display, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Navbar } from "@/components/navbar"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { AuthProvider } from "@/context/auth-context"
+import { PartneroIdentify } from "@/components/partnero-identify"
 import { ASSET_BASE } from "@/lib/assets"
+
+// Partnero affiliate tracking program key (GAIA Partners, program 12082).
+const PARTNERO_PROGRAM_KEY = process.env.NEXT_PUBLIC_PARTNERO_PROGRAM_KEY || "WRH67XHJ"
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -53,7 +58,20 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`} suppressHydrationWarning>
+        {/* Partnero affiliate tracking — fires on every page view, attributes
+            referrals to the active partner cookie. afterInteractive so it
+            doesn't block initial paint. */}
+        <Script id="partnero-universal" strategy="afterInteractive">
+          {`(function(p,t,n,e,o){p['__partnerObject']=n;function f(){
+            var c={a:arguments,q:[]};var r=this.push(c);return "number"!=typeof r?r:f.bind(c.q);}
+            f.q=f.q||[];p[n]=p[n]||f.bind(f.q);p[n].q=p[n].q||f.q;o=t.createElement('script');
+            var _=t.getElementsByTagName('script')[0];o.async=1;o.src=e+'?v'+(~~(new Date().getTime()/1e6));
+            _.parentNode.insertBefore(o,_)})(window,document,'po','https://app.partnero.com/js/universal.js');
+            po('settings', 'assets_host', 'https://assets.partnero.com');
+            po('program', '${PARTNERO_PROGRAM_KEY}', 'load');`}
+        </Script>
         <AuthProvider>
+          <PartneroIdentify />
           <SmoothScroll>
             <Navbar />
             {children}
