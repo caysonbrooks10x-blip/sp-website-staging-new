@@ -6,6 +6,7 @@ import type { PricingPlan } from "@/lib/types"
 import { motion, useMotionTemplate, useMotionValue, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/context/auth-context"
 
 interface PricingCardProps {
   plan: PricingPlan
@@ -17,6 +18,8 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
   const [tierIndex, setTierIndex] = useState(0)
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const { user, signInWithGoogle } = useAuth()
 
   const currentTier = plan.tiers ? plan.tiers[tierIndex] : null
   const activePrice = currentTier ? currentTier.price : plan.price
@@ -35,21 +38,70 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
     mouseY.set(clientY - top)
   }
 
-  const handlePurchase = () => {
-    const stripeLink = currentTier
-      ? billingCycle === "yearly"
-        ? currentTier.stripeYearlyLink
-        : currentTier.stripeMonthlyLink
-      : billingCycle === "yearly"
-        ? plan.stripeYearlyLink
-        : plan.stripeMonthlyLink
+  const handlePurchase = async () => {
+    if (isCheckingOut) return
 
-    if (!stripeLink) {
-      alert("Checkout is not configured for this plan yet.")
-      return
+    // Server-side checkout requires a signed-in Firebase user — that's how
+    // we attach the uid to the Stripe session for bulletproof Partnero
+    // attribution. If signed out, prompt sign-in first.
+    if (!user) {
+      try {
+        await signInWithGoogle()
+      } catch (err) {
+        console.error("[pricing] sign-in failed", err)
+        return
+      }
     }
 
-    window.open(stripeLink, "_blank", "noopener,noreferrer")
+    setIsCheckingOut(true)
+    try {
+      const currentUser = user
+      // After sign-in the auth state may not have propagated yet — pull
+      // from auth singleton directly to be safe.
+      const { auth } = await import("@/lib/firebaseClient")
+      const fbUser = currentUser ?? auth.currentUser
+      if (!fbUser) {
+        alert("Please sign in to continue.")
+        return
+      }
+      const idToken = await fbUser.getIdToken()
+
+      const res = await fetch("/api/checkout/create-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          planId: plan.id,
+          credits: activeCredits,
+          cycle: billingCycle,
+        }),
+      })
+
+      const data = (await res.json().catch(() => ({}))) as {
+        url?: string
+        error?: string
+        detail?: string
+      }
+
+      if (!res.ok || !data.url) {
+        // Surface the server's error detail when present — most useful one
+        // right now is "price not configured" until sync-stripe-prices runs.
+        const msg = data.detail || data.error || `Checkout failed (${res.status})`
+        alert(msg)
+        return
+      }
+
+      // Top-level redirect (not a new tab) so the user lands back on
+      // /checkout/success in the same window with their Firebase session.
+      window.location.href = data.url
+    } catch (err) {
+      console.error("[pricing] checkout error", err)
+      alert("Something went wrong starting checkout. Please try again.")
+    } finally {
+      setIsCheckingOut(false)
+    }
   }
 
   return (
@@ -280,16 +332,17 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
         {}
         <Button
           onClick={handlePurchase}
+          disabled={isCheckingOut}
           className={cn(
-            "w-full h-12 rounded-xl text-sm font-semibold transition-all duration-300 relative overflow-hidden mb-8",
+            "w-full h-12 rounded-xl text-sm font-semibold transition-all duration-300 relative overflow-hidden mb-8 disabled:opacity-70 disabled:cursor-wait",
             plan.popular
               ? "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 hover:scale-[1.02]"
               : "bg-gradient-to-r from-cyan-500/80 to-blue-600/80 hover:from-cyan-500 hover:to-blue-600 text-white hover:scale-[1.02]"
           )}
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
-            Subscribe
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            {isCheckingOut ? "Redirecting…" : "Subscribe"}
+            {!isCheckingOut && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
           </span>
         </Button>
 
