@@ -1,12 +1,14 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Check, Sparkles, ArrowRight } from "lucide-react"
+import { Check, Sparkles, ArrowRight, BadgeCheck } from "lucide-react"
 import type { PricingPlan } from "@/lib/types"
 import { motion, useMotionTemplate, useMotionValue, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
+import { doc, onSnapshot } from "firebase/firestore"
+import { db } from "@/lib/firebaseClient"
 
 interface PricingCardProps {
   plan: PricingPlan
@@ -14,17 +16,59 @@ interface PricingCardProps {
   billingCycle?: "monthly" | "yearly"
 }
 
+interface UserSubscription {
+  status?: string
+  cancel_at_period_end?: boolean
+  plan_id?: string | null
+  credits?: number | null
+  cycle?: "monthly" | "yearly" | null
+  stripe_subscription_id?: string
+}
+
 export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: PricingCardProps) {
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
   const [tierIndex, setTierIndex] = useState(0)
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null)
   const { user, signInWithGoogle } = useAuth()
 
   const currentTier = plan.tiers ? plan.tiers[tierIndex] : null
   const activePrice = currentTier ? currentTier.price : plan.price
   const activeYearlyPrice = currentTier ? currentTier.yearlyPrice : plan.yearlyPrice
   const activeCredits = currentTier ? currentTier.credits : plan.credits
+
+  // Subscribe to the user's active plan from Firestore so the matching
+  // card surfaces a "Current Plan" badge + disables its Subscribe CTA.
+  // Cycle/credits-tier match too — buying the same plan a second time
+  // would create a duplicate Stripe subscription, which we want to
+  // prevent at the UI layer.
+  useEffect(() => {
+    if (!user) {
+      setSubscription(null)
+      return
+    }
+    const unsub = onSnapshot(doc(db, "users", user.uid), (snap) => {
+      const data = snap.exists() ? snap.data() : null
+      const sub = (data?.subscription ?? null) as UserSubscription | null
+      // Treat only active/trialing as "current"; canceled / past_due
+      // should still let the user re-subscribe.
+      if (sub && (sub.status === "active" || sub.status === "trialing")) {
+        setSubscription(sub)
+      } else {
+        setSubscription(null)
+      }
+    })
+    return () => unsub()
+  }, [user])
+
+  const isCurrentPlan =
+    subscription?.plan_id === plan.id &&
+    subscription?.cycle === billingCycle &&
+    (currentTier ? subscription?.credits === currentTier.credits : subscription?.credits === plan.credits)
+  // "Current plan family" = right plan_id but maybe wrong tier/cycle.
+  // Used to show "Switch to monthly" / "Change tier" wording below.
+  const isPlanFamilyMatch = !isCurrentPlan && subscription?.plan_id === plan.id
 
   const effectiveMonthlyPrice =
     billingCycle === "yearly"
@@ -135,6 +179,18 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
       {}
       <div className="relative p-8 h-full flex flex-col">
         {}
+        {(isCurrentPlan || isPlanFamilyMatch) && (
+          <div className="absolute top-0 left-0 p-4">
+            <div className="bg-emerald-500/15 backdrop-blur-md border border-emerald-400/30 text-emerald-300 text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-wider">
+              <BadgeCheck className="w-3 h-3" />
+              {isCurrentPlan ? "Current plan" : `On ${plan.name}`}
+              {subscription?.cancel_at_period_end && (
+                <span className="ml-1 normal-case tracking-normal text-amber-300">· ending</span>
+              )}
+            </div>
+          </div>
+        )}
+        {}
         {plan.popular && (
           <div className="absolute top-0 right-0 p-4">
             <div className="bg-cyan-500/10 backdrop-blur-md border border-cyan-400/20 text-cyan-400 text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-wider">
@@ -145,7 +201,10 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
         )}
 
         {}
-        <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-[0.2em] mb-1">
+        <h3 className={cn(
+          "text-sm font-bold uppercase tracking-[0.2em] mb-1",
+          (isCurrentPlan || isPlanFamilyMatch) ? "text-emerald-300 mt-8" : "text-cyan-400",
+        )}>
           {plan.name}
         </h3>
 
@@ -330,21 +389,38 @@ export function PricingCard({ plan, index = 0, billingCycle = "monthly" }: Prici
         </div>
 
         {}
-        <Button
-          onClick={handlePurchase}
-          disabled={isCheckingOut}
-          className={cn(
-            "w-full h-12 rounded-xl text-sm font-semibold transition-all duration-300 relative overflow-hidden mb-8 disabled:opacity-70 disabled:cursor-wait",
-            plan.popular
-              ? "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 hover:scale-[1.02]"
-              : "bg-gradient-to-r from-cyan-500/80 to-blue-600/80 hover:from-cyan-500 hover:to-blue-600 text-white hover:scale-[1.02]"
-          )}
-        >
-          <span className="relative z-10 flex items-center justify-center gap-2">
-            {isCheckingOut ? "Redirecting…" : "Subscribe"}
-            {!isCheckingOut && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-          </span>
-        </Button>
+        {isCurrentPlan ? (
+          <a
+            href="/profile"
+            className={cn(
+              "w-full h-12 rounded-xl text-sm font-semibold transition-all duration-300 relative overflow-hidden mb-8 flex items-center justify-center gap-2",
+              "bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/15",
+            )}
+          >
+            <BadgeCheck className="w-4 h-4" />
+            <span>Current plan · Manage</span>
+          </a>
+        ) : (
+          <Button
+            onClick={handlePurchase}
+            disabled={isCheckingOut}
+            className={cn(
+              "w-full h-12 rounded-xl text-sm font-semibold transition-all duration-300 relative overflow-hidden mb-8 disabled:opacity-70 disabled:cursor-wait",
+              plan.popular
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 hover:scale-[1.02]"
+                : "bg-gradient-to-r from-cyan-500/80 to-blue-600/80 hover:from-cyan-500 hover:to-blue-600 text-white hover:scale-[1.02]"
+            )}
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              {isCheckingOut
+                ? "Redirecting…"
+                : isPlanFamilyMatch
+                  ? `Switch tier`
+                  : "Subscribe"}
+              {!isCheckingOut && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+            </span>
+          </Button>
+        )}
 
         {}
         <div className="border-t border-white/[0.06] mb-6" />
