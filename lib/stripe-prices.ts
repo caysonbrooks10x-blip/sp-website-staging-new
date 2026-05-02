@@ -58,6 +58,33 @@ export const STRIPE_PRICE_MAP: Record<string, PriceEntry> = {
   "ultra:50000:yearly":    { priceId: "price_1TEQ5sRuOCpoGOzJRr4p0JA2", note: "$1,908 SGD/yr · 600,000 credits" },
 };
 
+/**
+ * One-time top-up packs. Distinct from STRIPE_PRICE_MAP because top-ups
+ * are `mode: payment` (not subscription) and grant credits permanently
+ * without recurring billing.
+ *
+ * Keyed by SGD amount → { priceId, credits }. Created live 2026-05-02
+ * under product prod_URWFcgfa4RDo7a; SGD-denominated to match the
+ * subscription plans on the same Stripe account.
+ */
+export interface TopUpEntry {
+  priceId: string;
+  credits: number;
+  sgd: number;
+}
+
+export const STRIPE_TOPUP_PRICE_MAP: Record<number, TopUpEntry> = {
+  10:  { priceId: "price_1TSdCcRuOCpoGOzJehqBRukZ", credits: 2_000,   sgd: 10 },
+  50:  { priceId: "price_1TSdCdRuOCpoGOzJgsQyLYju", credits: 10_000,  sgd: 50 },
+  100: { priceId: "price_1TSdCdRuOCpoGOzJ7T5ZY06n", credits: 20_000,  sgd: 100 },
+  200: { priceId: "price_1TSdCeRuOCpoGOzJ8MougBf4", credits: 40_000,  sgd: 200 },
+  500: { priceId: "price_1TSdCeRuOCpoGOzJ7ZfBRSCV", credits: 100_000, sgd: 500 },
+};
+
+export function resolveTopUpPriceId(sgdAmount: number): TopUpEntry | null {
+  return STRIPE_TOPUP_PRICE_MAP[sgdAmount] ?? null;
+}
+
 export function priceKeyToString({ planId, credits, cycle }: PriceKey): string {
   return `${planId}:${credits}:${cycle}`;
 }

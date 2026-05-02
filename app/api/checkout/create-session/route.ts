@@ -1,15 +1,25 @@
 import { NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { getStripe } from "@/lib/stripe-server";
-import { resolvePriceId, type BillingCycle, type PriceKey } from "@/lib/stripe-prices";
+import {
+  resolvePriceId,
+  resolveTopUpPriceId,
+  type BillingCycle,
+  type PriceKey,
+} from "@/lib/stripe-prices";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 type CreateSessionBody = {
+  /** "subscription" (default) or "topup" — different Stripe checkout mode. */
+  kind?: "subscription" | "topup";
+  // Subscription fields
   planId?: string;
   credits?: number;
   cycle?: string;
+  // Top-up fields
+  topupSgd?: number;
   /** Optional override for redirect base — defaults to request origin. */
   origin?: string;
 };
@@ -46,6 +56,71 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => null)) as CreateSessionBody | null;
+  const kind = body?.kind ?? "subscription";
+
+  // Derive redirect origin. Prefer the request's own origin so previews
+  // route back to themselves; allow body override for edge cases.
+  const requestOrigin = (() => {
+    try {
+      return new URL(request.url).origin;
+    } catch {
+      return "https://studiox-live.vercel.app";
+    }
+  })();
+  const origin = body?.origin || requestOrigin;
+  const stripe = getStripe();
+
+  // ────────────────────────────── TOP-UP (one-time) ──────────────────────────────
+  if (kind === "topup") {
+    const topupSgd = typeof body?.topupSgd === "number" ? body.topupSgd : null;
+    if (topupSgd === null) {
+      return NextResponse.json(
+        { error: "invalid topup", detail: "topupSgd must be a number (10|50|100|200|500)" },
+        { status: 400 },
+      );
+    }
+    const entry = resolveTopUpPriceId(topupSgd);
+    if (!entry) {
+      return NextResponse.json(
+        { error: "topup not configured", detail: `No top-up tier for SGD ${topupSgd}` },
+        { status: 400 },
+      );
+    }
+    try {
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: [{ price: entry.priceId, quantity: 1 }],
+        client_reference_id: uid,
+        ...(userEmail ? { customer_email: userEmail } : {}),
+        success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/pricing?checkout=cancelled#top-up`,
+        // Webhook reads these to know how many credits to grant.
+        metadata: {
+          firebase_uid: uid,
+          kind: "topup",
+          topup_sgd: String(topupSgd),
+          topup_credits: String(entry.credits),
+        },
+        // payment_intent_data carries the same metadata onto the resulting
+        // PaymentIntent so it's queryable from refund/dispute flows later.
+        payment_intent_data: {
+          metadata: {
+            firebase_uid: uid,
+            kind: "topup",
+            topup_sgd: String(topupSgd),
+            topup_credits: String(entry.credits),
+          },
+        },
+        allow_promotion_codes: true,
+      });
+      return NextResponse.json({ url: session.url, id: session.id });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "unknown stripe error";
+      return NextResponse.json({ error: "stripe error", detail: msg }, { status: 502 });
+    }
+  }
+
+  // ────────────────────────────── SUBSCRIPTION ──────────────────────────────
   const planId = body?.planId;
   const credits = typeof body?.credits === "number" ? body.credits : null;
   const cycle = body?.cycle;
@@ -73,23 +148,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Derive redirect origin. Prefer the request's own origin so previews
-  // route back to themselves; allow body override for edge cases.
-  const requestOrigin = (() => {
-    try {
-      return new URL(request.url).origin;
-    } catch {
-      return "https://studiox-live.vercel.app";
-    }
-  })();
-  const origin = body?.origin || requestOrigin;
-
-  const stripe = getStripe();
-
   try {
-    // Subscription mode for monthly/yearly recurring prices.
-    // If we ever sell one-time credit packs from this route, branch on the
-    // price.recurring shape — for now every plan is a subscription.
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],

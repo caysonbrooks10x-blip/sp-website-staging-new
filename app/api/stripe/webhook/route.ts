@@ -126,6 +126,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   }
 
   // 2. Resolve credits from metadata first, then by reverse price lookup.
+  //    Top-up sessions store the credit count under metadata.topup_credits.
+  //    Subscription sessions store it under metadata.credits.
   const credits = resolveCreditsForSession(session);
 
   // 3. Tell Partnero. Amount is in the smallest currency unit, matching
@@ -139,6 +141,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 
   const amountTotal = full.amount_total ?? 0;
   const currency = full.currency ?? "sgd";
+  const isTopUp = full.metadata?.kind === "topup" || full.mode === "payment";
 
   if (amountTotal > 0) {
     await recordPartneroTransaction({
@@ -146,11 +149,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       transactionKey: full.id, // Stripe session.id doubles as Partnero idempotency key
       amount: amountTotal,
       currency,
-      productId: typeof full.metadata?.plan_id === "string" ? full.metadata.plan_id : undefined,
-      productName:
-        typeof full.metadata?.plan_id === "string"
-          ? `${full.metadata.plan_id} (${full.metadata?.cycle ?? "monthly"})`
-          : undefined,
+      productId: isTopUp
+        ? `topup-${full.metadata?.topup_sgd ?? amountTotal}`
+        : (typeof full.metadata?.plan_id === "string" ? full.metadata.plan_id : undefined),
+      productName: isTopUp
+        ? `Top-up SGD ${full.metadata?.topup_sgd ?? amountTotal / 100}`
+        : (typeof full.metadata?.plan_id === "string"
+            ? `${full.metadata.plan_id} (${full.metadata?.cycle ?? "monthly"})`
+            : undefined),
     });
   }
 
@@ -163,7 +169,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       {
         tokenBalance: FieldValue.increment(credits),
         lastCreditGrant: {
-          source: "stripe_checkout",
+          source: isTopUp ? "stripe_topup" : "stripe_checkout",
           sessionId: full.id,
           credits,
           at: FieldValue.serverTimestamp(),
@@ -171,6 +177,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       },
       { merge: true },
     );
+
+    // For top-ups, write an immutable history record so /profile can show
+    // a top-up ledger and accountants can audit the credit-bought trail.
+    if (isTopUp) {
+      await db
+        .collection("users")
+        .doc(uid)
+        .collection("topUpHistory")
+        .doc(full.id)
+        .set(
+          {
+            sessionId: full.id,
+            credits,
+            amount: amountTotal,
+            currency,
+            sgd: typeof full.metadata?.topup_sgd === "string" ? Number(full.metadata.topup_sgd) : null,
+            at: FieldValue.serverTimestamp(),
+            customerEmail: full.customer_details?.email ?? null,
+          },
+          { merge: true },
+        );
+    }
   }
 
   // 5. Mirror initial subscription state into users/{uid}.subscription so
@@ -285,11 +313,17 @@ async function writeSubscriptionDoc(
 }
 
 function resolveCreditsForSession(session: Stripe.Checkout.Session): number {
-  // Path A: metadata set when we created the session.
+  // Path A — top-up: metadata.topup_credits set when we created the session.
+  const fromTopUp = session.metadata?.topup_credits;
+  if (fromTopUp && /^\d+$/.test(fromTopUp)) return Number(fromTopUp);
+
+  // Path B — subscription: metadata.credits set when we created the session.
   const fromMeta = session.metadata?.credits;
   if (fromMeta && /^\d+$/.test(fromMeta)) return Number(fromMeta);
 
-  // Path B: reverse-lookup the line item's price → plan key.
+  // Path C — reverse-lookup the line item's price → plan key.
+  // Top-up prices aren't in this map (they're in STRIPE_TOPUP_PRICE_MAP),
+  // so this only resolves subscription line items as a last-resort fallback.
   const lineItem = (session as Stripe.Checkout.Session & {
     line_items?: { data?: Array<{ price?: { id?: string } | null }> };
   }).line_items;

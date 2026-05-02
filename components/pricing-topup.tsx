@@ -1,14 +1,15 @@
 "use client"
 
+import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Sparkles, Infinity as InfinityIcon, Zap } from "lucide-react"
+import { useAuth } from "@/context/auth-context"
 
 interface TopUpPack {
   price: number
   credits: number
   highlight?: boolean
   badge?: string
-  stripeLink?: string
 }
 
 const TOPUP_PACKS: TopUpPack[] = [
@@ -20,6 +21,54 @@ const TOPUP_PACKS: TopUpPack[] = [
 ]
 
 export function PricingTopUp() {
+  const { user, signInWithGoogle } = useAuth()
+  // Track which pack is currently in-flight so only that button shows loading.
+  const [busySgd, setBusySgd] = useState<number | null>(null)
+
+  const handleBuy = async (pack: TopUpPack) => {
+    if (busySgd !== null) return
+
+    // Top-up is a real-money one-time purchase — must be signed-in so the
+    // credits land on a known uid. Same gate as pricing-card.tsx.
+    if (!user) {
+      try {
+        await signInWithGoogle()
+      } catch (err) {
+        console.error("[topup] sign-in failed", err)
+        return
+      }
+    }
+
+    setBusySgd(pack.price)
+    try {
+      const { auth } = await import("@/lib/firebaseClient")
+      const fbUser = user ?? auth.currentUser
+      if (!fbUser) {
+        alert("Please sign in to continue.")
+        return
+      }
+      const idToken = await fbUser.getIdToken()
+      const res = await fetch("/api/checkout/create-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ kind: "topup", topupSgd: pack.price }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string; detail?: string }
+      if (!res.ok || !data.url) {
+        alert(data.detail || data.error || `Checkout failed (${res.status})`)
+        return
+      }
+      // Top-level redirect (not new tab) so the user lands back on
+      // /checkout/success in the same window with their Firebase session.
+      window.location.href = data.url
+    } catch (err) {
+      console.error("[topup] checkout error", err)
+      alert("Something went wrong starting checkout. Please try again.")
+    } finally {
+      setBusySgd(null)
+    }
+  }
+
   return (
     <section id="top-up" className="relative z-10 pb-24 px-4 sm:px-6 lg:px-8 scroll-mt-24">
       <div className="max-w-7xl mx-auto">
@@ -73,17 +122,16 @@ export function PricingTopUp() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (pack.stripeLink) window.location.href = pack.stripeLink
-                }}
+                onClick={() => handleBuy(pack)}
+                disabled={busySgd !== null}
                 className={cn(
-                  "mt-5 h-10 rounded-lg text-[11px] font-bold uppercase tracking-[0.16em] transition-all",
+                  "mt-5 h-10 rounded-lg text-[11px] font-bold uppercase tracking-[0.16em] transition-all disabled:opacity-60 disabled:cursor-wait",
                   pack.highlight
                     ? "bg-cyan-500 text-black hover:bg-cyan-400"
                     : "bg-white/10 text-white hover:bg-white/20 border border-white/10"
                 )}
               >
-                Buy now
+                {busySgd === pack.price ? "Redirecting…" : "Buy now"}
               </button>
             </div>
           ))}
