@@ -62,6 +62,128 @@ function ProfileBalanceComponent() {
   );
 }
 
+interface SubscriptionState {
+  stripe_subscription_id?: string;
+  stripe_customer_id?: string;
+  status?: string;
+  cancel_at_period_end?: boolean;
+  current_period_end?: number | null;
+  canceled_at?: number | null;
+  plan_id?: string | null;
+  credits?: number | null;
+  cycle?: "monthly" | "yearly" | null;
+  price_id?: string | null;
+}
+
+function SubscriptionCard() {
+  const { user } = useAuth();
+  const [sub, setSub] = useState<SubscriptionState | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setLoaded(true);
+      return;
+    }
+    const unsub = onSnapshot(doc(db, "users", user.uid), (snap) => {
+      const data = snap.exists() ? snap.data() : null;
+      const s = (data?.subscription ?? null) as SubscriptionState | null;
+      setSub(s);
+      setLoaded(true);
+    });
+    return () => unsub();
+  }, [user]);
+
+  const handleCancel = async () => {
+    if (!user || !sub?.stripe_subscription_id || canceling) return;
+    if (!confirm("Cancel your subscription? You'll keep access through the end of your current billing period.")) return;
+    setCanceling(true);
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/subscription/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.detail || data.error || `Cancel failed (${res.status})`);
+      }
+      // onSnapshot will pick up the optimistic Firestore mirror; no manual setState needed.
+    } catch (err) {
+      console.error("[profile] cancel error", err);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setCanceling(false);
+    }
+  };
+
+  if (!loaded) return null;
+
+  // No subscription — show subtle CTA card pointing to /pricing
+  if (!sub || !sub.stripe_subscription_id || sub.status === "incomplete_expired") {
+    return (
+      <div className="bg-[#050505]/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8 max-w-2xl w-full mx-auto md:mx-0 header-element">
+        <h3 className="text-lg font-bold text-white">No active subscription</h3>
+        <p className="text-slate-400 text-sm mt-1 mb-4">Subscribe to a plan for monthly credits, priority queue, and commercial license.</p>
+        <a href="/pricing" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:from-cyan-400 hover:to-blue-500 transition">
+          Browse Plans
+        </a>
+      </div>
+    );
+  }
+
+  const isActive = sub.status === "active" || sub.status === "trialing";
+  const isCanceled = sub.status === "canceled" || sub.cancel_at_period_end === true;
+  const planLabel = sub.plan_id ? sub.plan_id.charAt(0).toUpperCase() + sub.plan_id.slice(1) : "Subscription";
+  const cycleLabel = sub.cycle === "yearly" ? "Yearly" : sub.cycle === "monthly" ? "Monthly" : "";
+  const periodEnd = sub.current_period_end
+    ? new Date(sub.current_period_end * 1000).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
+    : null;
+
+  return (
+    <div className="bg-[#050505]/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8 max-w-2xl w-full mx-auto md:mx-0 header-element">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-bold text-white">{planLabel} {cycleLabel && <span className="text-slate-400 font-normal">· {cycleLabel}</span>}</h3>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+                isActive && !sub.cancel_at_period_end && "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+                isCanceled && "bg-amber-500/15 text-amber-300 border border-amber-500/30",
+                sub.status === "past_due" && "bg-rose-500/15 text-rose-300 border border-rose-500/30",
+              )}
+            >
+              {sub.cancel_at_period_end && sub.status !== "canceled" ? "ending" : (sub.status ?? "—")}
+            </span>
+          </div>
+          {sub.credits != null && (
+            <p className="text-slate-400 text-sm mt-1">{sub.credits.toLocaleString()} credits per {sub.cycle === "yearly" ? "year" : "month"}</p>
+          )}
+          {periodEnd && (
+            <p className="text-slate-500 text-xs mt-2">
+              {sub.cancel_at_period_end ? "Ends " : "Renews "}
+              {periodEnd}
+            </p>
+          )}
+        </div>
+        {isActive && !sub.cancel_at_period_end && sub.stripe_subscription_id && (
+          <Button
+            onClick={handleCancel}
+            disabled={canceling}
+            variant="ghost"
+            className="border border-white/10 hover:bg-white/5 text-slate-300 disabled:opacity-50"
+          >
+            {canceling ? "Canceling…" : "Cancel"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 
 
@@ -234,6 +356,7 @@ function ProfileContent() {
           </div>
 
           <ProfileBalanceComponent />
+          <SubscriptionCard />
 
           {}
           <div className="flex justify-center mb-16 header-element relative z-20">

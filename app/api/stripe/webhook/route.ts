@@ -14,20 +14,20 @@ export const maxDuration = 30;
 /**
  * Stripe webhook receiver.
  *
- * Three responsibilities, in order:
+ * Responsibilities, in order:
  *   1. Verify the request signature (shared secret with Stripe).
- *   2. Idempotency: if we've already processed this event id, return 200
- *      without doing anything. Stripe retries on 5xx with exponential
- *      backoff; this dedup table makes retries safe.
- *   3. On `checkout.session.completed`:
- *        a. Tell Partnero a transaction occurred (uid + amount).
- *        b. Grant the credit balance in Firestore users/{uid}.tokenBalance.
+ *   2. Idempotency: dedup on event.id so retries are safe.
+ *   3. Route by event type:
+ *        - checkout.session.completed → grant credits + record Partnero txn
+ *          + write initial subscription state to users/{uid}.subscription
+ *        - customer.subscription.updated → mirror subscription state
+ *          (status, period end, cancel_at_period_end) into Firestore
+ *        - customer.subscription.deleted → mark subscription as canceled
  *
- * Failure semantics: if either (3a) or (3b) throws, we return 500 — Stripe
- * will retry. The Partnero call is idempotent on transaction.key (== Stripe
- * session.id), and the Firestore credit grant is idempotent because we
- * record the session.id in the dedup table BEFORE granting credits and
- * skip if seen.
+ * Failure semantics: any handler throw → return 500 → Stripe retries on
+ * standard backoff. Partnero call is idempotent on transaction.key
+ * (== session.id). Credit grant is idempotent because we ONLY mark the
+ * dedup table after successful processing.
  *
  * Body parsing: Next route handlers expose `request.text()` which gives us
  * the raw body — needed because Stripe signature verification operates on
@@ -66,12 +66,30 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Only completed checkouts grant credits / record commission. Other
-    // event types (subscription updated, invoice paid for renewals, etc.)
-    // are deliberately not handled yet — add cases below as needed.
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      await handleCheckoutCompleted(session);
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await handleCheckoutCompleted(session);
+        break;
+      }
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        const sub = event.data.object as Stripe.Subscription;
+        await mirrorSubscriptionState(sub, event.type);
+        break;
+      }
+      case "customer.subscription.deleted": {
+        const sub = event.data.object as Stripe.Subscription;
+        await mirrorSubscriptionState(sub, event.type);
+        break;
+      }
+      // invoice.payment_succeeded / invoice.paid intentionally not handled
+      // for renewals yet — credits granted on checkout.session.completed
+      // for the first payment; renewal credit grants are a separate feature.
+      default:
+        // Acknowledge silently — Stripe sends many event types per the
+        // endpoint's enabled list; we only act on the ones we subscribe to.
+        break;
     }
 
     // Mark seen AFTER successful processing so a transient failure leaves
@@ -116,7 +134,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   // Re-fetch with line_items expanded — checkout.session.completed events
   // don't always include them.
   const full = await stripe.checkout.sessions.retrieve(session.id, {
-    expand: ["line_items.data.price"],
+    expand: ["line_items.data.price", "subscription"],
   });
 
   const amountTotal = full.amount_total ?? 0;
@@ -136,10 +154,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     });
   }
 
+  const db = getAdminDb();
+
   // 4. Grant credits in Firestore. Use FieldValue.increment for atomic
   //    add — concurrent webhooks on the same uid won't race.
   if (credits > 0) {
-    const db = getAdminDb();
     await db.collection("users").doc(uid).set(
       {
         tokenBalance: FieldValue.increment(credits),
@@ -153,6 +172,116 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       { merge: true },
     );
   }
+
+  // 5. Mirror initial subscription state into users/{uid}.subscription so
+  //    the /profile page can show the active plan immediately, before the
+  //    customer.subscription.created webhook (which races with this one).
+  if (full.subscription && typeof full.subscription !== "string") {
+    await writeSubscriptionDoc(uid, full.subscription as Stripe.Subscription, "checkout");
+  } else if (typeof full.subscription === "string") {
+    // Sub id only (no expansion succeeded for some reason) — minimal record.
+    await db.collection("users").doc(uid).set(
+      {
+        subscription: {
+          stripe_subscription_id: full.subscription,
+          stripe_customer_id: typeof full.customer === "string" ? full.customer : null,
+          plan_id: typeof full.metadata?.plan_id === "string" ? full.metadata.plan_id : null,
+          credits: typeof full.metadata?.credits === "string" ? Number(full.metadata.credits) : null,
+          cycle: typeof full.metadata?.cycle === "string" ? full.metadata.cycle : null,
+          status: "active",
+          updated_at: FieldValue.serverTimestamp(),
+          source: "checkout-fallback",
+        },
+      },
+      { merge: true },
+    );
+  }
+}
+
+/**
+ * Write subscription state to users/{uid}.subscription.
+ *
+ * Looks up uid from the subscription's metadata.firebase_uid (set on
+ * subscription_data.metadata at session creation) OR by stripe_customer_id
+ * matching a previously-recorded users/{uid}.subscription.stripe_customer_id.
+ *
+ * Reads on the standard plan path: O(1) when metadata is present, O(n) over
+ * users only when metadata is missing AND we've never seen the customer id
+ * before. Acceptable until volume justifies a customers/{stripe_customer_id}
+ * → uid mapping table.
+ */
+async function mirrorSubscriptionState(
+  sub: Stripe.Subscription,
+  eventType: string,
+): Promise<void> {
+  const uid = await resolveUidFromSubscription(sub);
+  if (!uid) {
+    console.warn(
+      "[stripe-webhook] subscription event without resolvable uid",
+      sub.id,
+      "event:",
+      eventType,
+    );
+    return;
+  }
+  await writeSubscriptionDoc(uid, sub, eventType);
+}
+
+async function resolveUidFromSubscription(sub: Stripe.Subscription): Promise<string | null> {
+  // Path A — metadata set when we created the Checkout Session.
+  const metaUid = (sub.metadata as Record<string, string> | null)?.firebase_uid;
+  if (typeof metaUid === "string" && metaUid.length > 0) return metaUid;
+
+  // Path B — reverse-lookup by stripe_customer_id against any existing
+  // user record we've already populated.
+  const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+  if (!customerId) return null;
+  const db = getAdminDb();
+  const snap = await db
+    .collection("users")
+    .where("subscription.stripe_customer_id", "==", customerId)
+    .limit(1)
+    .get();
+  if (!snap.empty) return snap.docs[0].id;
+  return null;
+}
+
+async function writeSubscriptionDoc(
+  uid: string,
+  sub: Stripe.Subscription,
+  source: string,
+): Promise<void> {
+  const item = sub.items?.data?.[0];
+  const priceId = item?.price?.id ?? null;
+  const planKey = priceId ? lookupKeyByPriceId(priceId) : null;
+  const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null;
+
+  // Stripe's TS types put current_period_end on subscription items in newer
+  // API versions; accept either source for forward compatibility.
+  const itemAny = item as unknown as { current_period_end?: number } | undefined;
+  const subAny = sub as unknown as { current_period_end?: number };
+  const currentPeriodEnd = itemAny?.current_period_end ?? subAny.current_period_end ?? null;
+
+  const db = getAdminDb();
+  await db.collection("users").doc(uid).set(
+    {
+      subscription: {
+        stripe_subscription_id: sub.id,
+        stripe_customer_id: customerId,
+        status: sub.status,
+        cancel_at_period_end: sub.cancel_at_period_end ?? false,
+        current_period_end: currentPeriodEnd,
+        canceled_at: sub.canceled_at ?? null,
+        plan_id: planKey?.planId ?? (sub.metadata as Record<string, string> | null)?.plan_id ?? null,
+        credits: planKey?.credits ?? null,
+        cycle: planKey?.cycle ?? (sub.metadata as Record<string, string> | null)?.cycle ?? null,
+        price_id: priceId,
+        updated_at: FieldValue.serverTimestamp(),
+        source,
+      },
+    },
+    { merge: true },
+  );
 }
 
 function resolveCreditsForSession(session: Stripe.Checkout.Session): number {
