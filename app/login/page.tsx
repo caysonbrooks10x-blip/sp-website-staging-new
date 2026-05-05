@@ -104,9 +104,15 @@ export default function LoginPage() {
         setError("");
         setIsSubmitting(true);
         try {
-            await signInWithGoogle();
+            await signInWithGoogle("signin");
         } catch (err: any) {
-            setError(mapAuthError(err));
+            // Surface the "no account for this email" gate cleanly with a
+            // pointer to the Create Account page.
+            if (err?.code === "auth/no-account-for-email") {
+                setError("No StudioX account exists for that Google email. Use Create Account below to sign up.");
+            } else {
+                setError(mapAuthError(err));
+            }
             setIsSubmitting(false);
         }
     };

@@ -7,6 +7,8 @@ import {
     signInWithPopup,
     signInWithRedirect,
     getRedirectResult,
+    getAdditionalUserInfo,
+    deleteUser,
     GoogleAuthProvider,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -28,11 +30,11 @@ interface AuthContextType {
     loading: boolean;
     credits: number | null;
     onboardingCompleted: boolean | null;
-    signInWithGoogle: () => Promise<void>;
+    signInWithGoogle: (intent?: "signin" | "signup") => Promise<void>;
     signInWithEmail: (email: string, pass: string) => Promise<any>;
     signUpWithEmail: (email: string, pass: string, name: string) => Promise<any>;
     setUpRecaptcha: (containerId: string) => void;
-    signInWithPhone: (phone: string, appVerifier: RecaptchaVerifier) => Promise<any>;
+    signInWithPhone: (phone: string, appVerifier: RecaptchaVerifier, intent?: "signin" | "signup") => Promise<any>;
     verifyOtp: (token: string) => Promise<any>;
     logout: () => Promise<void>;
     updateCredits: (newCredits: number) => void;
@@ -146,13 +148,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
     }, []);
 
-    const signInWithGoogle = async () => {
+    const signInWithGoogle = async (intent: "signin" | "signup" = "signup") => {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: "select_account" });
+        let result;
         try {
             // Popup is preferred — works synchronously, no cross-page storage issues.
             // COOP header (same-origin-allow-popups) is set in next.config.ts to allow this.
-            await signInWithPopup(auth, provider);
+            result = await signInWithPopup(auth, provider);
         } catch (popupError: any) {
             const code = popupError?.code;
             // If popup was blocked or closed, fall back to redirect flow.
@@ -165,6 +168,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return;
             }
             throw popupError;
+        }
+
+        // Intent gate: on the Sign In page, refuse to silently create a new
+        // account for an unknown email. Firebase merges sign-in and sign-up
+        // for SSO providers — we have to undo the create after the fact.
+        if (intent === "signin") {
+            const isNewUser = getAdditionalUserInfo(result)?.isNewUser === true;
+            if (isNewUser) {
+                try {
+                    await deleteUser(result.user);
+                } catch (delErr) {
+                    // Best-effort cleanup — even if delete fails, sign out so
+                    // the freshly-created session doesn't persist.
+                    console.warn("[auth] failed to delete unintended new user:", delErr);
+                }
+                try {
+                    await signOut(auth);
+                } catch {
+                    // ignored
+                }
+                const err: any = new Error(
+                    "No account exists for this email. Please use Create Account to sign up.",
+                );
+                err.code = "auth/no-account-for-email";
+                throw err;
+            }
         }
     };
 

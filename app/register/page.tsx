@@ -2,21 +2,23 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { Loader2, Mail, Lock, User as UserIcon, Eye, EyeOff } from "lucide-react";
+import { Loader2, Mail, Lock, User as UserIcon, Eye, EyeOff, Phone } from "lucide-react";
 import Link from "next/link";
 import { ASSET_BASE } from "@/lib/assets";
 
 export default function RegisterPage() {
-    const { user, loading, onboardingCompleted, signUpWithEmail } = useAuth();
+    const { user, loading, onboardingCompleted, signUpWithEmail, signInWithGoogle } = useAuth();
     const router = useRouter();
     const [formData, setFormData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
     const [isVerificationSent, setIsVerificationSent] = useState(false);
 
     
@@ -41,6 +43,20 @@ export default function RegisterPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleGoogleSignUp = async () => {
+        setError("");
+        setIsGoogleSubmitting(true);
+        try {
+            // intent="signup" → allows new accounts to be created. Existing
+            // Google users will also work (Firebase merges sign-in/up for SSO).
+            await signInWithGoogle("signup");
+            // onAuthStateChanged → useEffect → router.push handles redirect.
+        } catch (err: any) {
+            setError(err?.message || "Google sign-up failed");
+            setIsGoogleSubmitting(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -135,6 +151,43 @@ export default function RegisterPage() {
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
                     <div className="relative p-10 z-10">
+                        {}
+                        <div className="space-y-3 mb-6">
+                            <Button
+                                type="button"
+                                onClick={handleGoogleSignUp}
+                                disabled={isGoogleSubmitting || isSubmitting}
+                                className="w-full h-11 bg-white text-black hover:bg-white/90 font-semibold rounded-xl shadow-lg shadow-white/5 transition-transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70"
+                            >
+                                {isGoogleSubmitting ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Image
+                                        src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/google.svg"
+                                        alt=""
+                                        width={16}
+                                        height={16}
+                                        unoptimized
+                                    />
+                                )}
+                                <span>Continue with Google</span>
+                            </Button>
+                            <Link
+                                href="/login?signup=phone"
+                                className="w-full h-11 bg-black/40 border border-white/10 text-white hover:bg-white/10 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+                            >
+                                <Phone className="h-4 w-4" />
+                                <span>Continue with Phone</span>
+                            </Link>
+                        </div>
+
+                        {}
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="flex-1 h-px bg-white/10" />
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-white/40">Or sign up with email</span>
+                            <div className="flex-1 h-px bg-white/10" />
+                        </div>
+
                         <form className="space-y-5" onSubmit={handleSubmit}>
                             <div className="space-y-2">
                                 <Label className="text-white/50 text-[10px] uppercase font-bold tracking-widest pl-1">Full Name</Label>
