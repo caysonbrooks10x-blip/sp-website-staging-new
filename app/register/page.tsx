@@ -134,10 +134,6 @@ export default function RegisterPage() {
                 transition={{ duration: 0.5 }}
                 className="w-full max-w-[500px] relative z-10"
             >
-                <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold text-white tracking-tight">Create Account</h2>
-                </div>
-
                 {}
                 <div
                     className="relative bg-black/60 rounded-3xl shadow-2xl overflow-hidden border border-white/10"
@@ -151,6 +147,12 @@ export default function RegisterPage() {
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
                     <div className="relative p-10 z-10">
+                        {}
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl font-bold text-white tracking-tight">Create Account</h2>
+                            <p className="mt-1 text-xs text-white/50">Start creating with StudioX in seconds</p>
+                        </div>
+
                         {}
                         <div className="space-y-3 mb-6">
                             <Button
