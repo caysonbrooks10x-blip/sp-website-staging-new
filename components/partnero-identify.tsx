@@ -3,28 +3,57 @@
 import { useEffect } from "react"
 import { useAuth } from "@/context/auth-context"
 
-declare global {
-  interface Window {
-    po?: (...args: unknown[]) => unknown
-  }
-}
-
 const PARTNERO_IDENTIFIED_KEY = "px_partnero_identified_uid"
 
 /**
- * Identifies the logged-in StudioX user with Partnero so partner referrals
- * and conversions attribute to the right person.
+ * Cookie names Partnero's universal.js may use for the partner attribution
+ * token after a `?aff=...` URL visit. Different versions of the script
+ * have used different names — read all known variants and pick the first
+ * non-empty one.
+ */
+const PARTNERO_COOKIE_NAMES = [
+  "_partnero_partner",
+  "partnero_partner",
+  "_partnero_referral",
+  "partnero_referral",
+  "_partnero_ref",
+  "partnero_ref",
+  "_po_partner",
+]
+
+function readPartneroCookie(): string | null {
+  if (typeof document === "undefined") return null
+  const all = document.cookie.split(";").map((c) => c.trim())
+  for (const name of PARTNERO_COOKIE_NAMES) {
+    const hit = all.find((c) => c.startsWith(name + "="))
+    if (hit) {
+      const v = decodeURIComponent(hit.slice(name.length + 1))
+      if (v) return v
+    }
+  }
+  return null
+}
+
+/**
+ * Identifies the logged-in StudioX user with Partnero so partner
+ * referrals and conversions attribute to the right person.
+ *
+ * Switched 2026-05-05 from the client-side
+ * `po('customers','signup',{data:{...}})` universal-script call to a
+ * server-side POST /api/auth/identify call. Reason: live testing showed
+ * the universal-script call was unreliable — Partnero recorded clicks
+ * but signups silently dropped (verified clicks=2 vs signups=0 across
+ * multiple real signups). The server-side path uses the Partnero API
+ * key directly and never races with navigation.
  *
  * Performance contract:
- *  - Fires AT MOST ONCE per browser session per uid (gated by sessionStorage).
- *    Without this gate, every full-page navigation re-mounts the component
- *    and re-fires the call — the perf audit measured 1.4–2.2s blocking on
- *    `customers` POST on /pricing, /profile, /creations, /community.
- *  - Wraps the call in requestIdleCallback so it never competes with
- *    interactive work on the main thread.
- *  - No-op on the server. Silent if the Partnero script hasn't loaded yet
- *    (the universal script self-defers; sessionStorage gate prevents retry
- *    storms on every render).
+ *  - Fires AT MOST ONCE per browser session per uid (sessionStorage gate).
+ *  - requestIdleCallback wrap so it never competes with first interaction.
+ *  - Reads the partner attribution cookie set by Partnero's universal
+ *    script when the user visited `?aff=...`. Passes that cookie value
+ *    to our server so attribution survives all the way through.
+ *  - On failure, leaves the sessionStorage gate UNSET so the next page
+ *    load tries again — no permanent silent loss.
  */
 export function PartneroIdentify() {
   const { user } = useAuth()
@@ -37,39 +66,47 @@ export function PartneroIdentify() {
     try {
       alreadyIdentified = sessionStorage.getItem(PARTNERO_IDENTIFIED_KEY) === user.uid
     } catch {
-      // sessionStorage may be unavailable (private mode); fall through
-      // and accept the per-navigation re-fire as the safe degraded path.
+      // sessionStorage may be unavailable (private mode); fall through.
     }
     if (alreadyIdentified) return
 
-    const fire = () => {
-      if (typeof window.po !== "function") return
+    const fire = async () => {
       try {
-        window.po("customers", "signup", {
-          data: {
-            key: user.uid,
-            email: user.email || undefined,
-            name: user.displayName || undefined,
+        const idToken = await user.getIdToken()
+        const partnerKey = readPartneroCookie()
+        const res = await fetch("/api/auth/identify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
           },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            partnerKey,
+            name: user.displayName,
+          }),
         })
-        try {
-          sessionStorage.setItem(PARTNERO_IDENTIFIED_KEY, user.uid)
-        } catch {
-          // ignored — see comment above
+        if (res.ok) {
+          try {
+            sessionStorage.setItem(PARTNERO_IDENTIFIED_KEY, user.uid)
+          } catch {
+            // ignored
+          }
+        } else {
+          console.warn("[partnero-identify] non-ok:", res.status)
         }
       } catch (err) {
-        console.warn("[partnero] identify failed:", err)
+        console.warn("[partnero-identify] failed:", err)
       }
     }
 
     const ric: ((cb: () => void) => unknown) | undefined =
       (window as unknown as { requestIdleCallback?: (cb: () => void) => unknown }).requestIdleCallback
     if (typeof ric === "function") {
-      ric(fire)
+      ric(() => void fire())
     } else {
-      // Safari etc. — fall back to a generous setTimeout so we don't compete
-      // with first interaction.
-      setTimeout(fire, 1500)
+      // Safari etc. — generous setTimeout so we don't compete with first interaction.
+      setTimeout(() => void fire(), 1500)
     }
   }, [user])
 

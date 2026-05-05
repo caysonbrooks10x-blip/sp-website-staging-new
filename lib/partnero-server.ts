@@ -19,6 +19,70 @@ import { isDummy } from "./env";
 
 const PARTNERO_BASE = "https://api.partnero.com/v1";
 
+interface UpsertCustomerInput {
+  /** Firebase uid — used as the Partnero customer.key (idempotent on re-create). */
+  customerKey: string;
+  email?: string | null;
+  name?: string | null;
+  /** Partner key OR affiliate token from the `?aff=` cookie. Optional. */
+  partnerKey?: string | null;
+}
+
+/**
+ * Server-side customer record creation in Partnero. Replaces the
+ * client-side `po('customers','signup',{...})` call which was unreliable
+ * (raced with navigation, broke when the partner cookie didn't survive
+ * domain hops, etc).
+ *
+ * If `partnerKey` is provided, attributes the customer to that partner.
+ * Otherwise creates an unattributed customer record (Partnero's email
+ * matching may still associate them later).
+ *
+ * Returns true on success, false on a recoverable error (e.g. customer
+ * already exists with conflicting partner). Throws on auth/network errors
+ * the caller should retry.
+ */
+export async function upsertPartneroCustomer(input: UpsertCustomerInput): Promise<boolean> {
+  const apiKey = process.env.PARTNERO_API_KEY;
+  if (!apiKey || isDummy(apiKey)) {
+    throw new Error("Missing PARTNERO_API_KEY env var");
+  }
+
+  const body: Record<string, unknown> = {
+    key: input.customerKey,
+    ...(input.email ? { email: input.email } : {}),
+    ...(input.name ? { name: input.name } : {}),
+    ...(input.partnerKey ? { partner: { key: input.partnerKey } } : {}),
+  };
+
+  const res = await fetch(`${PARTNERO_BASE}/customers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 200 || res.status === 201) return true;
+  // 422 = customer already exists OR partner reference invalid. Either way,
+  // not a webhook-retry-worthy failure — log and move on.
+  if (res.status === 422 || res.status === 409) {
+    const err = await res.text().catch(() => "<no body>");
+    console.warn("[partnero] upsert customer", res.status, err.slice(0, 200));
+    return false;
+  }
+  if (res.status === 404 && input.partnerKey) {
+    // Partner not found — try once more without partner attribution so at
+    // least the customer record exists.
+    console.warn("[partnero] partner not found, retrying unattributed:", input.partnerKey);
+    return upsertPartneroCustomer({ ...input, partnerKey: null });
+  }
+  const errText = await res.text().catch(() => "<no body>");
+  throw new Error(`Partnero /v1/customers failed: ${res.status} ${errText.slice(0, 300)}`);
+}
+
 interface CreateTransactionInput {
   /** Firebase uid — the same value passed as Checkout `client_reference_id`. */
   customerKey: string;
